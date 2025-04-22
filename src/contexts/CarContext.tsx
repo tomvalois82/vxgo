@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Car, CarFormData } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,8 +5,8 @@ import { toast } from '@/components/ui/use-toast';
 
 interface CarContextType {
   cars: Car[];
-  addCar: (car: CarFormData) => Promise<void>;
-  updateCar: (id: string, car: Partial<CarFormData>) => Promise<void>;
+  addCar: (car: CarFormData & { fotos?: string[] }) => Promise<void>;
+  updateCar: (id: string, car: Partial<CarFormData & { fotos?: string[] }>) => Promise<void>;
   deleteCar: (id: string) => Promise<void>;
   getCar: (id: string) => Car | undefined;
   filteredCars: Car[];
@@ -82,8 +81,13 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     fetchCars();
   }, []);
 
-  const addCar = async (carData: CarFormData) => {
-    const { error } = await supabase.from('estoque_iputinga').insert([mapCarFormDataToSupabase(carData)]);
+  const addCar = async (carData: CarFormData & { fotos?: string[] }) => {
+    const insertPayload = {
+      ...mapCarFormDataToSupabase(carData),
+      fotos: carData.fotos ?? null,
+    };
+
+    const { error } = await supabase.from('estoque_iputinga').insert([insertPayload]);
     if (error) {
       toast({
         variant: 'destructive',
@@ -96,15 +100,19 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toast({ title: 'Veículo adicionado com sucesso!' });
   };
 
-  const updateCar = async (id: string, carData: Partial<CarFormData>) => {
-    // Fix: Convert id string to number using parseInt
+  const updateCar = async (id: string, carData: Partial<CarFormData & { fotos?: string[] }>) => {
     const numericId = parseInt(id, 10);
-    
+
+    const updatePayload = {
+      ...mapCarFormDataToSupabase(carData as CarFormData),
+      fotos: carData.fotos ?? null,
+    };
+
     const { error } = await supabase
       .from('estoque_iputinga')
-      .update(mapCarFormDataToSupabase(carData as CarFormData))
+      .update(updatePayload)
       .eq('id', numericId);
-      
+
     if (error) {
       toast({
         variant: 'destructive',
@@ -118,7 +126,6 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCar = async (id: string) => {
-    // Fix: Convert id string to number using parseInt
     const numericId = parseInt(id, 10);
     
     const { error } = await supabase.from('estoque_iputinga').delete().eq('id', numericId);

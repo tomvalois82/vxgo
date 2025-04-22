@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -17,6 +16,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { uploadCarImages } from "@/lib/uploadCarImages";
+import { Image } from "lucide-react";
 
 const carFormSchema = z.object({
   brand: z.string().min(1, 'Marca é obrigatória'),
@@ -60,8 +61,49 @@ const CarForm: React.FC<CarFormProps> = ({
     },
   });
 
-  function handleSubmit(values: z.infer<typeof carFormSchema>) {
-    onSubmit(values as CarFormData);
+  // Novo estado para fotos
+  const [imageFiles, setImageFiles] = React.useState<File[]>([]);
+  const [uploading, setUploading] = React.useState(false);
+  const [previewUrls, setPreviewUrls] = React.useState<string[]>(
+    initialData.fotos
+      ? initialData.fotos.map((nome: string) =>
+          supabase.storage.from("car-fotos").getPublicUrl(nome).data.publicUrl
+        )
+      : []
+  );
+
+  // Atualiza previews ao selecionar novas imagens
+  const handleImageFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setImageFiles(Array.from(files));
+      setPreviewUrls(Array.from(files).map(file => URL.createObjectURL(file)));
+    }
+  };
+
+  async function handleSubmit(values: z.infer<typeof carFormSchema>) {
+    setUploading(true);
+    let imageNames: string[] = [];
+
+    // Se o usuário subiu novas imagens, faz o upload
+    if (imageFiles.length > 0) {
+      try {
+        imageNames = await uploadCarImages(imageFiles);
+      } catch (err: any) {
+        alert(err.message || "Erro ao enviar imagens");
+        setUploading(false);
+        return;
+      }
+    } else if (initialData.fotos) {
+      // Mantém imagens antigas se não enviou novas
+      imageNames = initialData.fotos;
+    }
+
+    setUploading(false);
+
+    // Ajuste: adiciona o campo fotos
+    const fullData = { ...values, fotos: imageNames };
+    onSubmit(fullData as CarFormData & { fotos: string[] });
   }
 
   return (
@@ -240,6 +282,32 @@ const CarForm: React.FC<CarFormProps> = ({
               </FormItem>
             )}
           />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-1 flex gap-1 items-center">
+            <Image size={20} /> Fotos do veículo
+          </label>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleImageFilesChange}
+            className="file-input file-input-bordered w-full"
+            disabled={uploading}
+          />
+          {previewUrls.length > 0 && (
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              {previewUrls.map((url, i) => (
+                <img
+                  key={i}
+                  src={url}
+                  alt={`Preview ${i + 1}`}
+                  className="rounded border aspect-square object-cover h-24 w-full"
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <FormField
