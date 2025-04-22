@@ -97,10 +97,14 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCar = async (id: string, carData: Partial<CarFormData>) => {
+    // Fix: Convert id string to number using parseInt
+    const numericId = parseInt(id, 10);
+    
     const { error } = await supabase
       .from('estoque_iputinga')
       .update(mapCarFormDataToSupabase(carData as CarFormData))
-      .eq('id', id);
+      .eq('id', numericId);
+      
     if (error) {
       toast({
         variant: 'destructive',
@@ -114,7 +118,10 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCar = async (id: string) => {
-    const { error } = await supabase.from('estoque_iputinga').delete().eq('id', id);
+    // Fix: Convert id string to number using parseInt
+    const numericId = parseInt(id, 10);
+    
+    const { error } = await supabase.from('estoque_iputinga').delete().eq('id', numericId);
     if (error) {
       toast({
         variant: 'destructive',
