@@ -28,6 +28,13 @@ export default {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))'
 				},
+        carblue: {
+          DEFAULT: '#0EA5E9',
+          dark: '#0284C7'
+        },
+        cardark: '#1A1F2C',
+        carlight: '#F6F6F7',
+        carred: '#EA384C',
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
 					foreground: 'hsl(var(--secondary-foreground))'
