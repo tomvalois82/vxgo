@@ -1,9 +1,12 @@
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Car, Settings, Info } from 'lucide-react';
 
 const SidebarNav = () => {
+  // Force component to only render when we have access to Router context
+  const location = useLocation();
+  
   const navLinks = [
     { to: '/', icon: <Car size={20} />, label: 'Estoque', exact: true },
     { to: '/settings', icon: <Settings size={20} />, label: 'Configurações', exact: false },
