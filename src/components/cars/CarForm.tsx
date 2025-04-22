@@ -66,10 +66,10 @@ const CarForm: React.FC<CarFormProps> = ({
   const [imageFiles, setImageFiles] = React.useState<File[]>([]);
   const [uploading, setUploading] = React.useState(false);
   const [previewUrls, setPreviewUrls] = React.useState<string[]>(
-    initialData.fotos
-      ? initialData.fotos.map((nome: string) =>
-          supabase.storage.from("car-fotos").getPublicUrl(nome).data.publicUrl
-        )
+    Array.isArray((initialData as any).fotos)
+      ? (initialData as any).fotos.map((nome: string) =>
+        supabase.storage.from("car-fotos").getPublicUrl(nome).data.publicUrl
+      )
       : []
   );
 
@@ -95,9 +95,9 @@ const CarForm: React.FC<CarFormProps> = ({
         setUploading(false);
         return;
       }
-    } else if (initialData.fotos) {
+    } else if (Array.isArray((initialData as any).fotos)) {
       // Mantém imagens antigas se não enviou novas
-      imageNames = initialData.fotos;
+      imageNames = (initialData as any).fotos;
     }
 
     setUploading(false);
