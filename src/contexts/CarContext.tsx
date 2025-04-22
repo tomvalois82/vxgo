@@ -1,117 +1,140 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Car, CarFormData } from '@/lib/types';
-import { v4 as uuidv4 } from 'uuid';
-
-// Initial sample data
-const initialCars: Car[] = [
-  {
-    id: '1',
-    brand: 'Toyota',
-    model: 'Corolla',
-    year: 2022,
-    price: 120000,
-    color: 'Prata',
-    mileage: 0,
-    fuelType: 'Flex',
-    transmission: 'Automático',
-    inStock: true,
-    description: 'Modelo novo, completo com multimídia e câmera de ré.',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '2',
-    brand: 'Honda',
-    model: 'Civic',
-    year: 2021,
-    price: 115000,
-    color: 'Branco',
-    mileage: 15000,
-    fuelType: 'Flex',
-    transmission: 'Automático',
-    inStock: true,
-    description: 'Seminovo em excelente estado, único dono.',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '3',
-    brand: 'Volkswagen',
-    model: 'Golf',
-    year: 2020,
-    price: 90000,
-    color: 'Preto',
-    mileage: 32000,
-    fuelType: 'Flex',
-    transmission: 'Automático',
-    inStock: true,
-    description: 'Completo com teto solar.',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 interface CarContextType {
   cars: Car[];
-  addCar: (car: CarFormData) => void;
-  updateCar: (id: string, car: Partial<CarFormData>) => void;
-  deleteCar: (id: string) => void;
+  addCar: (car: CarFormData) => Promise<void>;
+  updateCar: (id: string, car: Partial<CarFormData>) => Promise<void>;
+  deleteCar: (id: string) => Promise<void>;
   getCar: (id: string) => Car | undefined;
   filteredCars: Car[];
   setSearchTerm: (term: string) => void;
   searchTerm: string;
+  refreshCars: () => Promise<void>;
 }
 
 const CarContext = createContext<CarContextType | undefined>(undefined);
 
+function mapSupabaseToCar(row: any): Car {
+  return {
+    id: String(row.id),
+    brand: row.fabricante || '',
+    model: row.modelo || '',
+    year: Number(row.ano_fabricacao || row.ano) || 0,
+    price: Number(row.valor) || 0,
+    color: row.cor || '',
+    mileage: Number(row.km) || 0,
+    fuelType: row.motor || '',
+    transmission: row.cambio || '',
+    inStock: !row.status || row.status.toLowerCase() === 'em estoque',
+    image: row.foto || '',
+    description: row.observacao || '',
+    createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+    updatedAt: row.created_at ? new Date(row.created_at) : new Date() // estoque_iputinga does not have updated_at
+  };
+}
+
+function mapCarFormDataToSupabase(car: CarFormData) {
+  return {
+    fabricante: car.brand,
+    modelo: car.model,
+    ano_fabricacao: String(car.year),
+    valor: String(car.price),
+    cor: car.color,
+    km: String(car.mileage),
+    motor: car.fuelType,
+    cambio: car.transmission,
+    status: car.inStock ? 'Em estoque' : 'Fora de estoque',
+    foto: car.image || null,
+    observacao: car.description || null
+  };
+}
+
 export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Try to load cars from localStorage or use initialCars
-  const [cars, setCars] = useState<Car[]>(() => {
-    const savedCars = localStorage.getItem('carInventory');
-    return savedCars ? JSON.parse(savedCars) : initialCars;
-  });
-  
+  const [cars, setCars] = useState<Car[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Save cars to localStorage whenever they change
+  const fetchCars = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('estoque_iputinga')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao carregar veículos',
+        description: error.message,
+      });
+      setLoading(false);
+      return;
+    }
+    setCars(data?.map(mapSupabaseToCar) || []);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    localStorage.setItem('carInventory', JSON.stringify(cars));
-  }, [cars]);
+    fetchCars();
+  }, []);
 
-  const addCar = (carData: CarFormData) => {
-    const newCar: Car = {
-      ...carData,
-      id: uuidv4(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setCars([...cars, newCar]);
+  const addCar = async (carData: CarFormData) => {
+    const { error } = await supabase.from('estoque_iputinga').insert([mapCarFormDataToSupabase(carData)]);
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao adicionar veículo',
+        description: error.message,
+      });
+      return;
+    }
+    await fetchCars();
+    toast({ title: 'Veículo adicionado com sucesso!' });
   };
 
-  const updateCar = (id: string, carData: Partial<CarFormData>) => {
-    setCars(
-      cars.map((car) =>
-        car.id === id
-          ? { ...car, ...carData, updatedAt: new Date() }
-          : car
-      )
-    );
+  const updateCar = async (id: string, carData: Partial<CarFormData>) => {
+    const { error } = await supabase
+      .from('estoque_iputinga')
+      .update(mapCarFormDataToSupabase(carData as CarFormData))
+      .eq('id', id);
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao atualizar veículo',
+        description: error.message,
+      });
+      return;
+    }
+    await fetchCars();
+    toast({ title: 'Veículo atualizado com sucesso!' });
   };
 
-  const deleteCar = (id: string) => {
-    setCars(cars.filter((car) => car.id !== id));
+  const deleteCar = async (id: string) => {
+    const { error } = await supabase.from('estoque_iputinga').delete().eq('id', id);
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao excluir veículo',
+        description: error.message,
+      });
+      return;
+    }
+    await fetchCars();
+    toast({ title: 'Veículo removido com sucesso!' });
   };
 
-  const getCar = (id: string) => {
-    return cars.find((car) => car.id === id);
-  };
+  const getCar = (id: string) => cars.find((car) => String(car.id) === String(id));
 
-  // Filter cars based on search term
   const filteredCars = cars.filter((car) => {
     const searchFields = `${car.brand} ${car.model} ${car.year} ${car.color}`.toLowerCase();
     return searchFields.includes(searchTerm.toLowerCase());
   });
+
+  const refreshCars = fetchCars;
 
   return (
     <CarContext.Provider
@@ -124,6 +147,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         filteredCars,
         setSearchTerm,
         searchTerm,
+        refreshCars,
       }}
     >
       {children}
