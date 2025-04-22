@@ -18,6 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { uploadCarImages } from "@/lib/uploadCarImages";
 import { Image } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const carFormSchema = z.object({
   brand: z.string().min(1, 'Marca é obrigatória'),
@@ -103,7 +104,7 @@ const CarForm: React.FC<CarFormProps> = ({
 
     // Ajuste: adiciona o campo fotos
     const fullData = { ...values, fotos: imageNames };
-    onSubmit(fullData as CarFormData & { fotos: string[] });
+    onSubmit(fullData as CarFormData);
   }
 
   return (

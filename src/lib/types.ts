@@ -12,6 +12,7 @@ export interface Car {
   inStock: boolean;
   image?: string;
   description?: string;
+  fotos?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
