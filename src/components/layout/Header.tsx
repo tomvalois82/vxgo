@@ -1,13 +1,14 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Car, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCars } from '@/contexts/CarContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
   const { setSearchTerm, searchTerm } = useCars();
+  const { signOut, profile } = useAuth();
 
   return (
     <header className="bg-cardark text-white py-4 px-6 flex justify-between items-center shadow-md">
@@ -27,12 +28,22 @@ const Header = () => {
           />
         </div>
       </div>
-      <div>
+      <div className="flex items-center gap-4">
         <Link to="/add-car">
           <Button className="bg-carblue hover:bg-carblue-dark">
             Adicionar Carro
           </Button>
         </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/profile">
+            <Button variant="ghost" className="text-white hover:text-carblue">
+              {profile?.nome || 'Perfil'}
+            </Button>
+          </Link>
+          <Button variant="ghost" className="text-white hover:text-carblue" onClick={signOut}>
+            Sair
+          </Button>
+        </div>
       </div>
     </header>
   );
