@@ -5,7 +5,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UserProfile {
-  id: string;
+  id: number; // Changed from string to number to match the database schema
   nome: string | null;
   cargo: 'Gerente' | 'Supervisor' | 'Vendedor' | 'Avaliador' | null;
   telefone: string | null;
