@@ -1,8 +1,10 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Car, CarFormData } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { VehicleType } from '@/hooks/useFipeBrands';
+import { formatCurrency } from '@/lib/utils';
 
 interface CarContextType {
   cars: Car[];
@@ -22,7 +24,7 @@ function mapSupabaseToCar(row: any): Car {
   let price = 0;
   if (row.valor) {
     const numericValue = row.valor.replace(/[^\d,]/g, '').replace(',', '.');
-    price = parseFloat(numericValue.replace('.', ''));
+    price = parseFloat(numericValue);
   }
 
   let mileage = 0;
@@ -58,13 +60,16 @@ function mapSupabaseToCar(row: any): Car {
 }
 
 function mapCarFormDataToSupabase(car: CarFormData) {
+  // Format the price to the required format: R$ 999.999,99
+  const formattedPrice = car.price ? formatCurrency(car.price).replace('R$', 'R$ ').trim() : 'R$ 0,00';
+  
   return {
     tipo_veiculo: car.vehicleType,
     fabricante: car.brand,
     modelo: car.model,
     ano: String(car.year),
     ano_fabricacao: String(car.manufacturingYear || car.year),
-    valor: car.price ? `R$ ${car.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '0',
+    valor: formattedPrice,
     cor: car.color,
     km: car.mileage ? car.mileage.toLocaleString('pt-BR') : '0',
     motor: car.fuelType,
