@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -19,9 +20,11 @@ const Auth = () => {
 
   const handleSignInWithGoogle = async () => {
     try {
+      setIsLoading(true);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
+          redirectTo: `${window.location.origin}/auth`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -37,6 +40,7 @@ const Auth = () => {
         title: "Erro",
         description: "Erro ao fazer login com Google. Tente novamente.",
       });
+      setIsLoading(false);
     }
   };
 
