@@ -1,7 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Car, CarFormData } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { VehicleType } from '@/hooks/useFipeBrands';
 
 interface CarContextType {
   cars: Car[];
@@ -20,6 +22,7 @@ const CarContext = createContext<CarContextType | undefined>(undefined);
 function mapSupabaseToCar(row: any): Car {
   return {
     id: String(row.id),
+    vehicleType: (row.tipo_veiculo as VehicleType) || 'carros', // Default to 'carros' if not specified
     brand: row.fabricante || '',
     model: row.modelo || '',
     year: Number(row.ano_fabricacao || row.ano) || 0,
@@ -38,6 +41,7 @@ function mapSupabaseToCar(row: any): Car {
 
 function mapCarFormDataToSupabase(car: CarFormData) {
   return {
+    tipo_veiculo: car.vehicleType, // Add the vehicleType to the database
     fabricante: car.brand,
     modelo: car.model,
     ano_fabricacao: String(car.year),
