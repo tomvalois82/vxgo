@@ -1,99 +1,42 @@
+
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CarFormData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { uploadCarImages } from "@/lib/uploadCarImages";
-import { Image, Calendar, Car, List, Pencil, DollarSign, Palette, Gauge, FileText, Video, FileSpreadsheet, Shield, LayoutList, Trash2, MoveHorizontal } from "lucide-react";
+import { Car, List, Pencil, DollarSign, Palette, Gauge, FileText, Video, FileSpreadsheet, Shield, LayoutList, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { VehicleType, useFipeBrands } from '@/hooks/useFipeBrands';
 import { toast } from '@/components/ui/use-toast';
+import { formatCurrency, formatMileage, extractNumericValue } from '@/lib/formUtils';
+import { currentYear, years, engineSizes, colors, categories } from './formConstants';
+import { carFormSchema, type CarFormSchema } from './carFormSchema';
+import ImageUploadGrid from './ImageUploadGrid';
 
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: currentYear - 1950 + 2 }, (_, i) => currentYear + 1 - i);
-const engineSizes = ['1.0', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2.0', '2.2', '2.4', '2.8', '3.0', '3.2', '3.6', '4.0', '4.2', '5.0'];
-const colors = ['Branco', 'Preto', 'Prata', 'Cinza', 'Vermelho', 'Marrom', 'Verde', 'Amarelo'];
-const categories = ['Hatch', 'Sedan', 'SUV', 'Conversível', 'Picape', 'Coupe', 'Esportivo'];
-
-const carFormSchema = z.object({
-  vehicleType: z.enum(['carros', 'motos', 'caminhoes'] as const),
-  brand: z.string().min(1, 'Marca é obrigatória'),
-  model: z.string().min(1, 'Modelo é obrigatório'),
-  year: z.coerce.number().int().min(1950).max(currentYear + 1),
-  manufacturingYear: z.coerce.number().int().min(1950).max(currentYear + 1),
-  price: z.coerce.number().positive('Preço deve ser um valor positivo'),
-  color: z.string().min(1, 'Cor é obrigatória'),
-  mileage: z.coerce.number().min(0, 'Quilometragem não pode ser negativa'),
-  fuelType: z.string().min(1, 'Tipo de combustível é obrigatório'),
-  transmission: z.string().min(1, 'Tipo de transmissão é obrigatório'),
-  inStock: z.boolean().default(true),
-  description: z.string().optional(),
-  characteristics: z.string().optional(),
-  video: z.string().optional(),
-  cautionReport: z.string().optional(),
-  technicalSheet: z.string().optional(),
-  warranty: z.string().optional(),
-  category: z.string().min(1, 'Categoria é obrigatória'),
-  image: z.string().optional(),
-});
-
-type CarFormProps = {
+interface CarFormProps {
   initialData?: Partial<CarFormData>;
   onSubmit: (data: CarFormData) => void;
   isEditing?: boolean;
-};
-
-// Format functions
-const formatCurrency = (value: string): string => {
-  // Remove non-numeric characters
-  const numericValue = value.replace(/\D/g, '');
-  
-  // Convert to number and format
-  const number = Number(numericValue) / 100;
-  return number.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-};
-
-const formatMileage = (value: string): string => {
-  // Remove non-numeric characters
-  return value.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-};
-
-// Helper to extract numeric value from formatted price string
-const extractNumericValue = (formattedPrice: string | number): number => {
-  if (formattedPrice === null || formattedPrice === undefined) return 0;
-  
-  // If it's already a number, return it
-  if (typeof formattedPrice === 'number') return formattedPrice;
-  
-  // Otherwise, parse the string
-  return parseFloat(formattedPrice.replace(/\D/g, '')) / 100;
-};
+}
 
 const CarForm: React.FC<CarFormProps> = ({
   initialData = {},
   onSubmit,
   isEditing = false,
 }) => {
-  // Convert price format if coming from database (R$ 999.999,99 format)
+  // Initialize form with initial data
   let initialPrice = initialData.price || 0;
   if (typeof initialData.price === 'string') {
     initialPrice = extractNumericValue(initialData.price);
   }
 
-  const form = useForm<z.infer<typeof carFormSchema>>({
+  const form = useForm<CarFormSchema>({
     resolver: zodResolver(carFormSchema),
     defaultValues: {
       vehicleType: (initialData.vehicleType as VehicleType) || 'carros',
@@ -118,20 +61,7 @@ const CarForm: React.FC<CarFormProps> = ({
     },
   });
 
-  const vehicleType = form.watch('vehicleType') as VehicleType;
-  const selectedYear = form.watch('year');
-  const { data: brands, isLoading: isLoadingBrands } = useFipeBrands(vehicleType);
-
-  // Update manufacturingYear options when year changes
-  useEffect(() => {
-    const manufacturingYear = form.getValues('manufacturingYear');
-    // If manufacturing year is not one of the allowed values (selected year or year-1)
-    if (manufacturingYear !== selectedYear && manufacturingYear !== selectedYear - 1) {
-      form.setValue('manufacturingYear', selectedYear - 1);
-    }
-  }, [selectedYear, form]);
-
-  // State for photos
+  // Image handling state
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [previewUrls, setPreviewUrls] = useState<string[]>(
@@ -145,47 +75,50 @@ const CarForm: React.FC<CarFormProps> = ({
     Array.isArray((initialData as any).fotos) ? (initialData as any).fotos : []
   );
 
-  // Updates previews when selecting new images
+  const vehicleType = form.watch('vehicleType') as VehicleType;
+  const selectedYear = form.watch('year');
+  const { data: brands, isLoading: isLoadingBrands } = useFipeBrands(vehicleType);
+
+  // Update manufacturingYear options when year changes
+  useEffect(() => {
+    const manufacturingYear = form.getValues('manufacturingYear');
+    if (manufacturingYear !== selectedYear && manufacturingYear !== selectedYear - 1) {
+      form.setValue('manufacturingYear', selectedYear - 1);
+    }
+  }, [selectedYear, form]);
+
+  // Image handling functions
   const handleImageFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const newFiles = Array.from(files);
       setImageFiles(prevFiles => [...prevFiles, ...newFiles]);
-      
-      // Create new preview URLs for the files
       const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
       setPreviewUrls(prevUrls => [...prevUrls, ...newPreviewUrls]);
     }
   };
 
-  // Delete a photo
   const handleDeletePhoto = (index: number) => {
-    // If it's an existing photo
     if (index < photoNames.length) {
       const newPhotoNames = [...photoNames];
       newPhotoNames.splice(index, 1);
       setPhotoNames(newPhotoNames);
       
-      // Remove the preview URL
       const newPreviewUrls = [...previewUrls];
       newPreviewUrls.splice(index, 1);
       setPreviewUrls(newPreviewUrls);
-    } 
-    // If it's a new photo
-    else {
+    } else {
       const newFileIndex = index - photoNames.length;
       const newFiles = [...imageFiles];
       newFiles.splice(newFileIndex, 1);
       setImageFiles(newFiles);
       
-      // Remove the preview URL
       const newPreviewUrls = [...previewUrls];
       newPreviewUrls.splice(index, 1);
       setPreviewUrls(newPreviewUrls);
     }
   };
 
-  // Reorder photos with drag and drop
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
     e.dataTransfer.setData('text/plain', index.toString());
   };
@@ -200,21 +133,17 @@ const CarForm: React.FC<CarFormProps> = ({
     
     if (sourceIndex === targetIndex) return;
 
-    // Update preview URLs
     const updatedPreviewUrls = [...previewUrls];
     const movedPreview = updatedPreviewUrls.splice(sourceIndex, 1)[0];
     updatedPreviewUrls.splice(targetIndex, 0, movedPreview);
     setPreviewUrls(updatedPreviewUrls);
 
-    // Update photo names or image files depending on which is being moved
     if (sourceIndex < photoNames.length && targetIndex < photoNames.length) {
-      // Both are existing photos
       const updatedPhotoNames = [...photoNames];
       const movedPhoto = updatedPhotoNames.splice(sourceIndex, 1)[0];
       updatedPhotoNames.splice(targetIndex, 0, movedPhoto);
       setPhotoNames(updatedPhotoNames);
     } else if (sourceIndex >= photoNames.length && targetIndex >= photoNames.length) {
-      // Both are new file uploads
       const updatedImageFiles = [...imageFiles];
       const sourceFileIndex = sourceIndex - photoNames.length;
       const targetFileIndex = targetIndex - photoNames.length;
@@ -222,7 +151,6 @@ const CarForm: React.FC<CarFormProps> = ({
       updatedImageFiles.splice(targetFileIndex, 0, movedFile);
       setImageFiles(updatedImageFiles);
     } else {
-      // Mixed case (moving between existing and new), requires more complex handling
       toast({
         title: "Não é possível reorganizar entre fotos existentes e novas",
         description: "Salve o formulário primeiro para organizar todas as fotos.",
@@ -231,11 +159,10 @@ const CarForm: React.FC<CarFormProps> = ({
     }
   };
 
-  async function handleSubmit(values: z.infer<typeof carFormSchema>) {
+  async function handleSubmit(values: CarFormSchema) {
     setUploading(true);
-    let imageNames = [...photoNames]; // Start with existing photo names
+    let imageNames = [...photoNames];
 
-    // If the user uploaded new images, upload them
     if (imageFiles.length > 0) {
       try {
         const newImageNames = await uploadCarImages(imageFiles);
@@ -252,8 +179,6 @@ const CarForm: React.FC<CarFormProps> = ({
     }
 
     setUploading(false);
-
-    // Add the field fotos to the form data
     const fullData = { ...values, fotos: imageNames };
     onSubmit(fullData as CarFormData);
   }
@@ -268,10 +193,7 @@ const CarForm: React.FC<CarFormProps> = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-2"><Car size={16} /> Tipo de Veículo</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
@@ -287,6 +209,7 @@ const CarForm: React.FC<CarFormProps> = ({
               </FormItem>
             )}
           />
+          
           <FormField
             control={form.control}
             name="brand"
@@ -400,7 +323,6 @@ const CarForm: React.FC<CarFormProps> = ({
                     onChange={(e) => {
                       const formatted = formatCurrency(e.target.value);
                       e.target.value = formatted;
-                      // Extract numeric value for the form
                       const numericValue = parseFloat(formatted.replace(/\D/g, '')) / 100;
                       onChange(numericValue);
                     }}
@@ -414,6 +336,7 @@ const CarForm: React.FC<CarFormProps> = ({
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="color"
@@ -441,6 +364,7 @@ const CarForm: React.FC<CarFormProps> = ({
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="category"
@@ -484,7 +408,6 @@ const CarForm: React.FC<CarFormProps> = ({
                     onChange={(e) => {
                       const formatted = formatMileage(e.target.value);
                       e.target.value = formatted;
-                      // Extract numeric value for the form
                       const numericValue = parseInt(formatted.replace(/\./g, ''));
                       onChange(isNaN(numericValue) ? 0 : numericValue);
                     }}
@@ -498,6 +421,7 @@ const CarForm: React.FC<CarFormProps> = ({
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="fuelType"
@@ -525,6 +449,7 @@ const CarForm: React.FC<CarFormProps> = ({
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="transmission"
@@ -620,7 +545,9 @@ const CarForm: React.FC<CarFormProps> = ({
             name="technicalSheet"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="flex items-center gap-2"><FileSpreadsheet size={16} /> Link para Ficha Técnica</FormLabel>
+                <FormLabel className="flex items-center gap-2">
+                  <FileSpreadsheet size={16} /> Link para Ficha Técnica
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="URL para ficha técnica" {...field} />
                 </FormControl>
@@ -630,51 +557,15 @@ const CarForm: React.FC<CarFormProps> = ({
           />
         </div>
 
-        <div>
-          <label className="block font-medium mb-1 flex gap-2 items-center">
-            <Image size={16} /> Fotos do veículo
-          </label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageFilesChange}
-            className="file-input file-input-bordered w-full"
-            disabled={uploading}
-          />
-          <div className="mt-2 text-sm text-gray-500 flex items-center">
-            <MoveHorizontal size={16} className="mr-1" /> Arraste para reordenar | 
-            <Trash2 size={16} className="ml-2 mr-1" /> Clique para excluir
-          </div>
-          {previewUrls.length > 0 && (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-3">
-              {previewUrls.map((url, i) => (
-                <div 
-                  key={i}
-                  className="relative group border rounded aspect-square cursor-move"
-                  draggable={true}
-                  onDragStart={(e) => handleDragStart(e, i)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, i)}
-                >
-                  <img
-                    src={url}
-                    alt={`Preview ${i + 1}`}
-                    className="w-full h-full object-cover rounded"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleDeletePhoto(i)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    aria-label="Delete photo"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ImageUploadGrid
+          previewUrls={previewUrls}
+          onImageFilesChange={handleImageFilesChange}
+          onDeletePhoto={handleDeletePhoto}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          uploading={uploading}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
