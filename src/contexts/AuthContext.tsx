@@ -18,8 +18,8 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   isLoading: boolean;
-  signUp: (email: string, password: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{ error?: Error }>;
+  signIn: (email: string, password: string) => Promise<{ error?: Error }>;
   signOut: () => Promise<void>;
   needsProfileCompletion: boolean;
 }
@@ -59,18 +59,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function fetchProfile() {
       if (user) {
-        const { data, error } = await supabase
-          .from('usuario')
-          .select('*')
-          .eq('uid', user.id)
-          .single();
+        try {
+          const { data, error } = await supabase
+            .from('usuario')
+            .select('*')
+            .eq('uid', user.id)
+            .single();
 
-        if (error) {
-          console.error('Error fetching profile:', error);
-          return;
+          if (error) {
+            console.error('Error fetching profile:', error);
+            return;
+          }
+
+          setProfile(data);
+        } catch (error) {
+          console.error('Exception fetching profile:', error);
         }
-
-        setProfile(data);
       }
     }
 
@@ -78,29 +82,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    if (error) throw error;
-    navigate('/profile');
+      if (error) return { error };
+      
+      // No error, but we don't immediately navigate since email confirmation may be required
+      return {};
+    } catch (error) {
+      console.error('Signup exception:', error);
+      return { error: error instanceof Error ? error : new Error('An unknown error occurred during signup') };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) throw error;
-    navigate('/');
+      if (error) return { error };
+      
+      navigate('/');
+      return {};
+    } catch (error) {
+      console.error('Signin exception:', error);
+      return { error: error instanceof Error ? error : new Error('An unknown error occurred during signin') };
+    }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    navigate('/auth');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
   };
 
   const needsProfileCompletion = !!profile && (!profile.nome || !profile.cargo || !profile.telefone);
