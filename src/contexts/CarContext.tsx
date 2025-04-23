@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Car, CarFormData } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,10 +21,11 @@ const CarContext = createContext<CarContextType | undefined>(undefined);
 function mapSupabaseToCar(row: any): Car {
   return {
     id: String(row.id),
-    vehicleType: (row.tipo_veiculo as VehicleType) || 'carros', // Default to 'carros' if not specified
+    vehicleType: (row.tipo_veiculo as VehicleType) || 'carros',
     brand: row.fabricante || '',
     model: row.modelo || '',
-    year: Number(row.ano_fabricacao || row.ano) || 0,
+    year: Number(row.ano || 0),
+    manufacturingYear: Number(row.ano_fabricacao || 0),
     price: Number(row.valor) || 0,
     color: row.cor || '',
     mileage: Number(row.km) || 0,
@@ -34,25 +34,39 @@ function mapSupabaseToCar(row: any): Car {
     inStock: !row.status || row.status.toLowerCase() === 'em estoque',
     image: row.foto || '',
     description: row.observacao || '',
+    characteristics: row.caracteristicas || '',
+    video: row.video || '',
+    cautionReport: row.cautelar || '',
+    technicalSheet: row.ficha_tecnica || '',
+    warranty: row.garantia || '',
+    category: row.categoria || '',
+    fotos: row.fotos || [],
     createdAt: row.created_at ? new Date(row.created_at) : new Date(),
-    updatedAt: row.created_at ? new Date(row.created_at) : new Date() // estoque_iputinga does not have updated_at
+    updatedAt: row.created_at ? new Date(row.created_at) : new Date()
   };
 }
 
 function mapCarFormDataToSupabase(car: CarFormData) {
   return {
-    tipo_veiculo: car.vehicleType, // Add the vehicleType to the database
+    tipo_veiculo: car.vehicleType,
     fabricante: car.brand,
     modelo: car.model,
-    ano_fabricacao: String(car.year),
-    valor: String(car.price),
+    ano: String(car.year),
+    ano_fabricacao: String(car.manufacturingYear || car.year),
+    valor: car.price ? `R$ ${car.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '0',
     cor: car.color,
-    km: String(car.mileage),
+    km: car.mileage ? car.mileage.toLocaleString('pt-BR') : '0',
     motor: car.fuelType,
     cambio: car.transmission,
+    categoria: car.category || null,
+    observacao: car.description || null,
+    caracteristicas: car.characteristics || null,
+    video: car.video || null,
+    cautelar: car.cautionReport || null,
+    ficha_tecnica: car.technicalSheet || null,
+    garantia: car.warranty || null,
     status: car.inStock ? 'Em estoque' : 'Fora de estoque',
-    foto: car.image || null,
-    observacao: car.description || null
+    foto: car.image || null
   };
 }
 

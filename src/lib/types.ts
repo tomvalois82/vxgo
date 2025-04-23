@@ -10,11 +10,18 @@ export interface Car {
   price: number;
   color: string;
   mileage: number;
-  fuelType: string;
-  transmission: string;
+  fuelType: string; // motor
+  transmission: string; // cambio
   inStock: boolean;
-  image?: string;
-  description?: string;
+  image?: string; // This will be removed from the form but kept in type for backward compatibility
+  description?: string; // observacao
+  characteristics?: string; // caracteristica
+  video?: string;
+  warranty?: string; // garantia
+  technicalSheet?: string; // ficha_tecnica
+  cautionReport?: string; // cautelar
+  category?: string;
+  manufacturingYear?: number; // ano_fabricacao
   fotos?: string[];
   createdAt: Date;
   updatedAt: Date;
