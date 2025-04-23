@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -73,8 +72,13 @@ const formatMileage = (value: string): string => {
 };
 
 // Helper to extract numeric value from formatted price string
-const extractNumericValue = (formattedPrice: string): number => {
-  if (!formattedPrice) return 0;
+const extractNumericValue = (formattedPrice: string | number): number => {
+  if (formattedPrice === null || formattedPrice === undefined) return 0;
+  
+  // If it's already a number, return it
+  if (typeof formattedPrice === 'number') return formattedPrice;
+  
+  // Otherwise, parse the string
   return parseFloat(formattedPrice.replace(/\D/g, '')) / 100;
 };
 
@@ -86,7 +90,7 @@ const CarForm: React.FC<CarFormProps> = ({
   // Convert price format if coming from database (R$ 999.999,99 format)
   let initialPrice = initialData.price || 0;
   if (typeof initialData.price === 'string') {
-    initialPrice = extractNumericValue(initialData.price.toString());
+    initialPrice = extractNumericValue(initialData.price);
   }
 
   const form = useForm<z.infer<typeof carFormSchema>>({
