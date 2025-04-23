@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Edit, Trash2, Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from '@/components/ui/use-toast';
 
 const CarList = () => {
   const { filteredCars, deleteCar } = useCars();
@@ -30,17 +31,40 @@ const CarList = () => {
 };
 
 const CarCard = ({ car, onDelete }: { car: CarType; onDelete: (id: string) => void }) => {
-  const handleDelete = () => {
-    if (confirm(`Tem certeza que deseja excluir o ${car.brand} ${car.model}?`)) {
-      onDelete(car.id);
+  const handleDelete = async () => {
+    if (window.confirm(`Tem certeza que deseja excluir o ${car.brand} ${car.model}?`)) {
+      try {
+        await onDelete(car.id);
+        toast({
+          title: "Veículo excluído",
+          description: "O veículo foi removido com sucesso.",
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Erro ao excluir",
+          description: "Não foi possível excluir o veículo. Tente novamente.",
+        });
+      }
     }
+  };
+
+  const getFirstImage = () => {
+    if (car.fotos && car.fotos.length > 0) {
+      return `https://jivkniqvqfxrqqoekwbu.supabase.co/storage/v1/object/public/car-fotos/${car.fotos[0]}`;
+    }
+    return car.image || null;
   };
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
-        {car.image ? (
-          <img src={car.image} alt={`${car.brand} ${car.model}`} className="w-full h-full object-cover" />
+        {getFirstImage() ? (
+          <img 
+            src={getFirstImage()} 
+            alt={`${car.brand} ${car.model}`} 
+            className="w-full h-full object-cover"
+          />
         ) : (
           <div className="flex items-center justify-center h-full w-full bg-gray-200">
             <Car size={64} className="text-gray-400" />

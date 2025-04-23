@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Car, CarFormData } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,7 +59,6 @@ function mapSupabaseToCar(row: any): Car {
 }
 
 function mapCarFormDataToSupabase(car: CarFormData) {
-  // Format the price to the required format: R$ 999.999,99
   const formattedPrice = car.price ? formatCurrency(car.price).replace('R$', 'R$ ').trim() : 'R$ 0,00';
   
   return {
@@ -161,18 +159,38 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteCar = async (id: string) => {
     const numericId = parseInt(id, 10);
+    const carToDelete = cars.find(car => String(car.id) === String(id));
     
-    const { error } = await supabase.from('estoque_iputinga').delete().eq('id', numericId);
+    if (carToDelete?.fotos?.length) {
+      for (const photo of carToDelete.fotos) {
+        const { error: storageError } = await supabase.storage
+          .from('car-fotos')
+          .remove([photo]);
+          
+        if (storageError) {
+          console.error('Error deleting photo:', storageError);
+        }
+      }
+    }
+    
+    const { error } = await supabase
+      .from('estoque_iputinga')
+      .delete()
+      .eq('id', numericId);
+
     if (error) {
       toast({
         variant: 'destructive',
         title: 'Erro ao excluir veículo',
         description: error.message,
       });
-      return;
+      throw error;
     }
-    await fetchCars();
-    toast({ title: 'Veículo removido com sucesso!' });
+
+    await refreshCars();
+    toast({ 
+      title: 'Veículo removido com sucesso!' 
+    });
   };
 
   const getCar = (id: string) => cars.find((car) => String(car.id) === String(id));
