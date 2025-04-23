@@ -19,8 +19,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { uploadCarImages } from "@/lib/uploadCarImages";
 import { Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { VehicleType, useFipeBrands } from '@/hooks/useFipeBrands';
 
 const carFormSchema = z.object({
+  vehicleType: z.enum(['carros', 'motos', 'caminhoes'] as const),
   brand: z.string().min(1, 'Marca é obrigatória'),
   model: z.string().min(1, 'Modelo é obrigatório'),
   year: z.coerce.number().int().min(1900).max(new Date().getFullYear() + 1),
@@ -48,6 +50,7 @@ const CarForm: React.FC<CarFormProps> = ({
   const form = useForm<z.infer<typeof carFormSchema>>({
     resolver: zodResolver(carFormSchema),
     defaultValues: {
+      vehicleType: (initialData.vehicleType as VehicleType) || 'carros',
       brand: initialData.brand || '',
       model: initialData.model || '',
       year: initialData.year || new Date().getFullYear(),
@@ -61,6 +64,9 @@ const CarForm: React.FC<CarFormProps> = ({
       description: initialData.description || '',
     },
   });
+
+  const vehicleType = form.watch('vehicleType') as VehicleType;
+  const { data: brands, isLoading: isLoadingBrands } = useFipeBrands(vehicleType);
 
   // Novo estado para fotos
   const [imageFiles, setImageFiles] = React.useState<File[]>([]);
@@ -113,26 +119,53 @@ const CarForm: React.FC<CarFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
-            name="brand"
+            name="vehicleType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Marca</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ex: Toyota" {...field} />
-                </FormControl>
+                <FormLabel>Tipo de Veículo</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="carros">Carros</SelectItem>
+                    <SelectItem value="motos">Motos</SelectItem>
+                    <SelectItem value="caminhoes">Caminhões</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
           <FormField
             control={form.control}
-            name="model"
+            name="brand"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Modelo</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ex: Corolla" {...field} />
-                </FormControl>
+                <FormLabel>Marca</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={isLoadingBrands || !brands}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={isLoadingBrands ? "Carregando..." : "Selecione a marca"} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {brands?.map((brand) => (
+                      <SelectItem key={brand.codigo} value={brand.nome}>
+                        {brand.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}

@@ -1,6 +1,9 @@
 
+import { VehicleType } from "@/hooks/useFipeBrands";
+
 export interface Car {
   id: string;
+  vehicleType: VehicleType;
   brand: string;
   model: string;
   year: number;
