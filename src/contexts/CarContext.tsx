@@ -19,6 +19,17 @@ interface CarContextType {
 const CarContext = createContext<CarContextType | undefined>(undefined);
 
 function mapSupabaseToCar(row: any): Car {
+  let price = 0;
+  if (row.valor) {
+    const numericValue = row.valor.replace(/[^\d,]/g, '').replace(',', '.');
+    price = parseFloat(numericValue.replace('.', ''));
+  }
+
+  let mileage = 0;
+  if (row.km) {
+    mileage = parseInt(row.km.replace(/\./g, ''));
+  }
+
   return {
     id: String(row.id),
     vehicleType: (row.tipo_veiculo as VehicleType) || 'carros',
@@ -26,9 +37,9 @@ function mapSupabaseToCar(row: any): Car {
     model: row.modelo || '',
     year: Number(row.ano || 0),
     manufacturingYear: Number(row.ano_fabricacao || 0),
-    price: Number(row.valor) || 0,
+    price: isNaN(price) ? 0 : price,
     color: row.cor || '',
-    mileage: Number(row.km) || 0,
+    mileage: isNaN(mileage) ? 0 : mileage,
     fuelType: row.motor || '',
     transmission: row.cambio || '',
     inStock: !row.status || row.status.toLowerCase() === 'em estoque',

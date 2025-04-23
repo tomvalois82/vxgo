@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,9 +18,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { uploadCarImages } from "@/lib/uploadCarImages";
-import { Image, Calendar, Car, List, Pencil, DollarSign, Palette, Gauge, FileText, Video, FileSpreadsheet, Shield, LayoutList } from "lucide-react";
+import { Image, Calendar, Car, List, Pencil, DollarSign, Palette, Gauge, FileText, Video, FileSpreadsheet, Shield, LayoutList, Trash2, MoveHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { VehicleType, useFipeBrands } from '@/hooks/useFipeBrands';
+import { toast } from '@/components/ui/use-toast';
 
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: currentYear - 1950 + 2 }, (_, i) => currentYear + 1 - i);
@@ -56,6 +57,7 @@ type CarFormProps = {
   isEditing?: boolean;
 };
 
+// Format functions
 const formatCurrency = (value: string): string => {
   // Remove non-numeric characters
   const numericValue = value.replace(/\D/g, '');
@@ -70,11 +72,23 @@ const formatMileage = (value: string): string => {
   return value.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
 };
 
+// Helper to extract numeric value from formatted price string
+const extractNumericValue = (formattedPrice: string): number => {
+  if (!formattedPrice) return 0;
+  return parseFloat(formattedPrice.replace(/\D/g, '')) / 100;
+};
+
 const CarForm: React.FC<CarFormProps> = ({
   initialData = {},
   onSubmit,
   isEditing = false,
 }) => {
+  // Convert price format if coming from database (R$ 999.999,99 format)
+  let initialPrice = initialData.price || 0;
+  if (typeof initialData.price === 'string') {
+    initialPrice = extractNumericValue(initialData.price.toString());
+  }
+
   const form = useForm<z.infer<typeof carFormSchema>>({
     resolver: zodResolver(carFormSchema),
     defaultValues: {
@@ -83,7 +97,7 @@ const CarForm: React.FC<CarFormProps> = ({
       model: initialData.model || '',
       year: initialData.year || currentYear,
       manufacturingYear: initialData.manufacturingYear || initialData.year || currentYear - 1,
-      price: initialData.price || 0,
+      price: initialPrice,
       color: initialData.color || 'Branco',
       mileage: initialData.mileage || 0,
       fuelType: initialData.fuelType || '1.0',
@@ -113,47 +127,129 @@ const CarForm: React.FC<CarFormProps> = ({
     }
   }, [selectedYear, form]);
 
-  // Novo estado para fotos
-  const [imageFiles, setImageFiles] = React.useState<File[]>([]);
-  const [uploading, setUploading] = React.useState(false);
-  const [previewUrls, setPreviewUrls] = React.useState<string[]>(
+  // State for photos
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [previewUrls, setPreviewUrls] = useState<string[]>(
     Array.isArray((initialData as any).fotos)
       ? (initialData as any).fotos.map((nome: string) =>
         supabase.storage.from("car-fotos").getPublicUrl(nome).data.publicUrl
       )
       : []
   );
+  const [photoNames, setPhotoNames] = useState<string[]>(
+    Array.isArray((initialData as any).fotos) ? (initialData as any).fotos : []
+  );
 
-  // Atualiza previews ao selecionar novas imagens
+  // Updates previews when selecting new images
   const handleImageFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      setImageFiles(Array.from(files));
-      setPreviewUrls(Array.from(files).map(file => URL.createObjectURL(file)));
+      const newFiles = Array.from(files);
+      setImageFiles(prevFiles => [...prevFiles, ...newFiles]);
+      
+      // Create new preview URLs for the files
+      const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
+      setPreviewUrls(prevUrls => [...prevUrls, ...newPreviewUrls]);
+    }
+  };
+
+  // Delete a photo
+  const handleDeletePhoto = (index: number) => {
+    // If it's an existing photo
+    if (index < photoNames.length) {
+      const newPhotoNames = [...photoNames];
+      newPhotoNames.splice(index, 1);
+      setPhotoNames(newPhotoNames);
+      
+      // Remove the preview URL
+      const newPreviewUrls = [...previewUrls];
+      newPreviewUrls.splice(index, 1);
+      setPreviewUrls(newPreviewUrls);
+    } 
+    // If it's a new photo
+    else {
+      const newFileIndex = index - photoNames.length;
+      const newFiles = [...imageFiles];
+      newFiles.splice(newFileIndex, 1);
+      setImageFiles(newFiles);
+      
+      // Remove the preview URL
+      const newPreviewUrls = [...previewUrls];
+      newPreviewUrls.splice(index, 1);
+      setPreviewUrls(newPreviewUrls);
+    }
+  };
+
+  // Reorder photos with drag and drop
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetIndex: number) => {
+    e.preventDefault();
+    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    
+    if (sourceIndex === targetIndex) return;
+
+    // Update preview URLs
+    const updatedPreviewUrls = [...previewUrls];
+    const movedPreview = updatedPreviewUrls.splice(sourceIndex, 1)[0];
+    updatedPreviewUrls.splice(targetIndex, 0, movedPreview);
+    setPreviewUrls(updatedPreviewUrls);
+
+    // Update photo names or image files depending on which is being moved
+    if (sourceIndex < photoNames.length && targetIndex < photoNames.length) {
+      // Both are existing photos
+      const updatedPhotoNames = [...photoNames];
+      const movedPhoto = updatedPhotoNames.splice(sourceIndex, 1)[0];
+      updatedPhotoNames.splice(targetIndex, 0, movedPhoto);
+      setPhotoNames(updatedPhotoNames);
+    } else if (sourceIndex >= photoNames.length && targetIndex >= photoNames.length) {
+      // Both are new file uploads
+      const updatedImageFiles = [...imageFiles];
+      const sourceFileIndex = sourceIndex - photoNames.length;
+      const targetFileIndex = targetIndex - photoNames.length;
+      const movedFile = updatedImageFiles.splice(sourceFileIndex, 1)[0];
+      updatedImageFiles.splice(targetFileIndex, 0, movedFile);
+      setImageFiles(updatedImageFiles);
+    } else {
+      // Mixed case (moving between existing and new), requires more complex handling
+      toast({
+        title: "Não é possível reorganizar entre fotos existentes e novas",
+        description: "Salve o formulário primeiro para organizar todas as fotos.",
+        variant: "destructive"
+      });
     }
   };
 
   async function handleSubmit(values: z.infer<typeof carFormSchema>) {
     setUploading(true);
-    let imageNames: string[] = [];
+    let imageNames = [...photoNames]; // Start with existing photo names
 
-    // Se o usuário subiu novas imagens, faz o upload
+    // If the user uploaded new images, upload them
     if (imageFiles.length > 0) {
       try {
-        imageNames = await uploadCarImages(imageFiles);
+        const newImageNames = await uploadCarImages(imageFiles);
+        imageNames = [...imageNames, ...newImageNames];
       } catch (err: any) {
-        alert(err.message || "Erro ao enviar imagens");
+        toast({
+          title: "Erro ao enviar imagens",
+          description: err.message || "Ocorreu um erro ao enviar as imagens",
+          variant: "destructive"
+        });
         setUploading(false);
         return;
       }
-    } else if (Array.isArray((initialData as any).fotos)) {
-      // Mantém imagens antigas se não enviou novas
-      imageNames = (initialData as any).fotos;
     }
 
     setUploading(false);
 
-    // Ajuste: adiciona o campo fotos
+    // Add the field fotos to the form data
     const fullData = { ...values, fotos: imageNames };
     onSubmit(fullData as CarFormData);
   }
@@ -542,15 +638,35 @@ const CarForm: React.FC<CarFormProps> = ({
             className="file-input file-input-bordered w-full"
             disabled={uploading}
           />
+          <div className="mt-2 text-sm text-gray-500 flex items-center">
+            <MoveHorizontal size={16} className="mr-1" /> Arraste para reordenar | 
+            <Trash2 size={16} className="ml-2 mr-1" /> Clique para excluir
+          </div>
           {previewUrls.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-3">
               {previewUrls.map((url, i) => (
-                <img
+                <div 
                   key={i}
-                  src={url}
-                  alt={`Preview ${i + 1}`}
-                  className="rounded border aspect-square object-cover h-24 w-full"
-                />
+                  className="relative group border rounded aspect-square cursor-move"
+                  draggable={true}
+                  onDragStart={(e) => handleDragStart(e, i)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, i)}
+                >
+                  <img
+                    src={url}
+                    alt={`Preview ${i + 1}`}
+                    className="w-full h-full object-cover rounded"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePhoto(i)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    aria-label="Delete photo"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               ))}
             </div>
           )}
