@@ -1,13 +1,12 @@
 
 import React from 'react';
+import { EvolutionApiSettings } from '@/components/settings/EvolutionApiSettings';
 
 const Settings = () => {
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Configurações</h1>
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <p className="text-gray-600">Configurações do sistema de gerenciamento de estoque.</p>
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Configurações</h1>
+      <EvolutionApiSettings />
     </div>
   );
 };

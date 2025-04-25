@@ -429,11 +429,15 @@ export type Database = {
       }
       usuario: {
         Row: {
+          apikeyvoice: string | null
           ativo: boolean | null
           cargo: Database["public"]["Enums"]["cargos"] | null
+          codVoice: string | null
           config: number | null
           created_at: string
           email: string | null
+          evo_instancia: string | null
+          evo_key: string | null
           id: number
           idbubble: string | null
           nome: string | null
@@ -441,11 +445,15 @@ export type Database = {
           uid: string | null
         }
         Insert: {
+          apikeyvoice?: string | null
           ativo?: boolean | null
           cargo?: Database["public"]["Enums"]["cargos"] | null
+          codVoice?: string | null
           config?: number | null
           created_at?: string
           email?: string | null
+          evo_instancia?: string | null
+          evo_key?: string | null
           id?: number
           idbubble?: string | null
           nome?: string | null
@@ -453,11 +461,15 @@ export type Database = {
           uid?: string | null
         }
         Update: {
+          apikeyvoice?: string | null
           ativo?: boolean | null
           cargo?: Database["public"]["Enums"]["cargos"] | null
+          codVoice?: string | null
           config?: number | null
           created_at?: string
           email?: string | null
+          evo_instancia?: string | null
+          evo_key?: string | null
           id?: number
           idbubble?: string | null
           nome?: string | null
