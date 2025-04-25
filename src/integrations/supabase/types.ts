@@ -166,6 +166,7 @@ export type Database = {
           motor: string | null
           observacao: string | null
           status: string | null
+          usuario: number | null
           valor: string | null
           video: string | null
         }
@@ -191,6 +192,7 @@ export type Database = {
           motor?: string | null
           observacao?: string | null
           status?: string | null
+          usuario?: number | null
           valor?: string | null
           video?: string | null
         }
@@ -216,6 +218,7 @@ export type Database = {
           motor?: string | null
           observacao?: string | null
           status?: string | null
+          usuario?: number | null
           valor?: string | null
           video?: string | null
         }
@@ -225,6 +228,13 @@ export type Database = {
             columns: ["config"]
             isOneToOne: false
             referencedRelation: "config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_usuario_fkey"
+            columns: ["usuario"]
+            isOneToOne: false
+            referencedRelation: "usuario"
             referencedColumns: ["id"]
           },
         ]
@@ -253,6 +263,7 @@ export type Database = {
           observacao: string | null
           status: string | null
           tipo_veiculo: string | null
+          uid: string | null
           valor: string | null
           video: string | null
         }
@@ -279,6 +290,7 @@ export type Database = {
           observacao?: string | null
           status?: string | null
           tipo_veiculo?: string | null
+          uid?: string | null
           valor?: string | null
           video?: string | null
         }
@@ -305,6 +317,7 @@ export type Database = {
           observacao?: string | null
           status?: string | null
           tipo_veiculo?: string | null
+          uid?: string | null
           valor?: string | null
           video?: string | null
         }

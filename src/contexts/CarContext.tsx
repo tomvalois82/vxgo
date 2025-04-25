@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { VehicleType } from '@/hooks/useFipeBrands';
 import { formatCurrency } from '@/lib/utils';
+import { useAuth } from './AuthContext';
 
 interface CarContextType {
   cars: Car[];
@@ -87,10 +88,9 @@ function mapCarFormDataToSupabase(car: CarFormData) {
 export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cars, setCars] = useState<Car[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const fetchCars = async () => {
-    setLoading(true);
     const { data, error } = await supabase
       .from('estoque_iputinga')
       .select('*')
@@ -102,24 +102,39 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: 'Erro ao carregar veículos',
         description: error.message,
       });
-      setLoading(false);
       return;
     }
     setCars(data?.map(mapSupabaseToCar) || []);
-    setLoading(false);
   };
 
   useEffect(() => {
-    fetchCars();
-  }, []);
+    if (user) {
+      fetchCars();
+    } else {
+      setCars([]);
+    }
+  }, [user]);
 
-  const addCar = async (carData: CarFormData & { fotos?: string[] }) => {
+  const addCar = async (car: CarFormData & { fotos?: string[] }) => {
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao adicionar veículo',
+        description: 'Você precisa estar logado para adicionar veículos.',
+      });
+      return;
+    }
+
     const insertPayload = {
-      ...mapCarFormDataToSupabase(carData),
-      fotos: carData.fotos ?? null,
+      ...mapCarFormDataToSupabase(car),
+      fotos: car.fotos ?? null,
+      uid: user.id
     };
 
-    const { error } = await supabase.from('estoque_iputinga').insert([insertPayload]);
+    const { error } = await supabase
+      .from('estoque_iputinga')
+      .insert([insertPayload]);
+
     if (error) {
       toast({
         variant: 'destructive',
@@ -133,8 +148,16 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCar = async (id: string, carData: Partial<CarFormData & { fotos?: string[] }>) => {
-    const numericId = parseInt(id, 10);
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao atualizar veículo',
+        description: 'Você precisa estar logado para atualizar veículos.',
+      });
+      return;
+    }
 
+    const numericId = parseInt(id, 10);
     const updatePayload = {
       ...mapCarFormDataToSupabase(carData as CarFormData),
       fotos: carData.fotos ?? null,
