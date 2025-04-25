@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Wifi, Check, ArrowRight } from 'lucide-react';
 
 interface EvolutionApiActionsProps {
   isLoading: boolean;
@@ -53,9 +53,10 @@ export function EvolutionApiActions({
       ) : (
         <Button 
           onClick={onConnect}
-          disabled={isLoading || isCheckingStatus || !hasRequiredFields}
+          disabled={isLoading || !hasRequiredFields} // Removed isCheckingStatus to keep button enabled during status check
           variant="secondary"
         >
+          <ArrowRight size={16} />
           Conectar WhatsApp
         </Button>
       )}
