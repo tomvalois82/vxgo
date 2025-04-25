@@ -109,27 +109,34 @@ export function EvolutionApiSettings() {
 
       if (!response.ok) throw new Error('Falha ao buscar instâncias');
 
-      const data: Instance[] = await response.json();
-      setInstances(data);
+      const data = await response.json();
       
-      const currentInstance = data.find(item => 
-        item.instance.instanceName === formData.evo_instancia
-      );
-      
-      if (currentInstance?.instance.owner) {
-        const ownerPhone = currentInstance.instance.owner.split('@')[0];
+      if (Array.isArray(data)) {
+        setInstances(data);
         
-        setFormData(prev => ({
-          ...prev,
-          telefone: ownerPhone
-        }));
-        
-        if (user && ownerPhone !== profile?.telefone) {
-          await supabase
-            .from('usuario')
-            .update({ telefone: ownerPhone })
-            .eq('uid', user.id);
+        if (formData.evo_instancia) {
+          const currentInstance = data.find(item => 
+            item?.instance?.instanceName === formData.evo_instancia
+          );
+          
+          if (currentInstance?.instance?.owner) {
+            const ownerPhone = currentInstance.instance.owner.split('@')[0];
+            
+            setFormData(prev => ({
+              ...prev,
+              telefone: ownerPhone
+            }));
+            
+            if (user && ownerPhone !== profile?.telefone) {
+              await supabase
+                .from('usuario')
+                .update({ telefone: ownerPhone })
+                .eq('uid', user.id);
+            }
+          }
         }
+      } else {
+        console.log('Formato de dados inválido:', data);
       }
     } catch (error) {
       console.error('Erro ao buscar instâncias:', error);
@@ -192,22 +199,33 @@ export function EvolutionApiSettings() {
 
       if (!response.ok) throw new Error('Falha na conexão com Evolution API');
 
-      const data: PairingResponse = await response.json();
-      setQrCodeData(data.code);
-      setShowQRDialog(true);
-
-      toast({
-        title: 'Iniciando conexão',
-        description: 'Escaneie o QR Code para conectar ao WhatsApp.',
-      });
+      const data = await response.json();
       
-      setTimeout(() => checkConnectionStatus(), 5000);
+      if (data && data.code) {
+        setQrCodeData(data.code);
+        setShowQRDialog(true);
+
+        toast({
+          title: 'Iniciando conexão',
+          description: 'Escaneie o QR Code para conectar ao WhatsApp.',
+        });
+        
+        setTimeout(() => checkConnectionStatus(), 5000);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erro na conexão',
+          description: 'Não foi possível gerar o QR code para conexão.',
+        });
+        console.error('Dados de resposta inválidos:', data);
+      }
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Erro na conexão',
         description: 'Não foi possível conectar ao WhatsApp.',
       });
+      console.error('Erro ao conectar:', error);
     } finally {
       setIsLoading(false);
     }
