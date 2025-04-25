@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Phone, PhoneOff } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 interface EvolutionApiActionsProps {
   isLoading: boolean;
@@ -39,7 +39,6 @@ export function EvolutionApiActions({
             disabled={isLoading || isCheckingStatus}
             variant="destructive"
           >
-            <PhoneOff className="mr-1" size={16} />
             Desconectar WhatsApp
           </Button>
           <Button 
@@ -54,10 +53,9 @@ export function EvolutionApiActions({
       ) : (
         <Button 
           onClick={onConnect}
-          disabled={!hasRequiredFields || isLoading}
+          disabled={isLoading || isCheckingStatus || !hasRequiredFields}
           variant="secondary"
         >
-          <Phone className="mr-1" size={16} />
           Conectar WhatsApp
         </Button>
       )}
