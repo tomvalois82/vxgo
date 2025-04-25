@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { QrCode } from 'lucide-react';
 
 interface QRCodeDialogProps {
@@ -14,12 +14,14 @@ export function QRCodeDialog({ qrCodeData, showDialog, onOpenChange }: QRCodeDia
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Conecte seu WhatsApp</DialogTitle>
+          <DialogDescription>
+            Escaneie o QR Code abaixo usando seu WhatsApp
+          </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center p-4 space-y-4">
-          {qrCodeData && (
+          {qrCodeData ? (
             <div className="flex flex-col items-center space-y-4">
-              <QrCode size={180} />
-              <div className="bg-secondary p-4 rounded-lg w-full">
+              <div className="bg-white p-4 rounded-lg w-full">
                 <img 
                   src={`data:image/png;base64,${qrCodeData}`} 
                   alt="QR Code" 
@@ -27,7 +29,14 @@ export function QRCodeDialog({ qrCodeData, showDialog, onOpenChange }: QRCodeDia
                 />
               </div>
               <p className="text-sm text-muted-foreground text-center">
-                Escaneie o QR Code acima usando seu WhatsApp
+                Abra seu WhatsApp e escaneie o código acima para conectar
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center space-y-4">
+              <QrCode size={180} />
+              <p className="text-sm text-muted-foreground text-center">
+                Carregando QR Code...
               </p>
             </div>
           )}
