@@ -21,12 +21,12 @@ export function QRCodeDialog({ qrCodeData, showDialog, onOpenChange }: QRCodeDia
         <div className="flex flex-col items-center justify-center p-4 space-y-4">
           {qrCodeData ? (
             <div className="flex flex-col items-center space-y-4">
-              <div className="bg-white p-4 rounded-lg w-full h-[300px] flex items-center justify-center">
+              <div className="bg-white p-4 rounded-lg w-full h-[240px] flex items-center justify-center">
                 {qrCodeData && (
                   <img 
-                    src={`https://quickchart.io/qr?text=${qrCodeData}&A2&size=300`}
+                    src={`data:image/png;base64,${qrCodeData}`} 
                     alt="QR Code" 
-                    className="w-auto h-auto max-w-full max-h-full"
+                    className="w-full h-auto"
                   />
                 )}
               </div>
@@ -36,7 +36,7 @@ export function QRCodeDialog({ qrCodeData, showDialog, onOpenChange }: QRCodeDia
             </div>
           ) : (
             <div className="flex flex-col items-center space-y-4">
-              <div className="p-4 rounded-lg w-full h-[300px] flex items-center justify-center">
+              <div className="p-4 rounded-lg w-full h-[240px] flex items-center justify-center">
                 <div className="animate-pulse flex flex-col items-center">
                   <QrCode size={180} className="text-muted-foreground" />
                   <Loader className="mt-4 animate-spin" />
