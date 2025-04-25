@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Wifi, WifiOff, RefreshCw, QrCode } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { QRCodeDialog } from './QRCodeDialog';
 
 interface ConnectionState {
   instance: {
@@ -112,7 +112,6 @@ export function EvolutionApiSettings() {
       const data: Instance[] = await response.json();
       setInstances(data);
       
-      // Find the current instance and update phone if available
       const currentInstance = data.find(item => 
         item.instance.instanceName === formData.evo_instancia
       );
@@ -125,7 +124,6 @@ export function EvolutionApiSettings() {
           telefone: ownerPhone
         }));
         
-        // Update the phone in the database
         if (user && ownerPhone !== profile?.telefone) {
           await supabase
             .from('usuario')
@@ -159,7 +157,6 @@ export function EvolutionApiSettings() {
         description: 'Suas configurações foram atualizadas com sucesso.',
       });
       
-      // Check connection status after saving
       await checkConnectionStatus();
     } catch (error) {
       toast({
@@ -201,10 +198,9 @@ export function EvolutionApiSettings() {
 
       toast({
         title: 'Iniciando conexão',
-        description: 'Utilize o QR Code para conectar ao WhatsApp.',
+        description: 'Escaneie o QR Code para conectar ao WhatsApp.',
       });
       
-      // Check connection status after attempting to connect
       setTimeout(() => checkConnectionStatus(), 5000);
     } catch (error) {
       toast({
@@ -273,7 +269,6 @@ export function EvolutionApiSettings() {
         description: 'Sua instância foi reiniciada com sucesso.',
       });
       
-      // Check connection status after restart
       setTimeout(() => checkConnectionStatus(), 3000);
     } catch (error) {
       toast({
@@ -286,7 +281,6 @@ export function EvolutionApiSettings() {
     }
   };
 
-  // Check connection status on component mount and when evo_instancia or evo_key changes
   useEffect(() => {
     if (profile?.evo_instancia && profile?.evo_key) {
       checkConnectionStatus();
@@ -360,7 +354,6 @@ export function EvolutionApiSettings() {
               Salvar
             </Button>
             
-            {/* Conditional button based on connection status */}
             {connectionState === 'open' ? (
               <Button 
                 onClick={handleDisconnect}
@@ -379,7 +372,6 @@ export function EvolutionApiSettings() {
               </Button>
             )}
             
-            {/* Restart button only shown when connected */}
             {connectionState === 'open' && (
               <Button 
                 onClick={handleRestart}
@@ -394,29 +386,11 @@ export function EvolutionApiSettings() {
         </CardContent>
       </Card>
 
-      {/* QR Code Dialog */}
-      <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Conecte seu WhatsApp</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center p-4">
-            {qrCodeData && (
-              <div className="flex flex-col items-center space-y-4">
-                <QrCode size={24} />
-                <div className="border-2 border-gray-300 p-4 rounded-lg">
-                  <pre className="text-xs overflow-hidden max-w-full break-all whitespace-pre-wrap">
-                    {qrCodeData}
-                  </pre>
-                </div>
-                <p className="text-sm text-gray-600">
-                  Utilize este código para conectar seu WhatsApp
-                </p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <QRCodeDialog 
+        qrCodeData={qrCodeData} 
+        showDialog={showQRDialog} 
+        onOpenChange={setShowQRDialog} 
+      />
     </>
   );
 }
