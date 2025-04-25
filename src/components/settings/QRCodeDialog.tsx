@@ -21,14 +21,12 @@ export function QRCodeDialog({ qrCodeData, showDialog, onOpenChange }: QRCodeDia
         <div className="flex flex-col items-center justify-center p-4 space-y-4">
           {qrCodeData ? (
             <div className="flex flex-col items-center space-y-4">
-              <div className="bg-white p-4 rounded-lg w-full h-[240px] flex items-center justify-center">
-                {qrCodeData && (
-                  <img 
-                    src={`data:image/png;base64,${qrCodeData}`} 
-                    alt="QR Code" 
-                    className="w-full h-auto"
-                  />
-                )}
+              <div className="bg-white p-4 rounded-lg flex items-center justify-center">
+                <img 
+                  src={`data:image/png;base64,${qrCodeData}`} 
+                  alt="QR Code" 
+                  className="w-[240px] h-[240px]"
+                />
               </div>
               <p className="text-sm text-muted-foreground text-center">
                 Abra seu WhatsApp e escaneie o código acima para conectar
@@ -36,7 +34,7 @@ export function QRCodeDialog({ qrCodeData, showDialog, onOpenChange }: QRCodeDia
             </div>
           ) : (
             <div className="flex flex-col items-center space-y-4">
-              <div className="p-4 rounded-lg w-full h-[240px] flex items-center justify-center">
+              <div className="p-8 rounded-lg flex items-center justify-center">
                 <div className="animate-pulse flex flex-col items-center">
                   <QrCode size={180} className="text-muted-foreground" />
                   <Loader className="mt-4 animate-spin" />
