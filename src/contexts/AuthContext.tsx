@@ -10,6 +10,8 @@ interface UserProfile {
   telefone: string | null;
   ativo: boolean;
   config: number;
+  evo_instancia: string | null;
+  evo_key: string | null;
 }
 
 interface AuthContextType {
