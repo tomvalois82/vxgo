@@ -1,11 +1,10 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UserProfile {
-  id: number; // Changed from string to number to match the database schema
+  id: number;
   nome: string | null;
   cargo: 'Gerente' | 'Supervisor' | 'Vendedor' | 'Avaliador' | null;
   telefone: string | null;
@@ -34,7 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -45,7 +43,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -55,31 +52,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch user profile when user changes
   useEffect(() => {
-    async function fetchProfile() {
+    async function fetchOrCreateProfile() {
       if (user) {
         try {
-          const { data, error } = await supabase
+          let { data: userProfile, error } = await supabase
             .from('usuario')
             .select('*')
             .eq('uid', user.id)
-            .single();
+            .maybeSingle();
 
-          if (error) {
-            console.error('Error fetching profile:', error);
-            return;
+          if (!userProfile) {
+            const { data: newProfile, error: createError } = await supabase
+              .from('usuario')
+              .insert([
+                { 
+                  uid: user.id,
+                  email: user.email,
+                  ativo: true 
+                }
+              ])
+              .select()
+              .single();
+
+            if (createError) throw createError;
+            userProfile = newProfile;
+            
+            navigate('/profile');
           }
 
-          setProfile(data);
+          setProfile(userProfile);
         } catch (error) {
-          console.error('Exception fetching profile:', error);
+          console.error('Error fetching/creating profile:', error);
         }
       }
     }
 
-    fetchProfile();
-  }, [user]);
+    fetchOrCreateProfile();
+  }, [user, navigate]);
 
   const signUp = async (email: string, password: string) => {
     try {
@@ -90,7 +100,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) return { error };
       
-      // No error, but we don't immediately navigate since email confirmation may be required
       return {};
     } catch (error) {
       console.error('Signup exception:', error);

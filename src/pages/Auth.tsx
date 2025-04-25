@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -46,7 +45,6 @@ const Auth = () => {
     } catch (error) {
       console.error("Auth error:", error);
       
-      // More descriptive error messages
       let errorMessage = error instanceof Error ? error.message : "Ocorreu um erro";
       
       if (errorMessage.includes("Email not confirmed")) {
