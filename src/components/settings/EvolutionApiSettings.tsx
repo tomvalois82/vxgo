@@ -34,10 +34,10 @@ export function EvolutionApiSettings() {
   useEffect(() => {
     if (profile?.evo_instancia && profile?.evo_key) {
       checkConnectionStatus();
-    } else {
-      setIsCheckingStatus(false);
     }
-  }, [profile?.evo_instancia, profile?.evo_key]);
+    // We don't need to manually set isCheckingStatus to false here
+    // That's handled internally by the hook
+  }, [profile?.evo_instancia, profile?.evo_key, checkConnectionStatus]);
 
   const hasRequiredFields = Boolean(formData.evo_instancia && formData.evo_key);
 
