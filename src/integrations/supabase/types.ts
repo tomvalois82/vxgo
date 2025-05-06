@@ -441,6 +441,8 @@ export type Database = {
           id: number
           idbubble: string | null
           nome: string | null
+          tbEstoque: string | null
+          tbHistorico: string | null
           telefone: string | null
           uid: string | null
         }
@@ -457,6 +459,8 @@ export type Database = {
           id?: number
           idbubble?: string | null
           nome?: string | null
+          tbEstoque?: string | null
+          tbHistorico?: string | null
           telefone?: string | null
           uid?: string | null
         }
@@ -473,6 +477,8 @@ export type Database = {
           id?: number
           idbubble?: string | null
           nome?: string | null
+          tbEstoque?: string | null
+          tbHistorico?: string | null
           telefone?: string | null
           uid?: string | null
         }

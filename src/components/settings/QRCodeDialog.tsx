@@ -1,6 +1,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { QrCode, Loader } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface QRCodeDialogProps {
   qrCodeData: string | null;
@@ -9,6 +10,17 @@ interface QRCodeDialogProps {
 }
 
 export function QRCodeDialog({ qrCodeData, showDialog, onOpenChange }: QRCodeDialogProps) {
+  const [qrSrc, setQrSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (qrCodeData) {
+      // The qrCodeData is already a base64 string, so we set it directly as the image source
+      setQrSrc(`data:image/png;base64,${qrCodeData}`);
+    } else {
+      setQrSrc(null);
+    }
+  }, [qrCodeData]);
+
   return (
     <Dialog open={showDialog} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -19,16 +31,14 @@ export function QRCodeDialog({ qrCodeData, showDialog, onOpenChange }: QRCodeDia
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center p-4 space-y-4">
-          {qrCodeData ? (
+          {qrSrc ? (
             <div className="flex flex-col items-center space-y-4">
               <div className="bg-white p-4 rounded-lg w-full h-[240px] flex items-center justify-center">
-                {qrCodeData && (
-                  <img 
-                    src={`data:image/png;base64,${qrCodeData}`} 
-                    alt="QR Code" 
-                    className="w-full h-auto"
-                  />
-                )}
+                <img 
+                  src={qrSrc} 
+                  alt="QR Code" 
+                  className="w-auto h-auto max-w-full max-h-full"
+                />
               </div>
               <p className="text-sm text-muted-foreground text-center">
                 Abra seu WhatsApp e escaneie o código acima para conectar
