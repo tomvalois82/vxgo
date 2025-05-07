@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,12 +14,17 @@ interface Instance {
   instance: {
     instanceName: string;
     instanceId: string;
-    owner?: string;
-    profileName?: string;
+    owner: string;
+    profileName: string;
+    profilePictureUrl: string | null;
+    profileStatus?: string;
     status: 'open' | 'close';
     serverUrl: string;
     apikey: string;
-    profilePictureUrl?: string;
+    integration?: {
+      integration: string;
+      webhook_wa_business: string;
+    };
   };
 }
 
@@ -158,6 +162,7 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
     if (!formData.evo_key) return;
     
     try {
+      console.log('Fetching instances...');
       const response = await fetch(
         `https://evolution-evolution.ppmwkh.easypanel.host/instance/fetchInstances`,
         {
@@ -170,22 +175,31 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
       if (!response.ok) throw new Error('Falha ao buscar instâncias');
 
       const data = await response.json();
+      console.log('Instances data:', data);
       
       if (Array.isArray(data)) {
         setInstances(data);
         
-        if (formData.evo_instancia) {
-          const currentInstance = data.find(item => 
-            item?.instance?.instanceName === formData.evo_instancia
-          );
+        // Find the current instance
+        const currentInstance = data.find(item => 
+          item?.instance?.instanceName === formData.evo_instancia
+        );
+        
+        console.log('Current instance:', currentInstance);
+        
+        if (currentInstance?.instance) {
+          // Update instance info with the data from the API
+          setInstanceInfo({
+            profileName: currentInstance.instance.profileName || null,
+            owner: currentInstance.instance.owner || null,
+            profilePictureUrl: currentInstance.instance.profilePictureUrl || null
+          });
           
-          if (currentInstance?.instance) {
-            setInstanceInfo({
-              profileName: currentInstance.instance.profileName || null,
-              owner: currentInstance.instance.owner || null,
-              profilePictureUrl: currentInstance.instance.profilePictureUrl || null
-            });
-          }
+          console.log('Instance info updated:', {
+            profileName: currentInstance.instance.profileName || null,
+            owner: currentInstance.instance.owner || null,
+            profilePictureUrl: currentInstance.instance.profilePictureUrl || null
+          });
         }
       }
     } catch (error) {
