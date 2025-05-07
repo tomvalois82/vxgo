@@ -11,6 +11,7 @@ interface EvolutionApiActionsProps {
   onDisconnect: () => void;
   onRestart: () => void;
   hasRequiredFields: boolean;
+  isValidCredentials: boolean | null;
 }
 
 export function EvolutionApiActions({
@@ -21,13 +22,14 @@ export function EvolutionApiActions({
   onConnect,
   onDisconnect,
   onRestart,
-  hasRequiredFields
+  hasRequiredFields,
+  isValidCredentials
 }: EvolutionApiActionsProps) {
   return (
     <div className="flex flex-wrap gap-2 pt-4">
       <Button 
         onClick={onSave} 
-        disabled={isLoading || isCheckingStatus}
+        disabled={isLoading || isCheckingStatus || !hasRequiredFields}
       >
         Salvar
       </Button>
@@ -36,14 +38,14 @@ export function EvolutionApiActions({
         <>
           <Button 
             onClick={onDisconnect}
-            disabled={isLoading || isCheckingStatus}
+            disabled={isLoading || isCheckingStatus || isValidCredentials === false}
             variant="destructive"
           >
             Desconectar WhatsApp
           </Button>
           <Button 
             onClick={onRestart}
-            disabled={isLoading || isCheckingStatus}
+            disabled={isLoading || isCheckingStatus || isValidCredentials === false}
             variant="outline"
           >
             <RefreshCw className="mr-1" size={16} />
@@ -53,7 +55,7 @@ export function EvolutionApiActions({
       ) : (
         <Button 
           onClick={onConnect}
-          disabled={isLoading || !hasRequiredFields} // Removed isCheckingStatus to keep button enabled during status check
+          disabled={isLoading || !hasRequiredFields || isValidCredentials !== true}
           variant="secondary"
         >
           <ArrowRight size={16} />

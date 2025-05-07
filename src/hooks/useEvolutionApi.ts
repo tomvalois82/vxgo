@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,13 +42,61 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [instances, setInstances] = useState<Instance[]>([]);
   const [formData, setFormData] = useState<EvolutionApiFormData>(initialFormData);
+  const [isValidCredentials, setIsValidCredentials] = useState<boolean | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Reset validation when credentials change
+    if (name === 'evo_instancia' || name === 'evo_key') {
+      setIsValidCredentials(null);
+    }
   };
 
-  const checkConnectionStatus = async () => {
+  // Validate credentials without changing connection state
+  const validateCredentials = useCallback(async () => {
+    if (!formData.evo_instancia || !formData.evo_key) {
+      setIsValidCredentials(null);
+      return false;
+    }
+
+    try {
+      const response = await fetch(
+        `https://evolution-evolution.ppmwkh.easypanel.host/instance/connectionState/${formData.evo_instancia}`,
+        {
+          headers: {
+            'apikey': formData.evo_key
+          }
+        }
+      );
+
+      if (response.ok) {
+        setIsValidCredentials(true);
+        return true;
+      } else {
+        setIsValidCredentials(false);
+        return false;
+      }
+    } catch (error) {
+      console.error('Erro ao validar credenciais:', error);
+      setIsValidCredentials(false);
+      return false;
+    }
+  }, [formData.evo_instancia, formData.evo_key]);
+
+  // Effect to validate credentials when they change
+  useEffect(() => {
+    const debounceValidation = setTimeout(() => {
+      if (formData.evo_instancia && formData.evo_key) {
+        validateCredentials();
+      }
+    }, 800); // Debounce to avoid too many requests
+
+    return () => clearTimeout(debounceValidation);
+  }, [formData.evo_instancia, formData.evo_key, validateCredentials]);
+
+  const checkConnectionStatus = useCallback(async () => {
     if (!formData.evo_instancia || !formData.evo_key) {
       setConnectionState(null);
       setIsCheckingStatus(false);
@@ -66,8 +114,12 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
         }
       );
 
-      if (!response.ok) throw new Error('Falha ao verificar status da conexão');
+      if (!response.ok) {
+        setIsValidCredentials(false);
+        throw new Error('Falha ao verificar status da conexão');
+      }
 
+      setIsValidCredentials(true);
       const data: ConnectionState = await response.json();
       setConnectionState(data.instance.state);
       
@@ -85,7 +137,7 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
     } finally {
       setIsCheckingStatus(false);
     }
-  };
+  }, [formData.evo_instancia, formData.evo_key]);
 
   const fetchInstances = async () => {
     if (!formData.evo_key) return;
@@ -135,6 +187,9 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
     setIsLoading(true);
     
     try {
+      // Validate credentials before saving
+      await validateCredentials();
+      
       const { error } = await supabase
         .from('usuario')
         .update({
@@ -169,6 +224,17 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
         variant: 'destructive',
         title: 'Dados incompletos',
         description: 'Por favor, preencha todos os campos antes de conectar.',
+      });
+      return;
+    }
+
+    // Validate credentials before connecting
+    const isValid = await validateCredentials();
+    if (!isValid) {
+      toast({
+        variant: 'destructive',
+        title: 'Credenciais inválidas',
+        description: 'A instância ou o token API são inválidos.',
       });
       return;
     }
@@ -216,6 +282,17 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
   const handleDisconnect = async () => {
     if (!formData.evo_instancia || !formData.evo_key) return;
     
+    // Validate credentials before disconnecting
+    const isValid = await validateCredentials();
+    if (!isValid) {
+      toast({
+        variant: 'destructive',
+        title: 'Credenciais inválidas',
+        description: 'A instância ou o token API são inválidos.',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -250,6 +327,17 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
   const handleRestart = async () => {
     if (!formData.evo_instancia || !formData.evo_key) return;
     
+    // Validate credentials before restarting
+    const isValid = await validateCredentials();
+    if (!isValid) {
+      toast({
+        variant: 'destructive',
+        title: 'Credenciais inválidas',
+        description: 'A instância ou o token API são inválidos.',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -281,6 +369,15 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
     }
   };
 
+  // Effect to check connection status on mount
+  useEffect(() => {
+    if (profile?.evo_instancia && profile?.evo_key) {
+      checkConnectionStatus();
+    } else {
+      setIsCheckingStatus(false);
+    }
+  }, [profile?.evo_instancia, profile?.evo_key, checkConnectionStatus]);
+
   return {
     isLoading,
     connectionState,
@@ -288,12 +385,14 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
     qrCodeData,
     showQRDialog,
     formData,
+    isValidCredentials,
     setShowQRDialog,
     handleInputChange,
     handleSave,
     handleConnect,
     handleDisconnect,
     handleRestart,
-    checkConnectionStatus
+    checkConnectionStatus,
+    validateCredentials
   };
 }

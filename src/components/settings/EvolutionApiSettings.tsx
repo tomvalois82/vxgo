@@ -18,6 +18,7 @@ export function EvolutionApiSettings() {
     qrCodeData,
     showQRDialog,
     formData,
+    isValidCredentials,
     setShowQRDialog,
     handleInputChange,
     handleSave,
@@ -35,8 +36,6 @@ export function EvolutionApiSettings() {
     if (profile?.evo_instancia && profile?.evo_key) {
       checkConnectionStatus();
     }
-    // We don't need to manually set isCheckingStatus to false here
-    // That's handled internally by the hook
   }, [profile?.evo_instancia, profile?.evo_key, checkConnectionStatus]);
 
   const hasRequiredFields = Boolean(formData.evo_instancia && formData.evo_key);
@@ -67,6 +66,7 @@ export function EvolutionApiSettings() {
             formData={formData}
             onInputChange={handleInputChange}
             isConnected={connectionState === 'open'}
+            isValidCredentials={isValidCredentials}
           />
           
           <EvolutionApiActions 
@@ -78,6 +78,7 @@ export function EvolutionApiSettings() {
             onDisconnect={handleDisconnect}
             onRestart={handleRestart}
             hasRequiredFields={hasRequiredFields}
+            isValidCredentials={isValidCredentials}
           />
         </CardContent>
       </Card>
