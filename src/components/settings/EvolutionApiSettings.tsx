@@ -7,6 +7,8 @@ import { QRCodeDialog } from './QRCodeDialog';
 import { EvolutionApiForm } from './EvolutionApiForm';
 import { EvolutionApiActions } from './EvolutionApiActions';
 import { useEvolutionApi } from '@/hooks/useEvolutionApi';
+import { InstanceInfoCard } from './InstanceInfoCard';
+import { Separator } from '@/components/ui/separator';
 
 export function EvolutionApiSettings() {
   const { profile } = useAuth();
@@ -19,6 +21,7 @@ export function EvolutionApiSettings() {
     showQRDialog,
     formData,
     isValidCredentials,
+    instanceInfo,
     setShowQRDialog,
     handleInputChange,
     handleSave,
@@ -29,7 +32,6 @@ export function EvolutionApiSettings() {
   } = useEvolutionApi({
     evo_instancia: profile?.evo_instancia || '',
     evo_key: profile?.evo_key || '',
-    telefone: profile?.telefone || '',
   });
 
   useEffect(() => {
@@ -80,6 +82,17 @@ export function EvolutionApiSettings() {
             hasRequiredFields={hasRequiredFields}
             isValidCredentials={isValidCredentials}
           />
+
+          {connectionState === 'open' && (
+            <>
+              <Separator className="my-4" />
+              <InstanceInfoCard 
+                profileName={instanceInfo.profileName}
+                owner={instanceInfo.owner}
+                profilePictureUrl={instanceInfo.profilePictureUrl}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
 

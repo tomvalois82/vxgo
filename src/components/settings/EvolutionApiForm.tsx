@@ -52,18 +52,6 @@ export function EvolutionApiForm({
           )}
         </div>
       </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="telefone">Número de Telefone</Label>
-        <Input
-          id="telefone"
-          name="telefone"
-          value={formData.telefone}
-          onChange={onInputChange}
-          placeholder="Digite seu número de telefone"
-          readOnly={isConnected}
-        />
-      </div>
     </div>
   );
 }

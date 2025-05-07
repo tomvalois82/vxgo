@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +20,7 @@ interface Instance {
     status: 'open' | 'close';
     serverUrl: string;
     apikey: string;
+    profilePictureUrl?: string;
   };
 }
 
@@ -30,11 +32,16 @@ interface QRCodeResponse {
 export interface EvolutionApiFormData {
   evo_instancia: string;
   evo_key: string;
-  telefone: string;
+}
+
+export interface InstanceInfo {
+  profileName: string | null;
+  owner: string | null;
+  profilePictureUrl: string | null;
 }
 
 export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [connectionState, setConnectionState] = useState<'open' | 'close' | null>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
@@ -43,6 +50,11 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
   const [instances, setInstances] = useState<Instance[]>([]);
   const [formData, setFormData] = useState<EvolutionApiFormData>(initialFormData);
   const [isValidCredentials, setIsValidCredentials] = useState<boolean | null>(null);
+  const [instanceInfo, setInstanceInfo] = useState<InstanceInfo>({
+    profileName: null,
+    owner: null,
+    profilePictureUrl: null
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -167,16 +179,12 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
             item?.instance?.instanceName === formData.evo_instancia
           );
           
-          if (currentInstance?.instance?.owner) {
-            const ownerPhone = currentInstance.instance.owner.split('@')[0];
-            setFormData(prev => ({ ...prev, telefone: ownerPhone }));
-            
-            if (user && ownerPhone !== profile?.telefone) {
-              await supabase
-                .from('usuario')
-                .update({ telefone: ownerPhone })
-                .eq('uid', user.id);
-            }
+          if (currentInstance?.instance) {
+            setInstanceInfo({
+              profileName: currentInstance.instance.profileName || null,
+              owner: currentInstance.instance.owner || null,
+              profilePictureUrl: currentInstance.instance.profilePictureUrl || null
+            });
           }
         }
       }
@@ -198,7 +206,6 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
         .update({
           evo_instancia: formData.evo_instancia,
           evo_key: formData.evo_key,
-          telefone: formData.telefone,
         })
         .eq('uid', user.id);
 
@@ -372,12 +379,12 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
 
   // Effect to check connection status on mount
   useEffect(() => {
-    if (profile?.evo_instancia && profile?.evo_key) {
+    if (formData.evo_instancia && formData.evo_key) {
       checkConnectionStatus();
     } else {
       setIsCheckingStatus(false);
     }
-  }, [profile?.evo_instancia, profile?.evo_key, checkConnectionStatus]);
+  }, [formData.evo_instancia, formData.evo_key, checkConnectionStatus]);
 
   return {
     isLoading,
@@ -387,6 +394,7 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
     showQRDialog,
     formData,
     isValidCredentials,
+    instanceInfo,
     setShowQRDialog,
     handleInputChange,
     handleSave,
