@@ -86,7 +86,10 @@ export function EvolutionApiSettings() {
       <QRCodeDialog 
         qrCodeData={qrCodeData} 
         showDialog={showQRDialog} 
-        onOpenChange={setShowQRDialog} 
+        onOpenChange={setShowQRDialog}
+        onTimeExpired={handleConnect}
+        onCheckStatus={checkConnectionStatus}
+        connectionState={connectionState} 
       />
     </>
   );

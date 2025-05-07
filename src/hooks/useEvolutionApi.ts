@@ -100,7 +100,7 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
     if (!formData.evo_instancia || !formData.evo_key) {
       setConnectionState(null);
       setIsCheckingStatus(false);
-      return;
+      return false;
     }
 
     try {
@@ -126,6 +126,8 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
       if (data.instance.state === 'open') {
         await fetchInstances();
       }
+      
+      return data.instance.state === 'open';
     } catch (error) {
       console.error('Erro ao verificar status:', error);
       toast({
@@ -134,6 +136,7 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
         description: 'Não foi possível verificar o status da conexão.',
       });
       setConnectionState(null);
+      return false;
     } finally {
       setIsCheckingStatus(false);
     }
@@ -262,8 +265,6 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
           title: 'Iniciando conexão',
           description: 'Escaneie o QR Code para conectar ao WhatsApp.',
         });
-        
-        setTimeout(() => checkConnectionStatus(), 5000);
       } else {
         throw new Error('Dados de resposta inválidos');
       }
