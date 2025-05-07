@@ -14,8 +14,8 @@ export function QRCodeDialog({ qrCodeData, showDialog, onOpenChange }: QRCodeDia
 
   useEffect(() => {
     if (qrCodeData) {
-      // The qrCodeData is already a base64 string, so we set it directly as the image source
-      setQrSrc(`data:image/png;base64,${qrCodeData}`);
+      // The qrCodeData is already the full data:image URL with base64 content
+      setQrSrc(qrCodeData);
     } else {
       setQrSrc(null);
     }

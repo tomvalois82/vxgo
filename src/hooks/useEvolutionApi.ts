@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +20,11 @@ interface Instance {
     serverUrl: string;
     apikey: string;
   };
+}
+
+interface QRCodeResponse {
+  code?: string;
+  base64?: string;
 }
 
 export interface EvolutionApiFormData {
@@ -182,10 +186,10 @@ export function useEvolutionApi(initialFormData: EvolutionApiFormData) {
 
       if (!response.ok) throw new Error('Falha na conexão com Evolution API');
 
-      const data = await response.json();
+      const data: QRCodeResponse = await response.json();
       
-      if (data && data.code) {
-        setQrCodeData(data.code);
+      if (data && data.base64) {
+        setQrCodeData(data.base64);
         setShowQRDialog(true);
 
         toast({
