@@ -166,6 +166,8 @@ export type Database = {
           motor: string | null
           observacao: string | null
           status: string | null
+          tipo_veiculo: string | null
+          uid: string | null
           usuario: number | null
           valor: string | null
           video: string | null
@@ -192,6 +194,8 @@ export type Database = {
           motor?: string | null
           observacao?: string | null
           status?: string | null
+          tipo_veiculo?: string | null
+          uid?: string | null
           usuario?: number | null
           valor?: string | null
           video?: string | null
@@ -218,6 +222,8 @@ export type Database = {
           motor?: string | null
           observacao?: string | null
           status?: string | null
+          tipo_veiculo?: string | null
+          uid?: string | null
           usuario?: number | null
           valor?: string | null
           video?: string | null

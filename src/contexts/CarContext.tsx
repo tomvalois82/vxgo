@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Car, CarFormData } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,7 +93,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const fetchCars = async () => {
     const { data, error } = await supabase
-      .from('estoque_iputinga')
+      .from('estoque')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -132,7 +133,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const { error } = await supabase
-      .from('estoque_iputinga')
+      .from('estoque')
       .insert([insertPayload]);
 
     if (error) {
@@ -164,7 +165,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const { error } = await supabase
-      .from('estoque_iputinga')
+      .from('estoque')
       .update(updatePayload)
       .eq('id', numericId);
 
@@ -197,7 +198,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     
     const { error } = await supabase
-      .from('estoque_iputinga')
+      .from('estoque')
       .delete()
       .eq('id', numericId);
 
