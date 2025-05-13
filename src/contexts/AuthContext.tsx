@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
@@ -12,6 +13,8 @@ interface UserProfile {
   config: number;
   evo_instancia: string | null;
   evo_key: string | null;
+  tbEstoque: string | null;
+  tbHistorico: string | null;
 }
 
 interface AuthContextType {
@@ -71,7 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 { 
                   uid: user.id,
                   email: user.email,
-                  ativo: true 
+                  ativo: true,
+                  tbEstoque: 'estoque' // Default table for new users
                 }
               ])
               .select()
@@ -83,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             navigate('/profile');
           }
 
+          console.log('User profile loaded:', userProfile);
           setProfile(userProfile);
         } catch (error) {
           console.error('Error fetching/creating profile:', error);

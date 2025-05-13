@@ -89,11 +89,25 @@ function mapCarFormDataToSupabase(car: CarFormData) {
 export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cars, setCars] = useState<Car[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const [stockTable, setStockTable] = useState<string>('estoque');
+
+  useEffect(() => {
+    if (profile?.tbEstoque) {
+      setStockTable(profile.tbEstoque);
+      console.log('Using stock table:', profile.tbEstoque);
+    } else {
+      setStockTable('estoque');
+      console.log('No custom stock table found, using default: estoque');
+    }
+  }, [profile]);
 
   const fetchCars = async () => {
+    if (!stockTable) return;
+    
+    console.log(`Fetching cars from table: ${stockTable}`);
     const { data, error } = await supabase
-      .from('estoque')
+      .from(stockTable)
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -109,15 +123,15 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && stockTable) {
       fetchCars();
     } else {
       setCars([]);
     }
-  }, [user]);
+  }, [user, stockTable]);
 
   const addCar = async (car: CarFormData & { fotos?: string[] }) => {
-    if (!user) {
+    if (!user || !stockTable) {
       toast({
         variant: 'destructive',
         title: 'Erro ao adicionar veículo',
@@ -133,7 +147,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const { error } = await supabase
-      .from('estoque')
+      .from(stockTable)
       .insert([insertPayload]);
 
     if (error) {
@@ -149,7 +163,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCar = async (id: string, carData: Partial<CarFormData & { fotos?: string[] }>) => {
-    if (!user) {
+    if (!user || !stockTable) {
       toast({
         variant: 'destructive',
         title: 'Erro ao atualizar veículo',
@@ -165,7 +179,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const { error } = await supabase
-      .from('estoque')
+      .from(stockTable)
       .update(updatePayload)
       .eq('id', numericId);
 
@@ -182,6 +196,8 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCar = async (id: string) => {
+    if (!stockTable) return;
+    
     const numericId = parseInt(id, 10);
     const carToDelete = cars.find(car => String(car.id) === String(id));
     
@@ -198,7 +214,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     
     const { error } = await supabase
-      .from('estoque')
+      .from(stockTable)
       .delete()
       .eq('id', numericId);
 
