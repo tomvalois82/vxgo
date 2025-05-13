@@ -106,10 +106,33 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!stockTable) return;
     
     console.log(`Fetching cars from table: ${stockTable}`);
-    const { data, error } = await supabase
-      .from(stockTable)
-      .select('*')
-      .order('created_at', { ascending: false });
+    
+    // Handle each supported table explicitly to satisfy TypeScript
+    let data, error;
+    
+    if (stockTable === 'estoque') {
+      const result = await supabase
+        .from('estoque')
+        .select('*')
+        .order('created_at', { ascending: false });
+      data = result.data;
+      error = result.error;
+    } else if (stockTable === 'estoque_iputinga') {
+      const result = await supabase
+        .from('estoque_iputinga')
+        .select('*')
+        .order('created_at', { ascending: false });
+      data = result.data;
+      error = result.error;
+    } else {
+      // Fallback to default table if none match
+      const result = await supabase
+        .from('estoque')
+        .select('*')
+        .order('created_at', { ascending: false });
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) {
       toast({
@@ -146,9 +169,24 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       uid: user.id
     };
 
-    const { error } = await supabase
-      .from(stockTable)
-      .insert([insertPayload]);
+    let error;
+    if (stockTable === 'estoque') {
+      const result = await supabase
+        .from('estoque')
+        .insert([insertPayload]);
+      error = result.error;
+    } else if (stockTable === 'estoque_iputinga') {
+      const result = await supabase
+        .from('estoque_iputinga')
+        .insert([insertPayload]);
+      error = result.error;
+    } else {
+      // Fallback to default
+      const result = await supabase
+        .from('estoque')
+        .insert([insertPayload]);
+      error = result.error;
+    }
 
     if (error) {
       toast({
@@ -178,10 +216,27 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       fotos: carData.fotos ?? null,
     };
 
-    const { error } = await supabase
-      .from(stockTable)
-      .update(updatePayload)
-      .eq('id', numericId);
+    let error;
+    if (stockTable === 'estoque') {
+      const result = await supabase
+        .from('estoque')
+        .update(updatePayload)
+        .eq('id', numericId);
+      error = result.error;
+    } else if (stockTable === 'estoque_iputinga') {
+      const result = await supabase
+        .from('estoque_iputinga')
+        .update(updatePayload)
+        .eq('id', numericId);
+      error = result.error;
+    } else {
+      // Fallback to default
+      const result = await supabase
+        .from('estoque')
+        .update(updatePayload)
+        .eq('id', numericId);
+      error = result.error;
+    }
 
     if (error) {
       toast({
@@ -213,10 +268,27 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
     
-    const { error } = await supabase
-      .from(stockTable)
-      .delete()
-      .eq('id', numericId);
+    let error;
+    if (stockTable === 'estoque') {
+      const result = await supabase
+        .from('estoque')
+        .delete()
+        .eq('id', numericId);
+      error = result.error;
+    } else if (stockTable === 'estoque_iputinga') {
+      const result = await supabase
+        .from('estoque_iputinga')
+        .delete()
+        .eq('id', numericId);
+      error = result.error;
+    } else {
+      // Fallback to default
+      const result = await supabase
+        .from('estoque')
+        .delete()
+        .eq('id', numericId);
+      error = result.error;
+    }
 
     if (error) {
       toast({
