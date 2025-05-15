@@ -134,55 +134,44 @@ const CarForm: React.FC<CarFormProps> = ({
     
     if (sourceIndex === targetIndex) return;
 
-    // Reorder preview URLs first, as this is the visual source of truth for order
     const updatedPreviewUrls = [...previewUrls];
     const movedPreview = updatedPreviewUrls.splice(sourceIndex, 1)[0];
     updatedPreviewUrls.splice(targetIndex, 0, movedPreview);
     setPreviewUrls(updatedPreviewUrls);
 
-    // Now, intelligently reorder photoNames and imageFiles
-    // This logic assumes previewUrls contains existing photo URLs first, then new file object URLs
-    // and that photoNames corresponds to the initial part of previewUrls, and imageFiles to the latter.
-
     const newPhotoNames = [...photoNames];
     const newImageFiles = [...imageFiles];
 
-    // Determine if source and target are within existing photos, new files, or crossing over
     const sourceIsExisting = sourceIndex < newPhotoNames.length;
-    const targetIsExistingBoundary = targetIndex <= newPhotoNames.length; // Use <= for inserting at the end of existing
+    const targetIsExistingBoundary = targetIndex <= newPhotoNames.length; 
 
-    if (sourceIsExisting) { // Moving an existing photo
+    if (sourceIsExisting) { 
       const movedPhotoName = newPhotoNames.splice(sourceIndex, 1)[0];
-      if (targetIsExistingBoundary) { // Target is within or at the end of existing photos
-         // Adjust targetIndex if it was after the removed source for photoNames
+      if (targetIsExistingBoundary) { 
         const adjustedTargetIndex = targetIndex > sourceIndex ? targetIndex -1 : targetIndex;
         newPhotoNames.splice(adjustedTargetIndex, 0, movedPhotoName);
-      } else { // Moving an existing photo into the new files section (conceptually, not allowed by toast)
-        // This case should ideally be prevented or handled by converting the existing photo to a "new file" concept if reordering this way is desired.
-        // For now, relying on the toast from original code for cross-type reordering.
+      } else { 
         toast({
           title: "Não é possível reorganizar entre fotos existentes e novas diretamente dessa forma.",
           description: "Salve o formulário primeiro para organizar todas as fotos consolidadas.",
           variant: "destructive"
         });
-        // Revert previewUrls change if the underlying data cannot be reordered cleanly
-        setPreviewUrls(previewUrls); // Revert to original
+        setPreviewUrls(previewUrls); 
         return;
       }
-    } else { // Moving a new file
+    } else { 
       const sourceFileIndex = sourceIndex - newPhotoNames.length;
       const movedFile = newImageFiles.splice(sourceFileIndex, 1)[0];
-      if (!targetIsExistingBoundary) { // Target is within new files section
-         // Adjust targetIndex for imageFiles list
+      if (!targetIsExistingBoundary) { 
         const adjustedTargetFileIndex = (targetIndex > sourceIndex ? targetIndex -1 : targetIndex) - newPhotoNames.length;
         newImageFiles.splice(adjustedTargetFileIndex, 0, movedFile);
-      } else { // Moving a new file into existing photos section (conceptually, not allowed by toast)
+      } else { 
         toast({
           title: "Não é possível reorganizar entre fotos existentes e novas diretamente dessa forma.",
           description: "Salve o formulário primeiro para organizar todas as fotos consolidadas.",
           variant: "destructive"
         });
-        setPreviewUrls(previewUrls); // Revert to original
+        setPreviewUrls(previewUrls); 
         return;
       }
     }
@@ -192,44 +181,12 @@ const CarForm: React.FC<CarFormProps> = ({
 
   async function handleSubmit(values: CarFormSchema) {
     setUploading(true);
-    let updatedPhotoNames = [...photoNames]; // Start with current server photos
-
-    // Reorder existing photoNames based on the current previewUrls order
-    // This assumes previewUrls up to the length of initialData.fotos (or photoNames derived from it) are the ones to reorder.
-    // This part is tricky if new photos were added and deleted, making previewUrls not directly map to original photoNames order.
-    // A more robust way is to map previewUrls back to original names if they are URLs, or file objects.
-
-    // Simplified: Assume the current order in photoNames reflects user's desired order for existing images,
-    // and new images will be appended. Drag and drop of existing images is handled above.
-    // The main task here is uploading NEW images.
+    let updatedPhotoNames = [...photoNames]; 
 
     if (imageFiles.length > 0) {
       try {
         const newUploadedImageNames = await uploadCarImages(imageFiles);
-        // Combine reordered existing photos with newly uploaded ones
-        // The order in previewUrls is the source of truth for final 'fotos'
-        const finalOrderedNames: string[] = [];
-        previewUrls.forEach(url => {
-          const existingPhotoIndex = photoNames.findIndex(name => supabase.storage.from("car-fotos").getPublicUrl(name).data.publicUrl === url);
-          if (existingPhotoIndex !== -1) {
-            finalOrderedNames.push(photoNames[existingPhotoIndex]);
-          } else {
-            // This URL must correspond to a newly uploaded file. Find its name.
-            // This step requires matching object URLs to uploaded names, which is complex here.
-            // Simpler: assume newUploadedImageNames are in the order of imageFiles which matches tail of previewUrls
-          }
-        });
-        
-        // A simpler logic for combining: Use the reordered photoNames and append newUploadedImageNames.
-        // This might not perfectly reflect drag-and-drop across existing/new if not careful.
-        // For robustness, it's better to derive final 'fotos' list from the final state of `previewUrls`,
-        // mapping them back to their names (existing or newly uploaded).
-        // Given the complexity, we'll stick to combining existing reordered names with new ones.
-        // The drag and drop handles reordering within existing and within new.
-        // This combination assumes new images are appended.
         updatedPhotoNames = [...photoNames, ...newUploadedImageNames];
-
-
       } catch (err: any) {
         toast({
           title: "Erro ao enviar imagens",
@@ -241,20 +198,19 @@ const CarForm: React.FC<CarFormProps> = ({
       }
     }
     
-    // Final assembly of 'fotos' based on previewUrls order to respect drag & drop fully.
-    // This is crucial.
     const finalFotos: string[] = [];
-    const newUploadedNamesCopy = [...(async () => { // Re-fetch names if any were uploaded, or use empty if not.
-        if (imageFiles.length > 0 && updatedPhotoNames.length > photoNames.length) { // implies new images were uploaded
-            return updatedPhotoNames.slice(photoNames.length);
-        }
-        return [];
-    })());
+    let newUploadedNamesFromSubmit: string[] = [];
+    if (imageFiles.length > 0) {
+        // This assumes newUploadedImageNames were successfully generated if imageFiles existed
+        // and that updatedPhotoNames contains them at the end.
+        newUploadedNamesFromSubmit = updatedPhotoNames.slice(photoNames.length);
+    }
+    const newUploadedNamesCopy = [...newUploadedNamesFromSubmit];
+
 
     for (const url of previewUrls) {
         let found = false;
-        // Check if it's an existing photo
-        for (const name of photoNames) {
+        for (const name of photoNames) { // Compare with original photoNames that correspond to existing URLs
             if (supabase.storage.from("car-fotos").getPublicUrl(name).data.publicUrl === url) {
                 finalFotos.push(name);
                 found = true;
@@ -263,24 +219,12 @@ const CarForm: React.FC<CarFormProps> = ({
         }
         if (found) continue;
 
-        // Check if it's a newly uploaded photo (this part is tricky as we only have URLs for new files locally)
-        // We'll assume newUploadedNamesCopy are in the order they appear at the end of previewUrls
-        // This requires careful management of imageFiles and their corresponding object URLs.
-        // For now, if it's not an existing photo, and new ones were uploaded, take from newUploadedNamesCopy.
         if (newUploadedNamesCopy.length > 0) {
-            finalFotos.push(newUploadedNamesCopy.shift()!); // Assumes order matches
+            finalFotos.push(newUploadedNamesCopy.shift()!); 
         }
     }
-
     setUploading(false);
-    // Use 'finalFotos' if the complex reordering logic is solid, otherwise use 'updatedPhotoNames'
-    // For simplicity and given current structure, 'updatedPhotoNames' (reordered existing + appended new) is safer.
-    // To fully respect drag-drop of all items, 'finalFotos' based on 'previewUrls' mapping is needed.
-    // Let's use `updatedPhotoNames` which combines potentially reordered `photoNames` with `newUploadedImageNames`.
-    // The drag-and-drop within `photoNames` and within `imageFiles` is handled. Cross-type is warned.
-    // So `photoNames` (potentially reordered) + `newUploadedImageNames` (appended) is the list.
-
-    const dataToSubmit = { ...values, fotos: updatedPhotoNames };
+    const dataToSubmit = { ...values, fotos: finalFotos.length > 0 ? finalFotos : updatedPhotoNames };
     onSubmit(dataToSubmit as CarFormData);
   }
 
@@ -300,7 +244,7 @@ const CarForm: React.FC<CarFormProps> = ({
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="bg-white z-50">
                     <SelectItem value="carros">Carros</SelectItem>
                     <SelectItem value="motos">Motos</SelectItem>
                     <SelectItem value="caminhoes">Caminhões</SelectItem>
@@ -423,13 +367,13 @@ const CarForm: React.FC<CarFormProps> = ({
                     placeholder="R$ 0,00"
                     onChange={(e) => {
                       const formatted = formatCurrency(e.target.value);
-                      e.target.value = formatted; // Ensure input displays formatted value
-                      const numericValue = parseFloat(formatted.replace(/[^\d,]/g, '').replace(',', '.')) ; // More robust parsing
+                      e.target.value = formatted; 
+                      const numericValue = parseFloat(formatted.replace(/[^\d,]/g, '').replace(',', '.')) ; 
                       onChange(isNaN(numericValue) ? 0 : numericValue);
                     }}
                     value={typeof rest.value === 'number' ? 
                       rest.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
-                      (initialData.price && typeof initialData.price === 'string' ? initialData.price : 'R$ 0,00') // Use initial string if available
+                      (initialData.price && typeof initialData.price === 'string' ? initialData.price : 'R$ 0,00') 
                     }
                   />
                 </FormControl>
@@ -508,13 +452,13 @@ const CarForm: React.FC<CarFormProps> = ({
                     placeholder="0"
                     onChange={(e) => {
                       const formatted = formatMileage(e.target.value);
-                      e.target.value = formatted; // Ensure input displays formatted value
+                      e.target.value = formatted; 
                       const numericValue = parseInt(formatted.replace(/\./g, ''), 10);
                       onChange(isNaN(numericValue) ? 0 : numericValue);
                     }}
                      value={typeof rest.value === 'number' ? 
                       rest.value.toLocaleString('pt-BR') : 
-                      (initialData.mileage?.toString() ?? '0') // Use initial if available
+                      (initialData.mileage?.toString() ?? '0') 
                     }
                   />
                 </FormControl>
