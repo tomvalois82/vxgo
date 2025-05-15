@@ -23,8 +23,10 @@ export interface Car {
   category?: string;
   manufacturingYear?: number; // ano_fabricacao
   fotos?: string[];
+  idOlx?: string; // Novo campo
   createdAt: Date;
   updatedAt: Date;
 }
 
 export type CarFormData = Omit<Car, 'id' | 'createdAt' | 'updatedAt'>;
+

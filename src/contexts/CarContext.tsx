@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Car, CarFormData } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,6 +54,7 @@ function mapSupabaseToCar(row: any): Car {
     warranty: row.garantia || '',
     category: row.categoria || '',
     fotos: row.fotos || [],
+    idOlx: row.idOlx || undefined, // Mapear idOlx
     createdAt: row.created_at ? new Date(row.created_at) : new Date(),
     updatedAt: row.created_at ? new Date(row.created_at) : new Date()
   };
@@ -82,7 +82,8 @@ function mapCarFormDataToSupabase(car: CarFormData) {
     ficha_tecnica: car.technicalSheet || null,
     garantia: car.warranty || null,
     status: car.inStock ? 'Em estoque' : 'Fora de estoque',
-    foto: car.image || null
+    foto: car.image || null,
+    idOlx: car.idOlx || null, // Mapear idOlx
   };
 }
 

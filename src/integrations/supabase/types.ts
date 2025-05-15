@@ -266,6 +266,7 @@ export type Database = {
           garantia: string | null
           id: number
           idEstoqueBubble: string | null
+          idolx: string | null
           km: string | null
           modelo: string | null
           motor: string | null
@@ -293,6 +294,7 @@ export type Database = {
           garantia?: string | null
           id?: number
           idEstoqueBubble?: string | null
+          idolx?: string | null
           km?: string | null
           modelo?: string | null
           motor?: string | null
@@ -320,6 +322,7 @@ export type Database = {
           garantia?: string | null
           id?: number
           idEstoqueBubble?: string | null
+          idolx?: string | null
           km?: string | null
           modelo?: string | null
           motor?: string | null

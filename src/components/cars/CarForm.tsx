@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { uploadCarImages } from "@/lib/uploadCarImages";
-import { Car, List, Pencil, DollarSign, Palette, Gauge, FileText, Video, FileSpreadsheet, Shield, LayoutList, Calendar, LoaderCircle } from "lucide-react";
+import { Car, List, Pencil, DollarSign, Palette, Gauge, FileText, Video, FileSpreadsheet, Shield, LayoutList, Calendar, LoaderCircle, Tag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { VehicleType, useFipeBrands } from '@/hooks/useFipeBrands';
 import { toast } from '@/components/ui/use-toast';
@@ -49,15 +49,15 @@ const CarForm: React.FC<CarFormProps> = ({
       fuelType: initialData.fuelType || '1.0',
       transmission: initialData.transmission || 'Manual',
       inStock: initialData.inStock !== undefined ? initialData.inStock : true,
-      image: initialData.image || '', // This might be legacy if 'fotos' is primary
+      image: initialData.image || '', 
       description: initialData.description || '',
       characteristics: initialData.characteristics || '',
+      idOlx: initialData.idOlx || '', // Adicionado idOlx
       video: initialData.video || '',
       cautionReport: initialData.cautionReport || '',
       technicalSheet: initialData.technicalSheet || '',
       warranty: initialData.warranty || '',
       category: initialData.category || 'Sedan',
-      // 'fotos' are handled by imageFiles/photoNames state, not directly in form defaultValues
     },
   });
 
@@ -649,7 +649,22 @@ const CarForm: React.FC<CarFormProps> = ({
           />
         </div>
 
-        <Button type="submit" className="bg-carblue hover:bg-carblue-dark" loading={uploading} disabled={uploading}>
+        <FormField
+          control={form.control}
+          name="idOlx"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2"><Tag size={16}/> Código do anúncio OLX</FormLabel>
+              <FormControl>
+                <Input placeholder="Cole aqui o código do anúncio da OLX" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="bg-carblue hover:bg-carblue-dark" loading={uploading || form.formState.isSubmitting} disabled={uploading || form.formState.isSubmitting}>
+          {form.formState.isSubmitting ? <LoaderCircle className="animate-spin mr-2" size={16} /> : null}
           {isEditing ? 'Atualizar Veículo' : 'Adicionar Veículo'}
         </Button>
       </form>

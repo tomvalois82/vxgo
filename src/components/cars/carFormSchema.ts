@@ -16,6 +16,7 @@ export const carFormSchema = z.object({
   inStock: z.boolean().default(true),
   description: z.string().optional(),
   characteristics: z.string().optional(),
+  idOlx: z.string().optional(), // Novo campo
   video: z.string().optional(),
   cautionReport: z.string().optional(),
   technicalSheet: z.string().optional(),
@@ -25,3 +26,4 @@ export const carFormSchema = z.object({
 });
 
 export type CarFormSchema = z.infer<typeof carFormSchema>;
+
