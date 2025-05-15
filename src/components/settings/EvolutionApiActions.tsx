@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Wifi, Check, ArrowRight } from 'lucide-react';
+import { RefreshCw, Wifi, Check, ArrowRight, LoaderCircle } from 'lucide-react'; // Added LoaderCircle
 
 interface EvolutionApiActionsProps {
   isLoading: boolean;
@@ -25,11 +25,13 @@ export function EvolutionApiActions({
   hasRequiredFields,
   isValidCredentials
 }: EvolutionApiActionsProps) {
+  const combinedLoading = isLoading || isCheckingStatus;
   return (
     <div className="flex flex-wrap gap-2 pt-4">
       <Button 
         onClick={onSave} 
-        disabled={isLoading || isCheckingStatus || !hasRequiredFields}
+        loading={isLoading} // Specifically isLoading for save
+        disabled={combinedLoading || !hasRequiredFields}
       >
         Salvar
       </Button>
@@ -38,14 +40,16 @@ export function EvolutionApiActions({
         <>
           <Button 
             onClick={onDisconnect}
-            disabled={isLoading || isCheckingStatus || isValidCredentials === false}
+            loading={isLoading} // Specifically isLoading for disconnect
+            disabled={combinedLoading || isValidCredentials === false}
             variant="destructive"
           >
             Desconectar WhatsApp
           </Button>
           <Button 
             onClick={onRestart}
-            disabled={isLoading || isCheckingStatus || isValidCredentials === false}
+            loading={isLoading} // Specifically isLoading for restart
+            disabled={combinedLoading || isValidCredentials === false}
             variant="outline"
           >
             <RefreshCw className="mr-1" size={16} />
@@ -55,7 +59,8 @@ export function EvolutionApiActions({
       ) : (
         <Button 
           onClick={onConnect}
-          disabled={isLoading || !hasRequiredFields || isValidCredentials !== true}
+          loading={isLoading} // Specifically isLoading for connect
+          disabled={combinedLoading || !hasRequiredFields || isValidCredentials !== true}
           variant="secondary"
         >
           <ArrowRight size={16} />
@@ -65,3 +70,4 @@ export function EvolutionApiActions({
     </div>
   );
 }
+

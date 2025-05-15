@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, LoaderCircle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { olxService } from '@/services/olxService';
@@ -18,7 +17,7 @@ const Auth = () => {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const { signIn, signUp, user, profile } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -41,14 +40,14 @@ const Auth = () => {
           }
           
           // Get updated user profile to get webhook URL
-          const { data: updatedProfile, error } = await supabase
+          const { data: updatedProfile, error: profileError } = await supabase
             .from('usuario')
             .select('credencialOlx, n8nOlx')
             .eq('uid', user.id)
             .single();
             
-          if (error || !updatedProfile) {
-            throw error || new Error('Failed to get updated profile');
+          if (profileError || !updatedProfile) {
+            throw profileError || new Error('Failed to get updated profile');
           }
           
           if (!updatedProfile.n8nOlx) {
@@ -76,13 +75,13 @@ const Auth = () => {
           } else if (status === 401) {
             toast({
               title: "Erro",
-              description: "Token inválido. Tente reconectar sua conta.",
+              description: "Token inválido. Tente reconectar sua conta OLX nas configurações.",
               variant: "destructive",
             });
           } else {
             toast({
               title: "Erro",
-              description: `Erro ao ativar webhook (${status}). Tente novamente.`,
+              description: `Erro ao ativar webhook (${status}). Tente novamente ou contate o suporte.`,
               variant: "destructive",
             });
           }
@@ -92,18 +91,19 @@ const Auth = () => {
         } catch (error) {
           console.error('OLX auth error:', error);
           toast({
-            title: "Erro",
-            description: "Falha na integração com a OLX. Tente novamente.",
+            title: "Erro de Integração OLX",
+            description: error instanceof Error ? error.message : "Falha na integração com a OLX. Tente novamente.",
             variant: "destructive",
           });
           setErrorMsg(error instanceof Error ? error.message : "Ocorreu um erro na integração com a OLX");
+          navigate('/settings');
         } finally {
           setIsLoading(false);
         }
       }
     };
     
-    if (user) {
+    if (user && location.search.includes('code=')) {
       handleOlxAuth();
     }
   }, [location.search, user, navigate]);
@@ -171,7 +171,7 @@ const Auth = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center p-6 space-y-4">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            <LoaderCircle className="h-16 w-16 animate-spin text-primary" />
             <p className="text-center text-muted-foreground">
               Por favor, aguarde enquanto processamos sua integração com o Chat da OLX...
             </p>
@@ -194,8 +194,8 @@ const Auth = () => {
         />
       </div>
       <div>
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Enviando..." : "Enviar email de recuperação"}
+        <Button type="submit" className="w-full" loading={isLoading} disabled={isLoading}>
+          Enviar email de recuperação
         </Button>
       </div>
       <div className="text-center">
@@ -234,8 +234,8 @@ const Auth = () => {
         />
       </div>
       <div>
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (isLogin ? "Entrando..." : "Cadastrando...") : (isLogin ? 'Entrar' : 'Cadastrar')}
+        <Button type="submit" className="w-full" loading={isLoading} disabled={isLoading}>
+          {isLogin ? 'Entrar' : 'Cadastrar'}
         </Button>
       </div>
       <div className="text-center space-y-2">
