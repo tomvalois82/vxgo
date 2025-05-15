@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
@@ -15,6 +14,8 @@ interface UserProfile {
   evo_key: string | null;
   tbEstoque: string | null;
   tbHistorico: string | null;
+  credencialOlx: string | null; // Added this line
+  n8nOlx: string | null; // Added this line as it's used in Auth.tsx and likely needed in profile
 }
 
 interface AuthContextType {
