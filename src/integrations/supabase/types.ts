@@ -161,6 +161,7 @@ export type Database = {
           garantia: string | null
           id: number
           idEstoqueBubble: string | null
+          idOlx: string | null
           km: string | null
           modelo: string | null
           motor: string | null
@@ -189,6 +190,7 @@ export type Database = {
           garantia?: string | null
           id?: number
           idEstoqueBubble?: string | null
+          idOlx?: string | null
           km?: string | null
           modelo?: string | null
           motor?: string | null
@@ -217,6 +219,7 @@ export type Database = {
           garantia?: string | null
           id?: number
           idEstoqueBubble?: string | null
+          idOlx?: string | null
           km?: string | null
           modelo?: string | null
           motor?: string | null
@@ -376,6 +379,24 @@ export type Database = {
         }
         Relationships: []
       }
+      n8n_historico_olx_vx: {
+        Row: {
+          id: number
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          id?: number
+          message: Json
+          session_id: string
+        }
+        Update: {
+          id?: number
+          message?: Json
+          session_id?: string
+        }
+        Relationships: []
+      }
       n8n_megan_followup: {
         Row: {
           created_at: string
@@ -441,14 +462,17 @@ export type Database = {
           codVoice: string | null
           config: number | null
           created_at: string
+          credencialOlx: string | null
           email: string | null
           evo_instancia: string | null
           evo_key: string | null
           id: number
           idbubble: string | null
+          n8nOlx: string | null
           nome: string | null
           tbEstoque: string | null
           tbHistorico: string | null
+          tbHistoricoOlx: string | null
           telefone: string | null
           uid: string | null
         }
@@ -459,14 +483,17 @@ export type Database = {
           codVoice?: string | null
           config?: number | null
           created_at?: string
+          credencialOlx?: string | null
           email?: string | null
           evo_instancia?: string | null
           evo_key?: string | null
           id?: number
           idbubble?: string | null
+          n8nOlx?: string | null
           nome?: string | null
           tbEstoque?: string | null
           tbHistorico?: string | null
+          tbHistoricoOlx?: string | null
           telefone?: string | null
           uid?: string | null
         }
@@ -477,14 +504,17 @@ export type Database = {
           codVoice?: string | null
           config?: number | null
           created_at?: string
+          credencialOlx?: string | null
           email?: string | null
           evo_instancia?: string | null
           evo_key?: string | null
           id?: number
           idbubble?: string | null
+          n8nOlx?: string | null
           nome?: string | null
           tbEstoque?: string | null
           tbHistorico?: string | null
+          tbHistoricoOlx?: string | null
           telefone?: string | null
           uid?: string | null
         }

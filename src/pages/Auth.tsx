@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useLocation, useNavigate } from 'react-router-dom';
+import { olxService } from '@/services/olxService';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,7 +18,95 @@ const Auth = () => {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, profile } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Handle OLX authorization code
+  useEffect(() => {
+    const handleOlxAuth = async () => {
+      const searchParams = new URLSearchParams(location.search);
+      const code = searchParams.get('code');
+      
+      if (code && user) {
+        setIsLoading(true);
+        setErrorMsg(null);
+        
+        try {
+          // Exchange code for token
+          const success = await olxService.exchangeCodeForToken(code, user.id);
+          
+          if (!success) {
+            throw new Error('Failed to exchange code for token');
+          }
+          
+          // Get updated user profile to get webhook URL
+          const { data: updatedProfile, error } = await supabase
+            .from('usuario')
+            .select('credencialOlx, n8nOlx')
+            .eq('uid', user.id)
+            .single();
+            
+          if (error || !updatedProfile) {
+            throw error || new Error('Failed to get updated profile');
+          }
+          
+          if (!updatedProfile.n8nOlx) {
+            toast({
+              title: "Aviso",
+              description: "URL do webhook não configurada. Entre em contato com o administrador.",
+              variant: "default",
+            });
+            navigate('/settings');
+            return;
+          }
+          
+          // Activate webhook
+          const status = await olxService.activateWebhook(
+            updatedProfile.credencialOlx as string,
+            updatedProfile.n8nOlx
+          );
+          
+          if (status === 201 || status === 200) {
+            toast({
+              title: "Sucesso",
+              description: "Integração com o Chat da OLX ativada com sucesso!",
+              variant: "default",
+            });
+          } else if (status === 401) {
+            toast({
+              title: "Erro",
+              description: "Token inválido. Tente reconectar sua conta.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Erro",
+              description: `Erro ao ativar webhook (${status}). Tente novamente.`,
+              variant: "destructive",
+            });
+          }
+          
+          // Redirect to settings
+          navigate('/settings');
+        } catch (error) {
+          console.error('OLX auth error:', error);
+          toast({
+            title: "Erro",
+            description: "Falha na integração com a OLX. Tente novamente.",
+            variant: "destructive",
+          });
+          setErrorMsg(error instanceof Error ? error.message : "Ocorreu um erro na integração com a OLX");
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    if (user) {
+      handleOlxAuth();
+    }
+  }, [location.search, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +159,27 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading state when processing OLX auth
+  if (isLoading && new URLSearchParams(location.search).get('code')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center text-2xl font-bold">
+              Processando integração OLX
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center p-6 space-y-4">
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            <p className="text-center text-muted-foreground">
+              Por favor, aguarde enquanto processamos sua integração com o Chat da OLX...
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const renderForgotPassword = () => (
     <form onSubmit={handleSubmit} className="space-y-6">
