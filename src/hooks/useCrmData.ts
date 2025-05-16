@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,10 +5,11 @@ import { OpportunityData, KanbanColumnData, LeadData } from '@/lib/crmTypes';
 import { useToast } from '@/components/ui/use-toast';
 
 export const useCrm = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth(); // Added user for id_usuario
   const { toast } = useToast();
   const [opportunities, setOpportunities] = useState<OpportunityData[]>([]);
   const [kanbanColumns, setKanbanColumns] = useState<KanbanColumnData[]>([]);
+  const [leads, setLeads] = useState<LeadData[]>([]); // State for leads
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchCrmData = useCallback(async () => {
@@ -28,9 +28,7 @@ export const useCrm = () => {
       if (columnsError) throw columnsError;
       setKanbanColumns(columnsData || []);
 
-      // Fetch Opportunities for the current user, including related lead data
-      // The RLS policies should handle filtering by id_usuario implicitly.
-      // We join with 'lead' table to get lead details.
+      // Fetch Opportunities
       const { data: opportunitiesData, error: opportunitiesError } = await supabase
         .from('opotunidade')
         .select(`
@@ -59,12 +57,18 @@ export const useCrm = () => {
             session_id_olx
           )
         `)
-        // RLS on 'opotunidade' filters by id_usuario automatically.
-        // No need for .eq('id_usuario', profile.id) here if RLS is correctly set up.
         .order('created_at', { ascending: false });
 
       if (opportunitiesError) throw opportunitiesError;
       setOpportunities(opportunitiesData || []);
+
+      // Fetch Leads
+      const { data: leadsData, error: leadsError } = await supabase
+        .from('lead')
+        .select('id, nome, telefone, email, Origem, created_at'); // Add fields as needed
+
+      if (leadsError) throw leadsError;
+      setLeads(leadsData || []);
 
     } catch (error: any) {
       console.error('Error fetching CRM data:', error);
@@ -110,7 +114,59 @@ export const useCrm = () => {
     }
   };
   
-  // Function to refetch opportunities, useful after creating/deleting
+  const addOpportunity = async (opportunityData: Omit<OpportunityData, 'id' | 'created_at' | 'id_usuario' | 'data_criacao'> & { id_kanban: number }) => {
+    if (!user?.id || !profile?.id) { // Ensure user and profile IDs are available
+        toast({ title: 'Erro', description: 'Usuário não autenticado.', variant: 'destructive' });
+        return;
+    }
+    try {
+        const newOpportunity = {
+            ...opportunityData,
+            id_usuario: profile.id, // Use profile.id which refers to public.usuario.id
+            data_criacao: new Date().toISOString(),
+            ultima_interacao: opportunityData.ultima_interacao ? new Date(opportunityData.ultima_interacao).toISOString() : new Date().toISOString(),
+        };
+
+        // Ensure 'valor' is either a string representation of a number or null
+        if (newOpportunity.valor && typeof newOpportunity.valor === 'number') {
+          newOpportunity.valor = String(newOpportunity.valor);
+        } else if (newOpportunity.valor === '') {
+          newOpportunity.valor = null;
+        }
+
+
+        const { data, error } = await supabase
+            .from('opotunidade')
+            .insert([newOpportunity])
+            .select();
+
+        if (error) throw error;
+
+        if (data) {
+            // Manually construct the lead object if id_lead is present
+            // This is a simplification; in a real app, you might want to fetch the full lead object
+            // or ensure the form provides enough data to construct it.
+            const newOpWithLead = data[0].id_lead 
+              ? { ...data[0], lead: leads.find(l => l.id === data[0].id_lead) || null }
+              : data[0];
+
+            setOpportunities(prev => [newOpWithLead as OpportunityData, ...prev]);
+            toast({
+                title: 'Sucesso!',
+                description: 'Nova oportunidade adicionada.',
+            });
+            return data[0];
+        }
+    } catch (error: any) {
+        console.error('Error adding opportunity:', error);
+        toast({
+            title: 'Erro ao adicionar oportunidade',
+            description: error.message,
+            variant: 'destructive',
+        });
+    }
+  };
+
   const refetchOpportunities = () => {
     fetchCrmData();
   };
@@ -118,8 +174,10 @@ export const useCrm = () => {
   return { 
     opportunities, 
     kanbanColumns, 
+    leads, // Expose leads
     isLoading, 
     updateOpportunityKanbanStatus,
-    refetchOpportunities // expose refetch
+    addOpportunity, // Expose addOpportunity
+    refetchOpportunities
   };
 };

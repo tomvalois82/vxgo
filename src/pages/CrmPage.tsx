@@ -1,30 +1,60 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import KanbanBoard from '@/components/crm/KanbanBoard';
-import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
-import { useCrm } from '@/hooks/useCrmData'; // We will create this hook
+import AddOpportunityForm from '@/components/crm/AddOpportunityForm';
+import { DndContext, closestCenter, DragEndEvent, useSensors, useSensor, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { useCrm } from '@/hooks/useCrmData';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+  DialogFooter, // Added DialogFooter
+  DialogClose // Added DialogClose
+} from '@/components/ui/dialog';
+import { Plus } from 'lucide-react';
 
 const CrmPage = () => {
-  const { opportunities, updateOpportunityKanbanStatus, isLoading } = useCrm();
+  const { updateOpportunityKanbanStatus, isLoading } = useCrm();
+  const [isAddOpportunityOpen, setIsAddOpportunityOpen] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const opportunityId = Number(active.id);
-      // The 'over.id' for a column could be something like `column-${kanbanColumn.id}`
-      // Or, if dropping onto a sortable list within the column, it might be more complex.
-      // For simplicity, let's assume over.id directly gives us the new column's ID or a parseable string.
-      // This part needs careful implementation based on how SortableContext and droppable areas are set up.
+      // active.id is like "opportunity-123"
+      // over.id is like "column-1"
+      const activeIdString = String(active.id);
+      const opportunityId = Number(activeIdString.replace('opportunity-', ''));
       
-      // For now, let's assume over.data.current?.columnId contains the target column id
-      const newKanbanId = over.data.current?.columnId;
+      const overIdString = String(over.id);
+      let newKanbanId: number | undefined;
 
-      if (newKanbanId !== undefined) {
+      if (overIdString.startsWith('column-')) {
+        newKanbanId = Number(overIdString.replace('column-', ''));
+      } else if (over.data.current?.type === 'column') { // Dropped onto a column directly
+        newKanbanId = over.data.current?.columnId;
+      } else if (over.data.current?.type === 'opportunity' && over.data.current?.columnId) { // Dropped onto an opportunity within a column
+        newKanbanId = over.data.current?.columnId;
+      }
+
+
+      if (newKanbanId !== undefined && !isNaN(opportunityId)) {
         console.log(`Opportunity ${opportunityId} dragged to Kanban column ${newKanbanId}`);
-        updateOpportunityKanbanStatus(opportunityId, Number(newKanbanId));
+        const currentOpportunity = updateOpportunityKanbanStatus(opportunityId, Number(newKanbanId));
       } else {
-        console.warn("Drag ended but could not determine target Kanban ID from over.id:", over);
+        console.warn("Drag ended but could not determine target Kanban ID or valid opportunity ID.", { active, over });
       }
     }
   };
@@ -34,9 +64,30 @@ const CrmPage = () => {
   }
 
   return (
-    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div className="p-4 md:p-6">
-        <h1 className="text-2xl font-semibold text-gray-800 mb-6">CRM Kanban</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold text-gray-800">CRM Kanban</h1>
+          <Dialog open={isAddOpportunityOpen} onOpenChange={setIsAddOpportunityOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Nova Oportunidade
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[625px]">
+              <DialogHeader>
+                <DialogTitle>Adicionar Nova Oportunidade</DialogTitle>
+                <DialogDescription>
+                  Preencha os detalhes abaixo para criar uma nova oportunidade.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 max-h-[70vh] overflow-y-auto pr-2">
+                <AddOpportunityForm onFormSubmit={() => setIsAddOpportunityOpen(false)} />
+              </div>
+              {/* DialogFooter can be removed if submit is inside form component */}
+            </DialogContent>
+          </Dialog>
+        </div>
         <KanbanBoard />
       </div>
     </DndContext>
