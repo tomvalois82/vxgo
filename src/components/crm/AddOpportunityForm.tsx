@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -56,9 +55,15 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
   const onSubmit = async (values: OpportunityFormValues) => {
     const numericValor = values.valor ? extractNumericValue(values.valor).toString() : null;
     
-    const submissionData: Omit<OpportunityData, 'id' | 'created_at' | 'id_usuario' | 'data_criacao'> & { id_kanban: number } = {
-      ...values,
+    // Ensure the titulo is always provided as a string (non-optional)
+    // and that all required fields are properly included
+    const submissionData: Omit<OpportunityData, "id" | "created_at" | "id_usuario" | "data_criacao"> & { id_kanban: number } = {
+      titulo: values.titulo, // This is required and validated by zod
+      id_lead: values.id_lead,
       valor: numericValor,
+      ultima_interacao: values.ultima_interacao,
+      obs: values.obs || null,
+      resumo: values.resumo || null,
       id_kanban: Number(values.id_kanban),
       status: 'Ativa', // Default status for new opportunities
       // data_criacao and id_usuario will be set in the hook
