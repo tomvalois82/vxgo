@@ -12,8 +12,8 @@ interface KanbanColumnProps {
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, opportunities }) => {
   const { setNodeRef, isOver } = useDroppable({
-    id: `column-${column.id}`, // Unique ID for the droppable column
-    data: { // Pass columnId for onDragEnd
+    id: `column-${column.id}`,
+    data: {
       columnId: column.id,
       type: 'column'
     }
@@ -24,8 +24,8 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, opportunities }) =>
   return (
     <div
       ref={setNodeRef}
-      className={`bg-neutral-100 p-3 rounded-md shadow-sm w-80 flex-shrink-0 h-full flex flex-col ${isOver ? 'bg-neutral-200 ring-2 ring-carblue' : ''}`}
-      style={{minHeight: '300px'}} // Ensure columns have a min height
+      className={`bg-neutral-100 p-3 rounded-md shadow-sm w-full md:w-80 flex-shrink-0 h-full flex flex-col ${isOver ? 'bg-neutral-200 ring-2 ring-carblue' : ''}`}
+      style={{minHeight: '300px'}}
     >
       <h2 className="text-lg font-semibold text-gray-700 mb-3 px-1 border-b pb-2">
         {column.descricao} ({opportunities.length})

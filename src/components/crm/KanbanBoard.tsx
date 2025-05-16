@@ -1,4 +1,3 @@
-
 import React from 'react';
 import KanbanColumn from './KanbanColumn';
 import { useCrm } from '@/hooks/useCrmData';
@@ -8,7 +7,6 @@ const KanbanBoard = () => {
   const { kanbanColumns, opportunities, isLoading } = useCrm();
 
   if (isLoading && !kanbanColumns.length && !opportunities.length) {
-    // Show a more prominent loading state if it's the initial load for the board
     return <div className="text-center p-10">Carregando quadro Kanban...</div>;
   }
   
@@ -17,9 +15,9 @@ const KanbanBoard = () => {
   }
 
   return (
-    <div className="flex space-x-4 overflow-x-auto p-2 bg-gray-100 rounded-lg min-h-[calc(100vh-200px)]">
+    <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 md:overflow-x-auto p-1 md:p-2 bg-gray-100 rounded-lg min-h-[calc(100vh-200px)]">
       {kanbanColumns
-        .sort((a, b) => (a.posicao || 0) - (b.posicao || 0)) // Ensure sorting by position
+        .sort((a, b) => (a.posicao || 0) - (b.posicao || 0))
         .map((column) => {
           const columnOpportunities = opportunities.filter(
             (op) => op.id_kanban === column.id
