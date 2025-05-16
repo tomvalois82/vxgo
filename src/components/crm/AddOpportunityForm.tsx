@@ -26,6 +26,7 @@ const opportunitySchema = z.object({
   id_kanban: z.string().min(1, "Situação é obrigatória."), // Comes as string from select
   obs: z.string().optional().nullable(),
   resumo: z.string().optional().nullable(),
+  // status is not part of the form, will be defaulted
 });
 
 export type OpportunityFormValues = z.infer<typeof opportunitySchema>;
@@ -59,6 +60,7 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
       ...values,
       valor: numericValor,
       id_kanban: Number(values.id_kanban),
+      status: 'Ativa', // Default status for new opportunities
       // data_criacao and id_usuario will be set in the hook
     };
     
