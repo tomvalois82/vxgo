@@ -25,6 +25,7 @@ const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity }) => {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 100 : 'auto',
+    transition: 'opacity 0.2s, box-shadow 0.2s, transform 0.1s', // Add smooth transitions
   };
 
   return (

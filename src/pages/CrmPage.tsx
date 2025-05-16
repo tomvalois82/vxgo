@@ -52,7 +52,9 @@ const CrmPage = () => {
 
       if (newKanbanId !== undefined && !isNaN(opportunityId)) {
         console.log(`Opportunity ${opportunityId} dragged to Kanban column ${newKanbanId}`);
-        const currentOpportunity = updateOpportunityKanbanStatus(opportunityId, Number(newKanbanId));
+        // The updateOpportunityKanbanStatus function already updates the local state,
+        // so we don't need additional state management here
+        updateOpportunityKanbanStatus(opportunityId, Number(newKanbanId));
       } else {
         console.warn("Drag ended but could not determine target Kanban ID or valid opportunity ID.", { active, over });
       }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -88,18 +89,38 @@ export const useCrm = () => {
 
   const updateOpportunityKanbanStatus = async (opportunityId: number, newKanbanId: number) => {
     try {
+      // Find the opportunity to update in our local state
+      const opportunityToUpdate = opportunities.find(op => op.id === opportunityId);
+      if (!opportunityToUpdate) {
+        console.error(`Opportunity with ID ${opportunityId} not found`);
+        return;
+      }
+      
+      // Immediately update the opportunity in local state for a responsive UI
+      setOpportunities(prev =>
+        prev.map(op =>
+          op.id === opportunityId 
+            ? { ...op, id_kanban: newKanbanId, ultima_interacao: new Date().toISOString() } 
+            : op
+        )
+      );
+
+      // Then update in the database
       const { error } = await supabase
         .from('opotunidade')
         .update({ id_kanban: newKanbanId, ultima_interacao: new Date().toISOString() })
         .eq('id', opportunityId);
 
-      if (error) throw error;
+      if (error) {
+        // If there was an error, revert the change in the local state
+        setOpportunities(prev =>
+          prev.map(op =>
+            op.id === opportunityId ? opportunityToUpdate : op
+          )
+        );
+        throw error;
+      }
 
-      setOpportunities(prev =>
-        prev.map(op =>
-          op.id === opportunityId ? { ...op, id_kanban: newKanbanId } : op
-        )
-      );
       toast({
         title: 'Oportunidade atualizada',
         description: 'Status da oportunidade movido com sucesso.',
@@ -124,7 +145,7 @@ export const useCrm = () => {
             ...opportunityData,
             id_usuario: profile.id, // Use profile.id which refers to public.usuario.id
             data_criacao: new Date().toISOString(),
-            ultima_interacao: opportunityData.ultima_interacao ? new Date(opportunityData.ultima_interacao).toISOString() : new Date().toISOString(),
+            ultima_interacao: opportunityData.ultima_interacao ? opportunityData.ultima_interacao : new Date().toISOString(),
         };
 
         // Ensure 'valor' is either a string representation of a number or null
