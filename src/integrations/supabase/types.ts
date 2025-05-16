@@ -9,67 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      atividade: {
-        Row: {
-          concluida: boolean | null
-          created_at: string
-          data_hora: string | null
-          descricao: string | null
-          id: number
-          id_lead: number | null
-          id_oportunidade: number | null
-          id_usuario: number | null
-          obs: string | null
-          tipo: string | null
-        }
-        Insert: {
-          concluida?: boolean | null
-          created_at?: string
-          data_hora?: string | null
-          descricao?: string | null
-          id?: number
-          id_lead?: number | null
-          id_oportunidade?: number | null
-          id_usuario?: number | null
-          obs?: string | null
-          tipo?: string | null
-        }
-        Update: {
-          concluida?: boolean | null
-          created_at?: string
-          data_hora?: string | null
-          descricao?: string | null
-          id?: number
-          id_lead?: number | null
-          id_oportunidade?: number | null
-          id_usuario?: number | null
-          obs?: string | null
-          tipo?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "atividade_id_lead_fkey"
-            columns: ["id_lead"]
-            isOneToOne: false
-            referencedRelation: "lead"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "atividade_id_oportunidade_fkey"
-            columns: ["id_oportunidade"]
-            isOneToOne: false
-            referencedRelation: "opotunidade"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "atividade_id_usuario_fkey"
-            columns: ["id_usuario"]
-            isOneToOne: false
-            referencedRelation: "usuario"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       avaliacoes: {
         Row: {
           created_at: string
@@ -404,56 +343,23 @@ export type Database = {
           },
         ]
       }
-      kanban: {
-        Row: {
-          created_at: string
-          descricao: string | null
-          id: number
-          posicao: number | null
-        }
-        Insert: {
-          created_at?: string
-          descricao?: string | null
-          id?: number
-          posicao?: number | null
-        }
-        Update: {
-          created_at?: string
-          descricao?: string | null
-          id?: number
-          posicao?: number | null
-        }
-        Relationships: []
-      }
       lead: {
         Row: {
           created_at: string
-          email: string | null
           id: number
           nome: string | null
-          Origem: string | null
-          session_id_olx: string | null
-          session_id_whatsaap: string | null
           telefone: string | null
         }
         Insert: {
           created_at?: string
-          email?: string | null
           id?: number
           nome?: string | null
-          Origem?: string | null
-          session_id_olx?: string | null
-          session_id_whatsaap?: string | null
           telefone?: string | null
         }
         Update: {
           created_at?: string
-          email?: string | null
           id?: number
           nome?: string | null
-          Origem?: string | null
-          session_id_olx?: string | null
-          session_id_whatsaap?: string | null
           telefone?: string | null
         }
         Relationships: []
@@ -550,79 +456,6 @@ export type Database = {
           session_id?: string
         }
         Relationships: []
-      }
-      opotunidade: {
-        Row: {
-          created_at: string
-          data_criacao: string | null
-          id: number
-          id_kanban: number | null
-          id_lead: number | null
-          id_usuario: number | null
-          obs: string | null
-          resumo: string | null
-          session_id_olx: string | null
-          session_id_whatsapp: string | null
-          status: string | null
-          titulo: string | null
-          ultima_interacao: string | null
-          valor: string | null
-        }
-        Insert: {
-          created_at?: string
-          data_criacao?: string | null
-          id?: number
-          id_kanban?: number | null
-          id_lead?: number | null
-          id_usuario?: number | null
-          obs?: string | null
-          resumo?: string | null
-          session_id_olx?: string | null
-          session_id_whatsapp?: string | null
-          status?: string | null
-          titulo?: string | null
-          ultima_interacao?: string | null
-          valor?: string | null
-        }
-        Update: {
-          created_at?: string
-          data_criacao?: string | null
-          id?: number
-          id_kanban?: number | null
-          id_lead?: number | null
-          id_usuario?: number | null
-          obs?: string | null
-          resumo?: string | null
-          session_id_olx?: string | null
-          session_id_whatsapp?: string | null
-          status?: string | null
-          titulo?: string | null
-          ultima_interacao?: string | null
-          valor?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "opotunidade_id_kanban_fkey"
-            columns: ["id_kanban"]
-            isOneToOne: false
-            referencedRelation: "kanban"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "opotunidade_id_lead_fkey"
-            columns: ["id_lead"]
-            isOneToOne: false
-            referencedRelation: "lead"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "opotunidade_id_usuario_fkey"
-            columns: ["id_usuario"]
-            isOneToOne: false
-            referencedRelation: "usuario"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       usuario: {
         Row: {
