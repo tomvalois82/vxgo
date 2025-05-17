@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -100,8 +99,6 @@ export const useCrm = () => {
     }
     setIsUserStockLoading(true);
     try {
-      // Using `as any` here tells TypeScript to trust that profile.tbEstoque is a valid table name string.
-      // This resolves the type instantiation and overload errors.
       const { data: stockData, error: stockError } = await supabase
         .from(profile.tbEstoque as any) 
         .select('id, modelo, fabricante')
@@ -111,10 +108,22 @@ export const useCrm = () => {
         console.error(`Error fetching stock vehicles from ${profile.tbEstoque}:`, stockError);
         setUserStockVehicles([]);
       } else {
-        // Ensure stockData is treated as StockVehicle[] or an empty array.
-        // The `as any` on `from()` should lead to stockData being correctly typed based on the select,
-        // or null if there's an error handled by the stockError check.
-        setUserStockVehicles(stockData || []);
+        // Check if stockData is an array and its elements are valid StockVehicle objects
+        // A simple check for 'id', 'modelo', and 'fabricante' properties can be a heuristic
+        if (Array.isArray(stockData) && stockData.every(item => 
+            item && 
+            typeof item.id === 'number' && 
+            'modelo' in item && // Checks if 'modelo' property exists
+            'fabricante' in item // Checks if 'fabricante' property exists
+          )) {
+          setUserStockVehicles(stockData as StockVehicle[]);
+        } else {
+          // If stockData is not in the expected format (e.g., null, or an array of errors)
+          if (stockData && stockData.length > 0) { // Log if stockData was not empty but invalid
+            console.warn(`Data from table ${profile.tbEstoque} for stock vehicles is not in the expected format or contains errors:`, stockData);
+          }
+          setUserStockVehicles([]);
+        }
       }
     } catch (error: any) {
       console.error(`Error fetching stock vehicles from ${profile.tbEstoque}:`, error);
@@ -287,4 +296,3 @@ export const useCrm = () => {
     refetchOpportunities
   };
 };
-
