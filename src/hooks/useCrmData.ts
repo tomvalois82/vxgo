@@ -90,34 +90,39 @@ export const useCrm = () => {
   const updateOpportunityKanbanStatus = async (opportunityId: number, newKanbanId: number) => {
     try {
       // Find the opportunity to update in our local state
-      const opportunityToUpdate = opportunities.find(op => op.id === opportunityId);
-      if (!opportunityToUpdate) {
+      const opportunityIndex = opportunities.findIndex(op => op.id === opportunityId);
+      if (opportunityIndex === -1) {
         console.error(`Opportunity with ID ${opportunityId} not found`);
         return;
       }
       
+      const opportunityToUpdate = opportunities[opportunityIndex];
+      
+      // Create updated opportunity with new kanban ID
+      const updatedOpportunity = { 
+        ...opportunityToUpdate, 
+        id_kanban: newKanbanId,
+        ultima_interacao: new Date().toISOString()
+      };
+      
       // Immediately update the opportunity in local state for a responsive UI
-      setOpportunities(prev =>
-        prev.map(op =>
-          op.id === opportunityId 
-            ? { ...op, id_kanban: newKanbanId, ultima_interacao: new Date().toISOString() } 
-            : op
-        )
-      );
+      const updatedOpportunities = [...opportunities];
+      updatedOpportunities[opportunityIndex] = updatedOpportunity;
+      setOpportunities(updatedOpportunities);
 
       // Then update in the database
       const { error } = await supabase
         .from('opotunidade')
-        .update({ id_kanban: newKanbanId, ultima_interacao: new Date().toISOString() })
+        .update({ 
+          id_kanban: newKanbanId, 
+          ultima_interacao: new Date().toISOString() 
+        })
         .eq('id', opportunityId);
 
       if (error) {
         // If there was an error, revert the change in the local state
-        setOpportunities(prev =>
-          prev.map(op =>
-            op.id === opportunityId ? opportunityToUpdate : op
-          )
-        );
+        updatedOpportunities[opportunityIndex] = opportunityToUpdate;
+        setOpportunities(updatedOpportunities);
         throw error;
       }
 
@@ -125,6 +130,8 @@ export const useCrm = () => {
         title: 'Oportunidade atualizada',
         description: 'Status da oportunidade movido com sucesso.',
       });
+      
+      return updatedOpportunity;
     } catch (error: any) {
       console.error('Error updating opportunity status:', error);
       toast({
@@ -132,6 +139,7 @@ export const useCrm = () => {
         description: error.message,
         variant: 'destructive',
       });
+      return null;
     }
   };
   

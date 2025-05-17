@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { OpportunityData } from '@/lib/crmTypes';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,12 +12,15 @@ interface OpportunityCardProps {
 }
 
 const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity }) => {
+  const opportunityId = `opportunity-${opportunity.id}`;
+  
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `opportunity-${opportunity.id}`, // Unique ID for the draggable item
-    data: { // Pass opportunity data for onDragEnd or other handlers
+    id: opportunityId,
+    data: {
       opportunityId: opportunity.id,
       currentKanbanId: opportunity.id_kanban,
-      type: 'opportunity'
+      type: 'opportunity',
+      columnId: opportunity.id_kanban // Include the column ID for better drag handling
     }
   });
 
@@ -67,4 +70,5 @@ const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity }) => {
   );
 };
 
-export default OpportunityCard;
+// Use memo to prevent unnecessary re-renders
+export default memo(OpportunityCard);

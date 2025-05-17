@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import KanbanBoard from '@/components/crm/KanbanBoard';
 import AddOpportunityForm from '@/components/crm/AddOpportunityForm';
 import { DndContext, closestCenter, DragEndEvent, useSensors, useSensor, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
@@ -13,8 +13,6 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
-  DialogFooter, // Added DialogFooter
-  DialogClose // Added DialogClose
 } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
 
@@ -29,36 +27,34 @@ const CrmPage = () => {
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      // active.id is like "opportunity-123"
-      // over.id is like "column-1"
-      const activeIdString = String(active.id);
-      const opportunityId = Number(activeIdString.replace('opportunity-', ''));
-      
-      const overIdString = String(over.id);
-      let newKanbanId: number | undefined;
+    if (!over || active.id === over.id) return;
 
-      if (overIdString.startsWith('column-')) {
-        newKanbanId = Number(overIdString.replace('column-', ''));
-      } else if (over.data.current?.type === 'column') { // Dropped onto a column directly
-        newKanbanId = over.data.current?.columnId;
-      } else if (over.data.current?.type === 'opportunity' && over.data.current?.columnId) { // Dropped onto an opportunity within a column
-        newKanbanId = over.data.current?.columnId;
-      }
+    // active.id is like "opportunity-123"
+    // over.id is like "column-1"
+    const activeIdString = String(active.id);
+    const opportunityId = Number(activeIdString.replace('opportunity-', ''));
+    
+    const overIdString = String(over.id);
+    let newKanbanId: number | undefined;
 
-      if (newKanbanId !== undefined && !isNaN(opportunityId)) {
-        console.log(`Opportunity ${opportunityId} dragged to Kanban column ${newKanbanId}`);
-        // The updateOpportunityKanbanStatus function already updates the local state,
-        // so we don't need additional state management here
-        updateOpportunityKanbanStatus(opportunityId, Number(newKanbanId));
-      } else {
-        console.warn("Drag ended but could not determine target Kanban ID or valid opportunity ID.", { active, over });
-      }
+    if (overIdString.startsWith('column-')) {
+      newKanbanId = Number(overIdString.replace('column-', ''));
+    } else if (over.data.current?.type === 'column') { // Dropped onto a column directly
+      newKanbanId = over.data.current?.columnId;
+    } else if (over.data.current?.type === 'opportunity' && over.data.current?.columnId) { // Dropped onto an opportunity within a column
+      newKanbanId = over.data.current?.columnId;
     }
-  };
+
+    if (newKanbanId !== undefined && !isNaN(opportunityId)) {
+      console.log(`Opportunity ${opportunityId} dragged to Kanban column ${newKanbanId}`);
+      updateOpportunityKanbanStatus(opportunityId, Number(newKanbanId));
+    } else {
+      console.warn("Drag ended but could not determine target Kanban ID or valid opportunity ID.", { active, over });
+    }
+  }, [updateOpportunityKanbanStatus]);
   
   if (isLoading) {
     return <div className="flex justify-center items-center h-full"><p>Loading CRM data...</p></div>;
@@ -85,7 +81,6 @@ const CrmPage = () => {
               <div className="py-4 max-h-[70vh] overflow-y-auto pr-2">
                 <AddOpportunityForm onFormSubmit={() => setIsAddOpportunityOpen(false)} />
               </div>
-              {/* DialogFooter can be removed if submit is inside form component */}
             </DialogContent>
           </Dialog>
         </div>
