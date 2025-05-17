@@ -430,6 +430,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: number
+          idUsuario: number | null
           nome: string | null
           Origem: string | null
           session_id_olx: string | null
@@ -440,6 +441,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: number
+          idUsuario?: number | null
           nome?: string | null
           Origem?: string | null
           session_id_olx?: string | null
@@ -450,13 +452,22 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: number
+          idUsuario?: number | null
           nome?: string | null
           Origem?: string | null
           session_id_olx?: string | null
           session_id_whatsaap?: string | null
           telefone?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lead_idUsuario_fkey"
+            columns: ["idUsuario"]
+            isOneToOne: false
+            referencedRelation: "usuario"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       n8n_chat_histories: {
         Row: {

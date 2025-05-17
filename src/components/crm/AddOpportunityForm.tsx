@@ -10,19 +10,24 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { KanbanColumnData, LeadData, OpportunityData } from '@/lib/crmTypes'; // OpportunityData type updated
+import { KanbanColumnData, LeadData } from '@/lib/crmTypes'; // OpportunityData not needed directly here for submission type
 import { useCrm } from '@/hooks/useCrmData';
 import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatCurrency, extractNumericValue } from '@/lib/formUtils';
 
+// Define the type for data expected by addOpportunity hook in useCrmData.ts
+// This ensures type safety between form submission and hook.
+type AddOpportunityHookInput = Parameters<ReturnType<typeof useCrm>['addOpportunity']>[0];
+
 const opportunitySchema = z.object({
   titulo: z.string().min(1, "Título é obrigatório."),
+  dataCriacao: z.date().optional().nullable(), // New field for creation date
   id_lead: z.number().nullable().optional(),
   idEstoque: z.string().nullable().optional(), // Vehicle ID from stock, comes as string from select
   valor: z.string().optional().nullable(), 
-  ultima_interacao: z.date().optional().nullable(),
+  // ultima_interacao is removed
   id_kanban: z.string().min(1, "Situação é obrigatória."),
   obs: z.string().optional().nullable(),
   resumo: z.string().optional().nullable(),
@@ -39,8 +44,8 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
     addOpportunity, 
     kanbanColumns, 
     leads, 
-    userStockVehicles, // Get user stock vehicles
-    isUserStockLoading, // Get loading state for stock
+    userStockVehicles,
+    isUserStockLoading, 
     isLoading: crmLoading 
   } = useCrm();
   const [valorField, setValorField] = useState("");
@@ -50,10 +55,11 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
     resolver: zodResolver(opportunitySchema),
     defaultValues: {
       titulo: '',
+      dataCriacao: new Date(), // Default to current date and time
       id_lead: null,
-      idEstoque: null, // Default to null
+      idEstoque: null,
       valor: '',
-      ultima_interacao: null,
+      // ultima_interacao: null, // Removed
       id_kanban: kanbanColumns.find(k => k.posicao === 0)?.id.toString() || kanbanColumns[0]?.id.toString() || '',
       obs: '',
       resumo: '',
@@ -63,21 +69,32 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
   const onSubmit = async (values: OpportunityFormValues) => {
     const numericValor = values.valor ? extractNumericValue(values.valor).toString() : null;
     
-    const submissionData: Omit<OpportunityData, "id" | "created_at" | "id_usuario" | "data_criacao"> & { id_kanban: number } = {
+    // Ensure submissionData matches AddOpportunityHookInput type
+    const submissionData: AddOpportunityHookInput = {
       titulo: values.titulo,
+      data_criacao: values.dataCriacao ? values.dataCriacao.toISOString() : null, // Use new dataCriacao field
       id_lead: values.id_lead,
-      idEstoque: values.idEstoque ? Number(values.idEstoque) : null, // Convert to number or null
+      idEstoque: values.idEstoque ? Number(values.idEstoque) : null,
       valor: numericValor,
-      ultima_interacao: values.ultima_interacao ? values.ultima_interacao.toISOString() : null,
+      // ultima_interacao is removed from submission
       obs: values.obs || null,
       resumo: values.resumo || null,
       id_kanban: Number(values.id_kanban),
-      status: 'Ativa',
+      status: 'Ativa', // Default status
     };
     
     const result = await addOpportunity(submissionData);
     if (result) {
-      form.reset();
+      form.reset({
+        titulo: '',
+        dataCriacao: new Date(), // Reset dataCriacao to current time
+        id_lead: null,
+        idEstoque: null,
+        valor: '',
+        id_kanban: kanbanColumns.find(k => k.posicao === 0)?.id.toString() || kanbanColumns[0]?.id.toString() || '',
+        obs: '',
+        resumo: '',
+      });
       setValorField("");
       onFormSubmit();
     }
@@ -101,6 +118,73 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
               <FormControl>
                 <Input placeholder="Ex: Venda de Produto X" {...field} className="text-base font-semibold" />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="dataCriacao"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Data de Criação</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        format(field.value, "dd/MM/yyyy HH:mm")
+                      ) : (
+                        <span>Escolha data e hora</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={(date) => {
+                        // Preserve time if date is already set, or set current time if new date
+                        let newDate = date;
+                        if (newDate) {
+                            const currentTime = field.value || new Date(); // Use existing time or now
+                            newDate.setHours(currentTime.getHours());
+                            newDate.setMinutes(currentTime.getMinutes());
+                            newDate.setSeconds(currentTime.getSeconds());
+                        }
+                        field.onChange(newDate);
+                    }}
+                    initialFocus
+                    className="pointer-events-auto" // Ensure calendar is interactive
+                  />
+                  {/* Basic time picker (could be enhanced) */}
+                  {field.value && (
+                    <div className="p-2 border-t flex items-center justify-center space-x-2">
+                      <Input
+                        type="time"
+                        className="w-auto"
+                        value={format(field.value, "HH:mm")}
+                        onChange={(e) => {
+                          const [hours, minutes] = e.target.value.split(':').map(Number);
+                          const newDateWithTime = new Date(field.value!);
+                          newDateWithTime.setHours(hours);
+                          newDateWithTime.setMinutes(minutes);
+                          field.onChange(newDateWithTime);
+                        }}
+                      />
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
               <FormMessage />
             </FormItem>
           )}
@@ -173,7 +257,7 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
               <FormLabel>Veículo de Interesse</FormLabel>
               <Select 
                 onValueChange={field.onChange} 
-                defaultValue={field.value || undefined} // Handle null default value
+                defaultValue={field.value || undefined}
                 disabled={isUserStockLoading}
               >
                 <FormControl>
@@ -244,52 +328,7 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="ultima_interacao"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Última Interação</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP HH:mm")
-                      ) : (
-                        <span>Escolha data e hora</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={(date) => {
-                        if (date) {
-                            const now = new Date();
-                            date.setHours(now.getHours());
-                            date.setMinutes(now.getMinutes());
-                        }
-                        field.onChange(date);
-                    }}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Última Interação field is removed */}
 
         <FormField
           control={form.control}

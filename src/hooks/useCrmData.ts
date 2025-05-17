@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -108,21 +109,27 @@ export const useCrm = () => {
         console.error(`Error fetching stock vehicles from ${profile.tbEstoque}:`, stockError);
         setUserStockVehicles([]);
       } else {
-        // Check if stockData is an array and its elements are valid StockVehicle objects
-        // A simple check for 'id', 'modelo', and 'fabricante' properties can be a heuristic
-        if (Array.isArray(stockData) && stockData.every(item => 
-            item && 
-            typeof item.id === 'number' && 
-            'modelo' in item && // Checks if 'modelo' property exists
-            'fabricante' in item // Checks if 'fabricante' property exists
-          )) {
-          setUserStockVehicles(stockData as StockVehicle[]);
-        } else {
-          // If stockData is not in the expected format (e.g., null, or an array of errors)
-          if (stockData && stockData.length > 0) { // Log if stockData was not empty but invalid
-            console.warn(`Data from table ${profile.tbEstoque} for stock vehicles is not in the expected format or contains errors:`, stockData);
+        if (Array.isArray(stockData)) {
+          // Filter out any potential malformed items or error objects if they sneak in
+          const validVehicles = stockData.filter(
+            (item: any): item is StockVehicle => // Type guard
+              item &&
+              typeof item.id === 'number' &&
+              // Check for existence; null is acceptable for string | null types like modelo/fabricante
+              Object.prototype.hasOwnProperty.call(item, 'modelo') && 
+              Object.prototype.hasOwnProperty.call(item, 'fabricante') &&
+              !item.error // Explicitly check if item itself is an error structure
+          );
+          setUserStockVehicles(validVehicles);
+          if (validVehicles.length !== stockData.length) {
+            console.warn(`Filtered out some invalid vehicle data from ${profile.tbEstoque}. Original count: ${stockData.length}, Filtered count: ${validVehicles.length}`);
           }
+        } else {
+          // This case handles stockData being null or not an array
           setUserStockVehicles([]);
+          if (stockData !== null) { // Log if it was non-null but also not an array
+             console.warn(`Received non-array data for stock vehicles from ${profile.tbEstoque}:`, stockData);
+          }
         }
       }
     } catch (error: any) {
@@ -131,7 +138,7 @@ export const useCrm = () => {
       toast({
         title: 'Erro ao carregar veículos do estoque',
         description: `Não foi possível carregar veículos da tabela ${profile.tbEstoque}.`,
-        variant: 'default',
+        variant: 'default', // Changed from 'warning' to 'default' as 'warning' is not a valid variant
       });
     } finally {
       setIsUserStockLoading(false);
@@ -208,30 +215,39 @@ export const useCrm = () => {
     }
   };
   
-  const addOpportunity = async (opportunityData: Omit<OpportunityData, 'id' | 'created_at' | 'id_usuario' | 'data_criacao'> & { id_kanban: number }) => {
-    if (!user?.id || !profile?.id) { // Ensure user and profile IDs are available
+  // Define the type for the data expected by addOpportunity directly
+  type AddOpportunityHookInput = Pick<
+    OpportunityData,
+    'titulo' | 'id_lead' | 'idEstoque' | 'valor' | 'obs' | 'resumo' | 'status' | 'data_criacao'
+  > & { id_kanban: number };
+
+  const addOpportunity = async (opportunityFormData: AddOpportunityHookInput) => {
+    if (!user?.id || !profile?.id) {
         toast({ title: 'Erro', description: 'Usuário não autenticado.', variant: 'destructive' });
         return;
     }
     try {
-        const newOpportunity = {
-            ...opportunityData,
-            id_usuario: profile.id, // Use profile.id which refers to public.usuario.id
-            data_criacao: new Date().toISOString(),
-            ultima_interacao: opportunityData.ultima_interacao ? opportunityData.ultima_interacao : new Date().toISOString(),
-            // idEstoque is already part of opportunityData from the form
+        // ultima_interacao is intentionally not set here based on new requirements for this form.
+        // It will be NULL in the DB unless a DB default sets it. It's updated by other processes.
+        const newOpportunityPayload = {
+            ...opportunityFormData, // This includes data_criacao from the form
+            id_usuario: profile.id,
+            // ultima_interacao is not set here
         };
 
         // Ensure 'valor' is either a string representation of a number or null
-        if (newOpportunity.valor && typeof newOpportunity.valor === 'number') {
-          newOpportunity.valor = String(newOpportunity.valor);
-        } else if (newOpportunity.valor === '') {
-          newOpportunity.valor = null;
+        if (newOpportunityPayload.valor && typeof newOpportunityPayload.valor === 'number') {
+          // This case should ideally not happen if form sends string, but as a safeguard:
+          newOpportunityPayload.valor = String(newOpportunityPayload.valor);
+        } else if (newOpportunityPayload.valor === '') {
+          newOpportunityPayload.valor = null;
         }
+        
+        // data_criacao is already expected as string | null from opportunityFormData
 
         const { data, error } = await supabase
             .from('opotunidade')
-            .insert([newOpportunity])
+            .insert([newOpportunityPayload]) // newOpportunityPayload matches subset of OpportunityData
             .select(`
               *,
               lead:lead (
@@ -244,15 +260,12 @@ export const useCrm = () => {
                 session_id_whatsaap,
                 session_id_olx
               )
-            `); // Ensure the select fetches the lead details for consistency
+            `);
 
         if (error) throw error;
 
         if (data) {
-            // The select already includes the lead details if id_lead is present.
-            // The returned data[0] from insert().select() should be OpportunityData compatible.
-            const newOp = data[0] as OpportunityData; // Explicitly cast here
-            // Fetch lead details separately if not included or if lead is null but id_lead exists
+            const newOp = data[0] as OpportunityData; 
             if (newOp.id_lead && !newOp.lead) {
               const { data: leadData, error: leadError } = await supabase
                 .from('lead')
