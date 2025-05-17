@@ -559,6 +559,7 @@ export type Database = {
           id_kanban: number | null
           id_lead: number | null
           id_usuario: number | null
+          idEstoque: number | null
           obs: string | null
           resumo: string | null
           session_id_olx: string | null
@@ -575,6 +576,7 @@ export type Database = {
           id_kanban?: number | null
           id_lead?: number | null
           id_usuario?: number | null
+          idEstoque?: number | null
           obs?: string | null
           resumo?: string | null
           session_id_olx?: string | null
@@ -591,6 +593,7 @@ export type Database = {
           id_kanban?: number | null
           id_lead?: number | null
           id_usuario?: number | null
+          idEstoque?: number | null
           obs?: string | null
           resumo?: string | null
           session_id_olx?: string | null

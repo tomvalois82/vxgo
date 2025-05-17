@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { KanbanColumnData, LeadData, OpportunityData } from '@/lib/crmTypes';
+import { KanbanColumnData, LeadData, OpportunityData } from '@/lib/crmTypes'; // OpportunityData type updated
 import { useCrm } from '@/hooks/useCrmData';
 import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { format } from 'date-fns';
@@ -20,22 +20,29 @@ import { formatCurrency, extractNumericValue } from '@/lib/formUtils';
 const opportunitySchema = z.object({
   titulo: z.string().min(1, "Título é obrigatório."),
   id_lead: z.number().nullable().optional(),
-  valor: z.string().optional().nullable(), // Will be string like "10.000,50"
+  idEstoque: z.string().nullable().optional(), // Vehicle ID from stock, comes as string from select
+  valor: z.string().optional().nullable(), 
   ultima_interacao: z.date().optional().nullable(),
-  id_kanban: z.string().min(1, "Situação é obrigatória."), // Comes as string from select
+  id_kanban: z.string().min(1, "Situação é obrigatória."),
   obs: z.string().optional().nullable(),
   resumo: z.string().optional().nullable(),
-  // status is not part of the form, will be defaulted
 });
 
 export type OpportunityFormValues = z.infer<typeof opportunitySchema>;
 
 interface AddOpportunityFormProps {
-  onFormSubmit: () => void; // Callback to close dialog or refresh
+  onFormSubmit: () => void;
 }
 
 const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit }) => {
-  const { addOpportunity, kanbanColumns, leads, isLoading: crmLoading } = useCrm();
+  const { 
+    addOpportunity, 
+    kanbanColumns, 
+    leads, 
+    userStockVehicles, // Get user stock vehicles
+    isUserStockLoading, // Get loading state for stock
+    isLoading: crmLoading 
+  } = useCrm();
   const [valorField, setValorField] = useState("");
   const [leadSearchOpen, setLeadSearchOpen] = useState(false);
 
@@ -44,6 +51,7 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
     defaultValues: {
       titulo: '',
       id_lead: null,
+      idEstoque: null, // Default to null
       valor: '',
       ultima_interacao: null,
       id_kanban: kanbanColumns.find(k => k.posicao === 0)?.id.toString() || kanbanColumns[0]?.id.toString() || '',
@@ -58,20 +66,20 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
     const submissionData: Omit<OpportunityData, "id" | "created_at" | "id_usuario" | "data_criacao"> & { id_kanban: number } = {
       titulo: values.titulo,
       id_lead: values.id_lead,
+      idEstoque: values.idEstoque ? Number(values.idEstoque) : null, // Convert to number or null
       valor: numericValor,
       ultima_interacao: values.ultima_interacao ? values.ultima_interacao.toISOString() : null,
       obs: values.obs || null,
       resumo: values.resumo || null,
       id_kanban: Number(values.id_kanban),
-      status: 'Ativa', // Default status for new opportunities
-      // data_criacao and id_usuario will be set in the hook
+      status: 'Ativa',
     };
     
     const result = await addOpportunity(submissionData);
     if (result) {
       form.reset();
       setValorField("");
-      onFormSubmit(); // Close dialog / trigger refresh
+      onFormSubmit();
     }
   };
 
@@ -156,6 +164,41 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="idEstoque"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Veículo de Interesse</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value || undefined} // Handle null default value
+                disabled={isUserStockLoading}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um veículo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {isUserStockLoading ? (
+                    <SelectItem value="loading" disabled>Carregando veículos...</SelectItem>
+                  ) : userStockVehicles.length === 0 ? (
+                    <SelectItem value="no-vehicles" disabled>Nenhum veículo em estoque encontrado</SelectItem>
+                  ) : (
+                    userStockVehicles.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
+                        {vehicle.modelo} ({vehicle.fabricante})
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
         <FormField
           control={form.control}
@@ -231,8 +274,6 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
                     mode="single"
                     selected={field.value}
                     onSelect={(date) => {
-                        // For simplicity, this date picker doesn't have time.
-                        // We'll set current time if a date is picked.
                         if (date) {
                             const now = new Date();
                             date.setHours(now.getHours());
@@ -278,7 +319,7 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
           )}
         />
 
-        <Button type="submit" disabled={form.formState.isSubmitting || crmLoading} className="w-full">
+        <Button type="submit" disabled={form.formState.isSubmitting || crmLoading || isUserStockLoading} className="w-full">
           {form.formState.isSubmitting ? 'Salvando...' : 'Salvar Oportunidade'}
         </Button>
       </form>

@@ -23,6 +23,7 @@ export interface OpportunityData {
   id: number; // from opotunidade.id (bigint in DB)
   id_usuario: number; // from opotunidade.id_usuario (bigint in DB)
   id_lead: number | null; // from opotunidade.id_lead (bigint in DB)
+  idEstoque: number | null; // from opotunidade.idEstoque (bigint in DB) - ADDED
   titulo: string | null;
   valor: string | null;
   obs: string | null;
