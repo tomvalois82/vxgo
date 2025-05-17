@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { OpportunityData, KanbanColumnData, LeadData } from '@/lib/crmTypes';
+import { OpportunityData, KanbanColumnData, LeadData, StockVehicle } from '@/lib/crmTypes';
 import { useToast } from '@/components/ui/use-toast';
 
 // Define a type for the stock vehicles
@@ -99,17 +99,20 @@ export const useCrm = () => {
     }
     setIsUserStockLoading(true);
     try {
+      // Using `as any` here tells TypeScript to trust that profile.tbEstoque is a valid table name string.
+      // This resolves the type instantiation and overload errors.
       const { data: stockData, error: stockError } = await supabase
-        .from(profile.tbEstoque) // Dynamically use the table name
+        .from(profile.tbEstoque as any) 
         .select('id, modelo, fabricante')
-        .eq('status', 'Em estoque'); // Filter by status
+        .eq('status', 'Em estoque');
 
       if (stockError) {
-        // It's possible the table doesn't exist or there's a permission issue.
-        // Log the error but don't necessarily throw a toast for a non-critical feature enhancement.
         console.error(`Error fetching stock vehicles from ${profile.tbEstoque}:`, stockError);
-        setUserStockVehicles([]); // Set to empty if error
+        setUserStockVehicles([]);
       } else {
+        // Ensure stockData is treated as StockVehicle[] or an empty array.
+        // The `as any` on `from()` should lead to stockData being correctly typed based on the select,
+        // or null if there's an error handled by the stockError check.
         setUserStockVehicles(stockData || []);
       }
     } catch (error: any) {
@@ -118,7 +121,7 @@ export const useCrm = () => {
       toast({
         title: 'Erro ao carregar veículos do estoque',
         description: `Não foi possível carregar veículos da tabela ${profile.tbEstoque}.`,
-        variant: 'warning',
+        variant: 'default',
       });
     } finally {
       setIsUserStockLoading(false);
@@ -238,12 +241,24 @@ export const useCrm = () => {
         if (data) {
             // The select already includes the lead details if id_lead is present.
             // The returned data[0] from insert().select() should be OpportunityData compatible.
-            setOpportunities(prev => [data[0] as OpportunityData, ...prev]);
+            const newOp = data[0] as OpportunityData; // Explicitly cast here
+            // Fetch lead details separately if not included or if lead is null but id_lead exists
+            if (newOp.id_lead && !newOp.lead) {
+              const { data: leadData, error: leadError } = await supabase
+                .from('lead')
+                .select('*')
+                .eq('id', newOp.id_lead)
+                .single();
+              if (leadError) console.error("Error fetching lead details for new opportunity:", leadError);
+              else newOp.lead = leadData as LeadData;
+            }
+
+            setOpportunities(prev => [newOp, ...prev]);
             toast({
                 title: 'Sucesso!',
                 description: 'Nova oportunidade adicionada.',
             });
-            return data[0];
+            return newOp;
         }
     } catch (error: any) {
         console.error('Error adding opportunity:', error);
@@ -262,12 +277,12 @@ export const useCrm = () => {
   return { 
     opportunities, 
     kanbanColumns, 
-    leads, // Expose leads
-    userStockVehicles, // Expose user's stock vehicles
-    isUserStockLoading, // Expose loading state for stock
+    leads, 
+    userStockVehicles, 
+    isUserStockLoading, 
     isLoading, 
     updateOpportunityKanbanStatus,
-    addOpportunity, // Expose addOpportunity
+    addOpportunity, 
     refetchOpportunities
   };
 };
