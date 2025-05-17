@@ -1,4 +1,3 @@
-
 export interface KanbanColumnData {
   id: number; // from kanban.id (bigint in DB)
   descricao: string; // from kanban.descricao
@@ -51,4 +50,10 @@ export interface ActivityData {
   concluida: boolean | null;
   // from opotunidade table
   created_at: string; // timestamp
+}
+
+export interface StockVehicle {
+  id: number;
+  modelo: string | null;
+  fabricante: string | null;
 }

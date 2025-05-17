@@ -1,15 +1,16 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { OpportunityData, KanbanColumnData, LeadData, StockVehicle } from '@/lib/crmTypes';
 import { useToast } from '@/components/ui/use-toast';
 
-// Define a type for the stock vehicles
-interface StockVehicle {
-  id: number;
-  modelo: string | null;
-  fabricante: string | null;
-}
+// Remove the local StockVehicle interface definition from here as it's now in crmTypes.ts
+// interface StockVehicle {
+//   id: number;
+//   modelo: string | null;
+//   fabricante: string | null;
+// }
 
 export const useCrm = () => {
   const { profile, user } = useAuth(); // Added user for id_usuario
@@ -286,3 +287,4 @@ export const useCrm = () => {
     refetchOpportunities
   };
 };
+
