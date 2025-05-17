@@ -49,7 +49,6 @@ const CrmPage = () => {
         newKanbanId = over.data.current?.columnId;
       }
 
-
       if (newKanbanId !== undefined && !isNaN(opportunityId)) {
         console.log(`Opportunity ${opportunityId} dragged to Kanban column ${newKanbanId}`);
         // The updateOpportunityKanbanStatus function already updates the local state,

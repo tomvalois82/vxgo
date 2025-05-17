@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import KanbanColumn from './KanbanColumn';
 import { useCrm } from '@/hooks/useCrmData';
 import { OpportunityData } from '@/lib/crmTypes';
@@ -24,7 +25,7 @@ const KanbanBoard = () => {
           );
           return (
             <KanbanColumn
-              key={column.id}
+              key={`column-${column.id}`}
               column={column}
               opportunities={columnOpportunities}
             />

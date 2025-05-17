@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import OpportunityCard from './OpportunityCard';
 import { KanbanColumnData, OpportunityData } from '@/lib/crmTypes';
 import { useDroppable } from '@dnd-kit/core';
@@ -19,7 +19,11 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, opportunities }) =>
     }
   });
 
-  const opportunityIds = opportunities.map(op => `opportunity-${op.id}`);
+  // Use memoized opportunity IDs to prevent unnecessary re-renders
+  const opportunityIds = useMemo(() => 
+    opportunities.map(op => `opportunity-${op.id}`), 
+    [opportunities]
+  );
 
   return (
     <div
@@ -43,7 +47,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ column, opportunities }) =>
             </div>
           )}
           {opportunities.map((op) => (
-            <OpportunityCard key={op.id} opportunity={op} />
+            <OpportunityCard key={`card-${op.id}-${op.id_kanban}`} opportunity={op} />
           ))}
         </div>
       </SortableContext>
