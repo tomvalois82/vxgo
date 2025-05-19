@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,7 @@ import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
 import RequireAuth from "@/components/auth/RequireAuth";
 import CrmPage from "@/pages/CrmPage";
+import OpportunityDetailPage from "@/pages/OpportunityDetailPage"; // Import new page
 
 // Import React Query components
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -43,6 +45,7 @@ const App = () => (
                   <Route path="/about" element={<About />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/crm" element={<CrmPage />} />
+                  <Route path="/crm/opportunity/:id" element={<OpportunityDetailPage />} /> {/* Add new route */}
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

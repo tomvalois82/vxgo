@@ -19,7 +19,8 @@ export const useCrm = () => {
   const [leads, setLeads] = useState<LeadData[]>([]);
   const [userStockVehicles, setUserStockVehicles] = useState<StockVehicle[]>([]); // New state for user's stock vehicles
   const [isUserStockLoading, setIsUserStockLoading] = useState(false); // Loading state for stock vehicles
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // General loading state
+  const [isOpportunityLoading, setIsOpportunityLoading] = useState(false); // Specific for single opportunity
 
   const fetchCrmData = useCallback(async () => {
     if (!profile?.id) {
@@ -75,7 +76,7 @@ export const useCrm = () => {
       // Fetch Leads
       const { data: leadsData, error: leadsError } = await supabase
         .from('lead')
-        .select('id, nome, telefone, email, Origem, created_at, idUsuario'); // Added idUsuario
+        .select('id, nome, telefone, email, Origem, created_at, idUsuario'); 
 
       if (leadsError) throw leadsError;
       setLeads(leadsData || []);
@@ -99,8 +100,9 @@ export const useCrm = () => {
     }
     setIsUserStockLoading(true);
     try {
-      const { data: stockData, error: stockError } = await supabase
-        .from(profile.tbEstoque as any) 
+      const tableName = profile.tbEstoque as string;
+      const { data, error: stockError } = await supabase
+        .from(tableName)
         .select('id, modelo, fabricante')
         .eq('status', 'Em estoque');
 
@@ -113,27 +115,33 @@ export const useCrm = () => {
         });
         setUserStockVehicles([]);
       } else {
-        if (Array.isArray(stockData)) {
-          // Filter data to ensure it matches the StockVehicle type
-          const validVehicles = stockData.filter(
-            (item: any): item is StockVehicle =>
-              typeof item === 'object' &&
-              item !== null &&
-              typeof item.id === 'number' &&
-              ('modelo' in item) && // Allows null
-              ('fabricante' in item) // Allows null
-          );
+        if (data && Array.isArray(data)) {
+          const typedData = data as Array<{ id: any; modelo: any; fabricante: any; [key: string]: any }>;
+
+          const validVehicles: StockVehicle[] = typedData
+            .map(item => ({ // Create objects with the expected shape first
+              id: item.id,
+              modelo: item.modelo,
+              fabricante: item.fabricante,
+            }))
+            .filter( // Then filter by type correctness
+              (item): item is StockVehicle =>
+                item && // Ensure item is not null or undefined after map
+                typeof item.id === 'number' &&
+                (item.modelo === null || typeof item.modelo === 'string') &&
+                (item.fabricante === null || typeof item.fabricante === 'string')
+            );
+          
           setUserStockVehicles(validVehicles);
-          if (validVehicles.length !== stockData.length) {
-            console.warn(`Filtered out some invalid vehicle data from ${profile.tbEstoque}. Original count: ${stockData.length}, Filtered count: ${validVehicles.length}`);
-            const invalidItems = stockData.filter(item => !validVehicles.includes(item));
-            console.warn('Invalid items:', invalidItems);
+
+          if (validVehicles.length !== typedData.length) {
+            const invalidCount = typedData.length - validVehicles.length;
+            console.warn(`Filtered out ${invalidCount} invalid vehicle data items from ${profile.tbEstoque}. Original items:`, typedData.filter(item => !validVehicles.some(v => v.id === item.id)));
           }
         } else {
-          // Handle non-array data
           setUserStockVehicles([]);
-          if (stockData !== null) { // Log if it was non-null but also not an array
-             console.warn(`Received non-array data for stock vehicles from ${profile.tbEstoque}:`, stockData);
+          if (data !== null) {
+             console.warn(`Received non-array data for stock vehicles from ${profile.tbEstoque}:`, data);
           }
         }
       }
@@ -150,6 +158,62 @@ export const useCrm = () => {
     }
   }, [profile?.tbEstoque, toast]);
 
+  const fetchOpportunityById = useCallback(async (opportunityId: number) => {
+    setIsOpportunityLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('opotunidade')
+        .select(`
+          id,
+          id_usuario,
+          id_lead,
+          idEstoque,
+          titulo,
+          valor,
+          obs,
+          resumo,
+          id_kanban,
+          data_criacao,
+          ultima_interacao,
+          status,
+          created_at,
+          session_id_whatsapp,
+          session_id_olx,
+          lead:lead (
+            id,
+            nome,
+            telefone,
+            email,
+            Origem,
+            created_at,
+            session_id_whatsaap,
+            session_id_olx
+          )
+        `)
+        .eq('id', opportunityId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') { // "PGRST116" is for " relación no encontrada " or "Not found"
+          console.warn(`Opportunity with ID ${opportunityId} not found.`);
+          return null; // Return null if not found, don't throw an error to break the page
+        }
+        throw error;
+      }
+      return data as OpportunityData | null;
+    } catch (error: any) {
+      console.error(`Error fetching opportunity ${opportunityId}:`, error);
+      toast({
+        title: 'Erro ao carregar oportunidade',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setIsOpportunityLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
     fetchCrmData();
   }, [fetchCrmData]);
@@ -158,12 +222,11 @@ export const useCrm = () => {
     if (profile?.tbEstoque) {
       fetchUserStockVehicles();
     } else {
-      // If tbEstoque is not set, ensure vehicles list is empty and not loading.
       setUserStockVehicles([]);
       setIsUserStockLoading(false);
     }
   }, [profile?.tbEstoque, fetchUserStockVehicles]);
-
+  
   const updateOpportunityKanbanStatus = async (opportunityId: number, newKanbanId: number) => {
     try {
       // Find the opportunity to update in our local state
@@ -232,27 +295,20 @@ export const useCrm = () => {
         return;
     }
     try {
-        // ultima_interacao is intentionally not set here based on new requirements for this form.
-        // It will be NULL in the DB unless a DB default sets it. It's updated by other processes.
         const newOpportunityPayload = {
-            ...opportunityFormData, // This includes data_criacao from the form
+            ...opportunityFormData,
             id_usuario: profile.id,
-            // ultima_interacao is not set here
         };
 
-        // Ensure 'valor' is either a string representation of a number or null
         if (newOpportunityPayload.valor && typeof newOpportunityPayload.valor === 'number') {
-          // This case should ideally not happen if form sends string, but as a safeguard:
           newOpportunityPayload.valor = String(newOpportunityPayload.valor);
         } else if (newOpportunityPayload.valor === '') {
           newOpportunityPayload.valor = null;
         }
         
-        // data_criacao is already expected as string | null from opportunityFormData
-
         const { data, error } = await supabase
             .from('opotunidade')
-            .insert([newOpportunityPayload]) // newOpportunityPayload matches subset of OpportunityData
+            .insert([newOpportunityPayload])
             .select(`
               *,
               lead:lead (
@@ -348,7 +404,9 @@ export const useCrm = () => {
     leads, 
     userStockVehicles, 
     isUserStockLoading, 
-    isLoading, 
+    isLoading,
+    isOpportunityLoading, // Added
+    fetchOpportunityById, // Added
     updateOpportunityKanbanStatus,
     addOpportunity, 
     addLead, 
