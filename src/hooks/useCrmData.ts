@@ -114,6 +114,7 @@ export const useCrm = () => {
         setUserStockVehicles([]);
       } else {
         if (Array.isArray(stockData)) {
+          // Filter data to ensure it matches the StockVehicle type
           const validVehicles = stockData.filter(
             (item: any): item is StockVehicle =>
               typeof item === 'object' &&
@@ -129,6 +130,7 @@ export const useCrm = () => {
             console.warn('Invalid items:', invalidItems);
           }
         } else {
+          // Handle non-array data
           setUserStockVehicles([]);
           if (stockData !== null) { // Log if it was non-null but also not an array
              console.warn(`Received non-array data for stock vehicles from ${profile.tbEstoque}:`, stockData);
