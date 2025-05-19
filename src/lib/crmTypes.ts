@@ -1,3 +1,4 @@
+
 export interface KanbanColumnData {
   id: number; // from kanban.id (bigint in DB)
   descricao: string; // from kanban.descricao
@@ -6,16 +7,45 @@ export interface KanbanColumnData {
   created_at: string; // timestamp
 }
 
+export type LeadOrigem = 
+  | "OLX" 
+  | "Instagram/Facebook" 
+  | "Webmotors" 
+  | "iCarros" 
+  | "Site da loja" 
+  | "Cliente de Carteira" 
+  | "Passante"
+  | "Outro"; // Added Outro as a fallback
+
+export const leadOrigemOptions: LeadOrigem[] = [
+  "OLX", 
+  "Instagram/Facebook", 
+  "Webmotors", 
+  "iCarros", 
+  "Site da loja", 
+  "Cliente de Carteira", 
+  "Passante",
+  "Outro"
+];
+
 export interface LeadData {
   id: number; // from lead.id (bigint in DB)
   nome: string | null;
   telefone: string | null;
   email: string | null;
-  Origem: string | null;
+  Origem: LeadOrigem | string | null; // Updated to use LeadOrigem or string for flexibility
   // from opotunidade table
   created_at: string; // timestamp
   session_id_whatsaap?: string | null;
   session_id_olx?: string | null;
+  idUsuario?: number | null; // Added based on table structure
+}
+
+export interface AddLeadFormInput {
+  nome: string;
+  telefone: string;
+  email?: string | null;
+  Origem?: LeadOrigem | string | null;
 }
 
 export interface OpportunityData {
