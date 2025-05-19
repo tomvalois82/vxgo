@@ -148,8 +148,8 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ onLeadCreated, onCancel }) =>
           render={({ field }) => (
             <FormItem>
               <FormLabel>Origem</FormLabel>
-              <FormControl>
-                <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+              <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+                <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a origem" />
                   </SelectTrigger>
@@ -170,7 +170,7 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ onLeadCreated, onCancel }) =>
           <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} loading={isSubmitting}>
             {isSubmitting ? 'Salvando...' : 'Salvar Lead'}
           </Button>
         </div>
