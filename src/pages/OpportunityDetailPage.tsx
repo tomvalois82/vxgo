@@ -5,9 +5,7 @@ import { useCrm } from '@/hooks/useCrmData';
 import { OpportunityData } from '@/lib/crmTypes';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Edit } from 'lucide-react'; // Import Edit icon
-// To implement Resizable Panels:
-// import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { ArrowLeft, Edit } from 'lucide-react';
 
 const OpportunityDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -66,7 +64,6 @@ const OpportunityDetailPage = () => {
         <h1 className="text-2xl font-semibold text-gray-800">
           Oportunidade: {opportunity.titulo || `ID ${opportunity.id}`}
         </h1>
-        {/* Placeholder for future Edit button related to the whole page or specific sections */}
       </div>
 
       {/* Using a simple grid for now, can be replaced with ResizablePanelGroup */}
@@ -76,10 +73,6 @@ const OpportunityDetailPage = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg font-medium">Detalhes do Lead</CardTitle>
-              {/* Edit icon for this section - to be implemented */}
-              {/* <Button variant="ghost" size="icon" onClick={handleEditToggle}>
-                <Edit className="h-4 w-4" />
-              </Button> */}
             </CardHeader>
             <CardContent>
               {lead ? (

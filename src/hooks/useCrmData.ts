@@ -95,9 +95,7 @@ export const useCrm = () => {
     try {
       const tableName = profile.tbEstoque as string;
 
-      // Use `tableName as any` to bypass TypeScript's strict table name literal requirement for .from()
-      // This acknowledges that the JS SDK is more flexible than the generated types for dynamic table names.
-      // `data` will be typed as `any` or `any[]`.
+      // Using the Supabase dynamic table query
       const { data, error: stockError } = await supabase
         .from(tableName as any) 
         .select('id, modelo, fabricante')
@@ -114,37 +112,43 @@ export const useCrm = () => {
       } else {
         // Ensure data is an array before processing
         if (data && Array.isArray(data)) {
-          // `data` is now confirmed to be an array (effectively `any[]`)
-          const validVehicles: StockVehicle[] = data
-            .map(item => ({ // `item` is implicitly `any` here
-              id: item?.id, // Use optional chaining for robustness
-              modelo: item?.modelo,
-              fabricante: item?.fabricante,
-            }))
-            .filter( // Type guard to ensure items conform to StockVehicle
-              (item): item is StockVehicle =>
-                item &&
-                typeof item.id === 'number' &&
-                (item.modelo === null || typeof item.modelo === 'string') &&
-                (item.fabricante === null || typeof item.fabricante === 'string')
-            );
+          // Use type guards to ensure we only process valid items
+          const validVehicles: StockVehicle[] = [];
+          
+          for (const item of data) {
+            // Check if item has the required properties with correct types
+            if (
+              item && 
+              typeof item === 'object' &&
+              'id' in item && 
+              typeof item.id === 'number' &&
+              ('modelo' in item || item.modelo === null) &&
+              (item.modelo === null || typeof item.modelo === 'string') &&
+              ('fabricante' in item || item.fabricante === null) &&
+              (item.fabricante === null || typeof item.fabricante === 'string')
+            ) {
+              validVehicles.push({
+                id: item.id,
+                modelo: item.modelo,
+                fabricante: item.fabricante
+              });
+            }
+          }
           
           setUserStockVehicles(validVehicles);
 
           if (validVehicles.length !== data.length) {
             const invalidCount = data.length - validVehicles.length;
-            // Ensure item?.id is used if item can be null/undefined in the original data array for logging
-            console.warn(`Filtered out ${invalidCount} invalid vehicle data items from ${tableName}. Original items:`, data.filter(item => !validVehicles.some(v => v.id === item?.id)));
+            console.warn(`Filtered out ${invalidCount} invalid vehicle data items from ${tableName}.`);
           }
         } else {
           setUserStockVehicles([]);
-          if (data !== null) { // If data is not null but also not an array
+          if (data !== null) {
              console.warn(`Received non-array data for stock vehicles from ${tableName}:`, data);
           }
         }
       }
     } catch (error: any) {
-      // Ensure profile.tbEstoque is used in catch if tableName might not be set (e.g., error before its assignment)
       const currentTable = profile?.tbEstoque || "unknown table";
       console.error(`Error fetching stock vehicles from ${currentTable}:`, error);
       setUserStockVehicles([]);
