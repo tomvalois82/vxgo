@@ -1,25 +1,17 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { OpportunityData, KanbanColumnData, LeadData, StockVehicle } from '@/lib/crmTypes';
 import { useToast } from '@/components/ui/use-toast';
 
-// Remove the local StockVehicle interface definition from here as it's now in crmTypes.ts
-// interface StockVehicle {
-//   id: number;
-//   modelo: string | null;
-//   fabricante: string | null;
-// }
-
 export const useCrm = () => {
-  const { profile, user } = useAuth(); // Added user for id_usuario
+  const { profile, user } = useAuth();
   const { toast } = useToast();
   const [opportunities, setOpportunities] = useState<OpportunityData[]>([]);
   const [kanbanColumns, setKanbanColumns] = useState<KanbanColumnData[]>([]);
-  const [leads, setLeads] = useState<LeadData[]>([]); // State for leads
-  const [userStockVehicles, setUserStockVehicles] = useState<StockVehicle[]>([]); // New state for user's stock vehicles
-  const [isUserStockLoading, setIsUserStockLoading] = useState(false); // Loading state for stock vehicles
+  const [leads, setLeads] = useState<LeadData[]>([]);
+  const [userStockVehicles, setUserStockVehicles] = useState<StockVehicle[]>([]);
+  const [isUserStockLoading, setIsUserStockLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchCrmData = useCallback(async () => {
@@ -76,10 +68,10 @@ export const useCrm = () => {
       // Fetch Leads
       const { data: leadsData, error: leadsError } = await supabase
         .from('lead')
-        .select('id, nome, telefone, email, Origem, created_at');
+        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx');
 
       if (leadsError) throw leadsError;
-      setLeads(leadsData || []);
+      setLeads((leadsData || []).sort((a, b) => (a.nome || '').localeCompare(b.nome || '')));
 
     } catch (error: any) {
       console.error('Error fetching CRM data:', error);
@@ -101,7 +93,7 @@ export const useCrm = () => {
     setIsUserStockLoading(true);
     try {
       const { data: stockData, error: stockError } = await supabase
-        .from(profile.tbEstoque as any) 
+        .from(profile.tbEstoque as any)
         .select('id, modelo, fabricante')
         .eq('status', 'Em estoque');
 
@@ -110,24 +102,29 @@ export const useCrm = () => {
         setUserStockVehicles([]);
       } else {
         if (Array.isArray(stockData)) {
-          // Filter out any potential malformed items or error objects if they sneak in
           const validVehicles = stockData.filter(
-            (item: any): item is StockVehicle => // Type guard
-              item &&
-              typeof item.id === 'number' &&
+            (item: any): item is StockVehicle => {
+              if (!item) { // Explicit null/undefined check for the item itself
+                return false;
+              }
+              // Now item is guaranteed to be non-null here.
+              // Proceed with property checks.
+              const hasId = typeof item.id === 'number';
               // Check for existence; null is acceptable for string | null types like modelo/fabricante
-              Object.prototype.hasOwnProperty.call(item, 'modelo') && 
-              Object.prototype.hasOwnProperty.call(item, 'fabricante') &&
-              !item.error // Explicitly check if item itself is an error structure
+              const hasModelo = Object.prototype.hasOwnProperty.call(item, 'modelo');
+              const hasFabricante = Object.prototype.hasOwnProperty.call(item, 'fabricante');
+              const isNotErrorObject = !item.error; 
+
+              return hasId && hasModelo && hasFabricante && isNotErrorObject;
+            }
           );
           setUserStockVehicles(validVehicles);
           if (validVehicles.length !== stockData.length) {
             console.warn(`Filtered out some invalid vehicle data from ${profile.tbEstoque}. Original count: ${stockData.length}, Filtered count: ${validVehicles.length}`);
           }
         } else {
-          // This case handles stockData being null or not an array
           setUserStockVehicles([]);
-          if (stockData !== null) { // Log if it was non-null but also not an array
+          if (stockData !== null) {
              console.warn(`Received non-array data for stock vehicles from ${profile.tbEstoque}:`, stockData);
           }
         }
@@ -138,7 +135,7 @@ export const useCrm = () => {
       toast({
         title: 'Erro ao carregar veículos do estoque',
         description: `Não foi possível carregar veículos da tabela ${profile.tbEstoque}.`,
-        variant: 'default', // Changed from 'warning' to 'default' as 'warning' is not a valid variant
+        variant: 'default',
       });
     } finally {
       setIsUserStockLoading(false);
@@ -153,7 +150,6 @@ export const useCrm = () => {
     if (profile?.tbEstoque) {
       fetchUserStockVehicles();
     } else {
-      // If tbEstoque is not set, ensure vehicles list is empty and not loading.
       setUserStockVehicles([]);
       setIsUserStockLoading(false);
     }
@@ -215,7 +211,6 @@ export const useCrm = () => {
     }
   };
   
-  // Define the type for the data expected by addOpportunity directly
   type AddOpportunityHookInput = Pick<
     OpportunityData,
     'titulo' | 'id_lead' | 'idEstoque' | 'valor' | 'obs' | 'resumo' | 'status' | 'data_criacao'
@@ -293,6 +288,49 @@ export const useCrm = () => {
     }
   };
 
+  type AddLeadHookInput = Pick<LeadData, 'nome' | 'telefone' | 'email' | 'Origem'>;
+
+  const addLead = async (leadFormData: AddLeadHookInput): Promise<LeadData | undefined> => {
+    if (!profile?.id) {
+      toast({ title: 'Erro', description: 'Usuário não autenticado para criar lead.', variant: 'destructive' });
+      return undefined;
+    }
+
+    const newLeadPayload = {
+      ...leadFormData,
+      idUsuario: profile.id,
+      // created_at is set by default by Supabase
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('lead')
+        .insert([newLeadPayload])
+        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx') // Ensure all fields are selected
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const newLead = data as LeadData;
+        setLeads(prevLeads => [...prevLeads, newLead].sort((a, b) => (a.nome || '').localeCompare(b.nome || '')));
+        toast({
+          title: 'Sucesso!',
+          description: 'Novo lead adicionado.',
+        });
+        return newLead;
+      }
+    } catch (error: any) {
+      console.error('Error adding lead:', error);
+      toast({
+        title: 'Erro ao adicionar lead',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+    return undefined;
+  };
+
   const refetchOpportunities = () => {
     fetchCrmData();
   };
@@ -306,6 +344,7 @@ export const useCrm = () => {
     isLoading, 
     updateOpportunityKanbanStatus,
     addOpportunity, 
+    addLead,
     refetchOpportunities
   };
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,24 +10,23 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { KanbanColumnData, LeadData } from '@/lib/crmTypes'; // OpportunityData not needed directly here for submission type
+import { KanbanColumnData, LeadData } from '@/lib/crmTypes';
 import { useCrm } from '@/hooks/useCrmData';
-import { CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatCurrency, extractNumericValue } from '@/lib/formUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import AddLeadForm from './AddLeadForm';
 
-// Define the type for data expected by addOpportunity hook in useCrmData.ts
-// This ensures type safety between form submission and hook.
 type AddOpportunityHookInput = Parameters<ReturnType<typeof useCrm>['addOpportunity']>[0];
 
 const opportunitySchema = z.object({
   titulo: z.string().min(1, "Título é obrigatório."),
-  dataCriacao: z.date().optional().nullable(), // New field for creation date
+  dataCriacao: z.date().optional().nullable(),
   id_lead: z.number().nullable().optional(),
-  idEstoque: z.string().nullable().optional(), // Vehicle ID from stock, comes as string from select
-  valor: z.string().optional().nullable(), 
-  // ultima_interacao is removed
+  idEstoque: z.string().nullable().optional(),
+  valor: z.string().optional().nullable(),
   id_kanban: z.string().min(1, "Situação é obrigatória."),
   obs: z.string().optional().nullable(),
   resumo: z.string().optional().nullable(),
@@ -46,25 +45,34 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
     leads, 
     userStockVehicles,
     isUserStockLoading, 
-    isLoading: crmLoading 
+    isLoading: crmLoading,
   } = useCrm();
   const [valorField, setValorField] = useState("");
   const [leadSearchOpen, setLeadSearchOpen] = useState(false);
+  const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
 
   const form = useForm<OpportunityFormValues>({
     resolver: zodResolver(opportunitySchema),
     defaultValues: {
       titulo: '',
-      dataCriacao: new Date(), // Default to current date and time
+      dataCriacao: new Date(),
       id_lead: null,
       idEstoque: null,
       valor: '',
-      // ultima_interacao: null, // Removed
-      id_kanban: kanbanColumns.find(k => k.posicao === 0)?.id.toString() || kanbanColumns[0]?.id.toString() || '',
+      id_kanban: '', // Will be set in useEffect
       obs: '',
       resumo: '',
     },
   });
+
+  useEffect(() => {
+    if (kanbanColumns.length > 0 && !form.getValues('id_kanban')) {
+      const initialKanban = kanbanColumns.find(k => k.posicao === 0) || kanbanColumns[0];
+      if (initialKanban) {
+        form.setValue('id_kanban', initialKanban.id.toString());
+      }
+    }
+  }, [kanbanColumns, form]);
 
   const onSubmit = async (values: OpportunityFormValues) => {
     const numericValor = values.valor ? extractNumericValue(values.valor).toString() : null;
@@ -72,11 +80,10 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
     // Ensure submissionData matches AddOpportunityHookInput type
     const submissionData: AddOpportunityHookInput = {
       titulo: values.titulo,
-      data_criacao: values.dataCriacao ? values.dataCriacao.toISOString() : null, // Use new dataCriacao field
+      data_criacao: values.dataCriacao ? values.dataCriacao.toISOString() : null,
       id_lead: values.id_lead,
       idEstoque: values.idEstoque ? Number(values.idEstoque) : null,
       valor: numericValor,
-      // ultima_interacao is removed from submission
       obs: values.obs || null,
       resumo: values.resumo || null,
       id_kanban: Number(values.id_kanban),
@@ -87,7 +94,7 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
     if (result) {
       form.reset({
         titulo: '',
-        dataCriacao: new Date(), // Reset dataCriacao to current time
+        dataCriacao: new Date(),
         id_lead: null,
         idEstoque: null,
         valor: '',
@@ -104,6 +111,11 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
     const formatted = formatCurrency(e.target.value);
     setValorField(formatted);
     form.setValue('valor', formatted);
+  };
+
+  const handleLeadCreated = (newLead: LeadData) => {
+    form.setValue('id_lead', newLead.id, { shouldValidate: true });
+    setIsAddLeadModalOpen(false);
   };
 
   return (
@@ -195,7 +207,30 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
           name="id_lead"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Lead</FormLabel>
+              <div className="flex justify-between items-center">
+                <FormLabel>Lead</FormLabel>
+                <Dialog open={isAddLeadModalOpen} onOpenChange={setIsAddLeadModalOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="p-1 h-auto">
+                      <PlusCircle className="h-4 w-4 mr-1" /> Novo Lead
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[525px]">
+                    <DialogHeader>
+                      <DialogTitle>Adicionar Novo Lead</DialogTitle>
+                      <DialogDescription>
+                        Preencha os detalhes abaixo para criar um novo lead.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 max-h-[60vh] overflow-y-auto pr-1">
+                      <AddLeadForm 
+                        onLeadCreated={handleLeadCreated}
+                        onCancel={() => setIsAddLeadModalOpen(false)}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
               <Popover open={leadSearchOpen} onOpenChange={setLeadSearchOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -209,7 +244,7 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
                       )}
                     >
                       {field.value
-                        ? leads.find((lead) => lead.id === field.value)?.nome
+                        ? leads.find((lead) => lead.id === field.value)?.nome || `Lead ID: ${field.value}`
                         : "Selecione um Lead"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -236,7 +271,10 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
                                 lead.id === field.value ? "opacity-100" : "opacity-0"
                               )}
                             />
-                            {lead.nome || `Lead ID: ${lead.id}`} ({lead.email || lead.telefone})
+                            {lead.nome || `Lead ID: ${lead.id}`} 
+                            {(lead.email || lead.telefone) && 
+                              ` (${[lead.email, lead.telefone].filter(Boolean).join(' / ')})`
+                            }
                           </CommandItem>
                         ))}
                       </CommandGroup>

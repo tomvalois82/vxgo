@@ -1,3 +1,4 @@
+
 export interface KanbanColumnData {
   id: number; // from kanban.id (bigint in DB)
   descricao: string; // from kanban.descricao
@@ -12,8 +13,8 @@ export interface LeadData {
   telefone: string | null;
   email: string | null;
   Origem: string | null;
-  // from opotunidade table
-  created_at: string; // timestamp
+  idUsuario: number | null; // from lead.idUsuario (bigint in DB) - ADDED
+  created_at: string; // timestamp  // from lead table
   session_id_whatsaap?: string | null;
   session_id_olx?: string | null;
 }
