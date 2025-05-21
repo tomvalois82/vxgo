@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,7 +48,6 @@ export const useCrm = () => {
           ultima_interacao,
           status,
           created_at,
-          session_id_whatsaap,
           session_id_olx,
           lead:lead (
             id,
@@ -64,11 +64,21 @@ export const useCrm = () => {
         .order('created_at', { ascending: false });
 
       if (opportunitiesError) throw opportunitiesError;
-      const typedOpportunitiesData = (opportunitiesData || []).map(op => ({
-        ...op,
-        lead: op.lead ? (op.lead as LeadData) : undefined
-      })) as OpportunityData[];
-      setOpportunities(typedOpportunitiesData);
+      
+      // Only proceed if data is valid and not an error
+      if (opportunitiesData) {
+        const typedOpportunitiesData = opportunitiesData.map(op => {
+          // Safely handle the lead property which might not exist
+          return {
+            ...op,
+            lead: op.lead && typeof op.lead === 'object' && !('error' in op.lead) 
+              ? (op.lead as LeadData)
+              : undefined
+          };
+        }) as OpportunityData[];
+        
+        setOpportunities(typedOpportunitiesData);
+      }
 
       // Fetch Leads
       const { data: leadsData, error: leadsError } = await supabase
@@ -76,7 +86,12 @@ export const useCrm = () => {
         .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx');
 
       if (leadsError) throw leadsError;
-      setLeads((leadsData as LeadData[] || []).sort((a, b) => (a.nome || '').localeCompare(b.nome || '')));
+      
+      if (leadsData) {
+        setLeads(leadsData
+          .filter(item => typeof item === 'object' && !('error' in item))
+          .sort((a, b) => (a.nome || '').localeCompare(b.nome || '')) as LeadData[]);
+      }
 
     } catch (error: any) {
       console.error('Error fetching CRM data:', error);
@@ -109,7 +124,7 @@ export const useCrm = () => {
       } else if (stockData && Array.isArray(stockData)) {
           const validVehicles = stockData.filter(
             (item: any): item is StockVehicle => {
-              if (!item || typeof item !== 'object' || item.error) {
+              if (!item || typeof item !== 'object' || 'error' in item) {
                 return false;
               }
               const hasId = typeof item.id === 'number';
@@ -256,27 +271,45 @@ export const useCrm = () => {
 
         if (error) throw error;
 
-        if (data) {
-            const newOp = data[0] as OpportunityData; 
-            if (newOp.id_lead && !newOp.lead) { 
-              const { data: leadData, error: leadError } = await supabase
-                .from('lead')
-                .select('id, nome, telefone, email, Origem, idUsuario, created_at, session_id_whatsaap, session_id_olx')
-                .eq('id', newOp.id_lead)
-                .single();
-              if (leadError) console.error("Error fetching lead details for new opportunity:", leadError);
-              else newOp.lead = leadData as LeadData; 
+        if (data && Array.isArray(data) && data.length > 0) {
+            const newOpData = data[0];
+            // Only process if the returned data isn't an error
+            if (typeof newOpData === 'object' && !('error' in newOpData)) {
+                const newOp = newOpData as OpportunityData;
+                
+                // If no lead was included but we have an id_lead, fetch the lead
+                if (newOp.id_lead && (!newOp.lead || 'error' in newOp.lead)) { 
+                    const { data: leadData, error: leadError } = await supabase
+                        .from('lead')
+                        .select('id, nome, telefone, email, Origem, idUsuario, created_at, session_id_whatsaap, session_id_olx')
+                        .eq('id', newOp.id_lead)
+                        .single();
+                    
+                    if (leadError) {
+                        console.error("Error fetching lead details for new opportunity:", leadError);
+                    } else if (leadData && typeof leadData === 'object' && !('error' in leadData)) {
+                        newOp.lead = leadData as LeadData;
+                    }
+                }
+                
+                // Update opportunities state
+                setOpportunities(prev => {
+                    const validNewOp = {
+                        ...newOp,
+                        lead: newOp.lead && typeof newOp.lead === 'object' && !('error' in newOp.lead) 
+                            ? newOp.lead as LeadData 
+                            : undefined
+                    };
+                    return [validNewOp, ...prev];
+                });
+                
+                toast({
+                    title: 'Sucesso!',
+                    description: 'Nova oportunidade adicionada.',
+                });
+                
+                return newOp;
             }
-            
-            setOpportunities(prev => [newOp, ...prev].map(op => ({
-              ...op,
-              lead: op.lead ? op.lead as LeadData : undefined 
-            })) as OpportunityData[]);
-            toast({
-                title: 'Sucesso!',
-                description: 'Nova oportunidade adicionada.',
-            });
-            return newOp;
         }
     } catch (error: any) {
         console.error('Error adding opportunity:', error);
@@ -310,7 +343,7 @@ export const useCrm = () => {
 
       if (error) throw error;
 
-      if (data) {
+      if (data && typeof data === 'object' && !('error' in data)) {
         const newLead = data as LeadData;
         setLeads(prevLeads => [...prevLeads, newLead].sort((a, b) => (a.nome || '').localeCompare(b.nome || '')));
         toast({
