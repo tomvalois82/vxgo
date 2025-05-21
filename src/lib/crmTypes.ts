@@ -14,7 +14,7 @@ export interface LeadData {
   Origem: string | null;
   idUsuario: number | null; // from lead.idUsuario (bigint in DB) - ENSURE THIS IS PRESENT
   created_at: string; // timestamp  // from lead table
-  session_id_whatsapp?: string | null; // Corrected typo from session_id_whatsaap
+  session_id_whatsaap?: string | null; // Changed from session_id_whatsapp to match DB
   session_id_olx?: string | null;
 }
 
@@ -22,7 +22,7 @@ export interface OpportunityData {
   id: number; // from opotunidade.id (bigint in DB)
   id_usuario: number; // from opotunidade.id_usuario (bigint in DB)
   id_lead: number | null; // from opotunidade.id_lead (bigint in DB)
-  idEstoque: number | null; // from opotunidade.idEstoque (bigint in DB) - ADDED
+  idEstoque: number | null; // from opotunidade.idEstoque (bigint in DB)
   titulo: string | null;
   valor: string | null;
   obs: string | null;
@@ -34,7 +34,7 @@ export interface OpportunityData {
   lead?: LeadData; // To store fetched lead details
   // from opotunidade table
   created_at: string; // timestamp
-  session_id_whatsapp?: string | null;
+  session_id_whatsaap?: string | null; // Changed from session_id_whatsapp to match DB
   session_id_olx?: string | null;
 }
 

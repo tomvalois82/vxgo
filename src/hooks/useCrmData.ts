@@ -47,7 +47,7 @@ export const useCrm = () => {
           ultima_interacao,
           status,
           created_at,
-          session_id_whatsapp,
+          session_id_whatsaap, // Corrected field name
           session_id_olx,
           lead:lead (
             id,
@@ -57,25 +57,23 @@ export const useCrm = () => {
             Origem,
             idUsuario, 
             created_at,
-            session_id_whatsapp, 
+            session_id_whatsaap, // Corrected field name
             session_id_olx
           )
         `)
         .order('created_at', { ascending: false });
 
       if (opportunitiesError) throw opportunitiesError;
-      // Ensure that if lead is null or undefined, it's handled appropriately or cast if necessary
-      // Supabase might return lead as null if the foreign key relation doesn't find a match
       const typedOpportunitiesData = (opportunitiesData || []).map(op => ({
         ...op,
-        lead: op.lead ? (op.lead as LeadData) : undefined // Explicitly cast or handle null/undefined
+        lead: op.lead ? (op.lead as LeadData) : undefined
       })) as OpportunityData[];
       setOpportunities(typedOpportunitiesData);
 
       // Fetch Leads
       const { data: leadsData, error: leadsError } = await supabase
         .from('lead')
-        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsapp, session_id_olx');
+        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx'); // Corrected field name
 
       if (leadsError) throw leadsError;
       setLeads((leadsData as LeadData[] || []).sort((a, b) => (a.nome || '').localeCompare(b.nome || '')));
@@ -227,27 +225,20 @@ export const useCrm = () => {
         return;
     }
     try {
-        // ultima_interacao is intentionally not set here based on new requirements for this form.
-        // It will be NULL in the DB unless a DB default sets it. It's updated by other processes.
         const newOpportunityPayload = {
-            ...opportunityFormData, // This includes data_criacao from the form
+            ...opportunityFormData, 
             id_usuario: profile.id,
-            // ultima_interacao is not set here
         };
 
-        // Ensure 'valor' is either a string representation of a number or null
         if (newOpportunityPayload.valor && typeof newOpportunityPayload.valor === 'number') {
-          // This case should ideally not happen if form sends string, but as a safeguard:
           newOpportunityPayload.valor = String(newOpportunityPayload.valor);
         } else if (newOpportunityPayload.valor === '') {
           newOpportunityPayload.valor = null;
         }
         
-        // data_criacao is already expected as string | null from opportunityFormData
-
         const { data, error } = await supabase
             .from('opotunidade')
-            .insert([newOpportunityPayload]) // newOpportunityPayload matches subset of OpportunityData
+            .insert([newOpportunityPayload]) 
             .select(`
               *,
               lead:lead (
@@ -258,7 +249,7 @@ export const useCrm = () => {
                 Origem,
                 idUsuario,
                 created_at,
-                session_id_whatsapp, 
+                session_id_whatsaap, // Corrected field name
                 session_id_olx
               )
             `);
@@ -267,23 +258,19 @@ export const useCrm = () => {
 
         if (data) {
             const newOp = data[0] as OpportunityData; 
-            // The lead object within newOp might be null if id_lead was null or relation failed.
-            // If newOp.lead is populated by Supabase, it should already have idUsuario.
-            // If we fetch manually, we must ensure idUsuario is included.
-            if (newOp.id_lead && !newOp.lead) { // If lead was not joined but id_lead exists
+            if (newOp.id_lead && !newOp.lead) { 
               const { data: leadData, error: leadError } = await supabase
                 .from('lead')
-                .select('id, nome, telefone, email, Origem, idUsuario, created_at, session_id_whatsapp, session_id_olx')
+                .select('id, nome, telefone, email, Origem, idUsuario, created_at, session_id_whatsaap, session_id_olx') // Corrected field name
                 .eq('id', newOp.id_lead)
                 .single();
               if (leadError) console.error("Error fetching lead details for new opportunity:", leadError);
-              else newOp.lead = leadData as LeadData; // Cast to LeadData
+              else newOp.lead = leadData as LeadData; 
             }
             
-            // Ensure the newOp being added to state matches OpportunityData, especially the nested lead.
             setOpportunities(prev => [newOp, ...prev].map(op => ({
               ...op,
-              lead: op.lead ? op.lead as LeadData : undefined // Ensure nested lead type
+              lead: op.lead ? op.lead as LeadData : undefined 
             })) as OpportunityData[]);
             toast({
                 title: 'Sucesso!',
@@ -318,7 +305,7 @@ export const useCrm = () => {
       const { data, error } = await supabase
         .from('lead')
         .insert([newLeadPayload])
-        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsapp, session_id_olx') // Corrected field name
+        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx') // Corrected field name
         .single();
 
       if (error) throw error;
