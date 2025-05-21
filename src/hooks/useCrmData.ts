@@ -1,8 +1,7 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { OpportunityData, KanbanColumnData, LeadData, StockVehicle } from '@/lib/crmTypes';
+import { OpportunityData, KanbanColumnData, LeadData, StockVehicle, ActivityData } from '@/lib/crmTypes';
 import { useToast } from '@/components/ui/use-toast';
 
 export const useCrm = () => {
@@ -67,15 +66,17 @@ export const useCrm = () => {
       
       // Only proceed if data is valid and not an error
       if (opportunitiesData) {
-        const typedOpportunitiesData = opportunitiesData.map(op => {
-          // Safely handle the lead property which might not exist
-          return {
-            ...op,
-            lead: op.lead && typeof op.lead === 'object' && !('error' in op.lead) 
-              ? (op.lead as LeadData)
-              : undefined
-          };
-        }) as OpportunityData[];
+        const typedOpportunitiesData = opportunitiesData
+          .filter(op => typeof op === 'object' && !('error' in op))
+          .map(op => {
+            // Safely handle the lead property which might not exist
+            return {
+              ...op,
+              lead: op.lead && typeof op.lead === 'object' && !('error' in op.lead) 
+                ? op.lead as LeadData
+                : undefined
+            };
+          }) as OpportunityData[];
         
         setOpportunities(typedOpportunitiesData);
       }
@@ -108,7 +109,7 @@ export const useCrm = () => {
   const fetchUserStockVehicles = useCallback(async () => {
     if (!profile?.tbEstoque) {
       setUserStockVehicles([]);
-      setIsUserStockLoading(false); // Ensure loading state is reset
+      setIsUserStockLoading(false);
       return;
     }
     setIsUserStockLoading(true);
@@ -122,29 +123,29 @@ export const useCrm = () => {
         console.error(`Error fetching stock vehicles from ${profile.tbEstoque}:`, stockError);
         setUserStockVehicles([]);
       } else if (stockData && Array.isArray(stockData)) {
-          const validVehicles = stockData.filter(
-            (item: any): item is StockVehicle => {
-              if (!item || typeof item !== 'object' || 'error' in item) {
-                return false;
-              }
-              const hasId = typeof item.id === 'number';
-              const hasModelo = Object.prototype.hasOwnProperty.call(item, 'modelo');
-              const hasFabricante = Object.prototype.hasOwnProperty.call(item, 'fabricante');
-              return hasId && hasModelo && hasFabricante;
+        // Filter the data to ensure it contains valid vehicle objects before setting state
+        const validVehicles = stockData.filter(
+          (item: any): item is StockVehicle => {
+            if (!item || typeof item !== 'object' || 'error' in item) {
+              return false;
             }
-          );
-          setUserStockVehicles(validVehicles);
-          if (validVehicles.length !== stockData.length) {
-            console.warn(`Filtered out some invalid vehicle data from ${profile.tbEstoque}. Original count: ${stockData.length}, Filtered count: ${validVehicles.length}`);
+            const hasId = typeof item.id === 'number';
+            const hasModelo = Object.prototype.hasOwnProperty.call(item, 'modelo');
+            const hasFabricante = Object.prototype.hasOwnProperty.call(item, 'fabricante');
+            return hasId && hasModelo && hasFabricante;
           }
-      } else if (stockData && typeof stockData === 'object' && 'error' in stockData) {
-        console.warn(`Received error object in stock data from ${profile.tbEstoque}:`, stockData);
+        );
+        
+        // Now we're sure validVehicles only contains objects that match StockVehicle type
+        setUserStockVehicles(validVehicles);
+        
+        if (validVehicles.length !== stockData.length) {
+          console.warn(`Filtered out some invalid vehicle data from ${profile.tbEstoque}. Original count: ${stockData.length}, Filtered count: ${validVehicles.length}`);
+        }
+      } else {
         setUserStockVehicles([]);
-      }
-       else {
-        setUserStockVehicles([]); // Default to empty array if data is not as expected
-        if (stockData !== null) { // Log if stockData is not null but also not an array or known error object
-             console.warn(`Received unexpected data type for stock vehicles from ${profile.tbEstoque}:`, stockData);
+        if (stockData !== null) {
+          console.warn(`Received unexpected data type for stock vehicles from ${profile.tbEstoque}:`, stockData);
         }
       }
     } catch (error: any) {
@@ -363,6 +364,264 @@ export const useCrm = () => {
     return undefined;
   };
 
+  // Get opportunity details by ID
+  const getOpportunityById = async (opportunityId: number): Promise<OpportunityData | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('opotunidade')
+        .select(`
+          id,
+          id_usuario,
+          id_lead,
+          idEstoque,
+          titulo,
+          valor,
+          obs,
+          resumo,
+          id_kanban,
+          data_criacao,
+          ultima_interacao,
+          status,
+          created_at,
+          session_id_olx,
+          lead:lead (
+            id,
+            nome,
+            telefone,
+            email,
+            Origem,
+            idUsuario,
+            created_at,
+            session_id_whatsaap,
+            session_id_olx
+          )
+        `)
+        .eq('id', opportunityId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching opportunity:', error);
+        toast({
+          title: 'Erro ao carregar oportunidade',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return null;
+      }
+
+      if (!data) return null;
+
+      // Ensure lead is properly typed if it exists
+      const opportunity = {
+        ...data,
+        lead: data.lead && typeof data.lead === 'object' && !('error' in data.lead) 
+          ? data.lead as LeadData 
+          : undefined
+      } as OpportunityData;
+
+      return opportunity;
+    } catch (error: any) {
+      console.error('Error in getOpportunityById:', error);
+      toast({
+        title: 'Erro ao carregar oportunidade',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return null;
+    }
+  };
+
+  // Update opportunity
+  const updateOpportunity = async (opportunityId: number, updates: Partial<OpportunityData>): Promise<boolean> => {
+    try {
+      // Remove lead from updates if present, as it needs to be updated separately
+      const { lead, ...opportunityUpdates } = updates;
+
+      const { error } = await supabase
+        .from('opotunidade')
+        .update(opportunityUpdates)
+        .eq('id', opportunityId);
+
+      if (error) throw error;
+
+      // If lead updates are provided and lead_id exists, update the lead as well
+      if (lead && updates.id_lead) {
+        const { error: leadError } = await supabase
+          .from('lead')
+          .update({
+            nome: lead.nome,
+            telefone: lead.telefone,
+            email: lead.email,
+            Origem: lead.Origem
+          })
+          .eq('id', updates.id_lead);
+
+        if (leadError) throw leadError;
+      }
+
+      // Update local state
+      setOpportunities(prevOpportunities => 
+        prevOpportunities.map(op => 
+          op.id === opportunityId 
+            ? { ...op, ...opportunityUpdates, lead: lead || op.lead } 
+            : op
+        )
+      );
+
+      toast({
+        title: 'Sucesso',
+        description: 'Oportunidade atualizada com sucesso.',
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Error updating opportunity:', error);
+      toast({
+        title: 'Erro ao atualizar oportunidade',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  // Delete opportunity
+  const deleteOpportunity = async (opportunityId: number): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('opotunidade')
+        .delete()
+        .eq('id', opportunityId);
+
+      if (error) throw error;
+
+      // Update local state by removing the deleted opportunity
+      setOpportunities(prevOpportunities => 
+        prevOpportunities.filter(op => op.id !== opportunityId)
+      );
+
+      toast({
+        title: 'Sucesso',
+        description: 'Oportunidade excluída com sucesso.',
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Error deleting opportunity:', error);
+      toast({
+        title: 'Erro ao excluir oportunidade',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  // Get activities for opportunity
+  const getActivitiesForOpportunity = async (opportunityId: number): Promise<ActivityData[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('atividade')
+        .select('*')
+        .eq('id_oportunidade', opportunityId)
+        .order('data_hora', { ascending: false });
+
+      if (error) throw error;
+
+      return data as ActivityData[] || [];
+    } catch (error: any) {
+      console.error('Error fetching activities:', error);
+      toast({
+        title: 'Erro ao carregar atividades',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return [];
+    }
+  };
+
+  // Add activity
+  const addActivity = async (activity: Omit<ActivityData, 'id' | 'created_at'>): Promise<ActivityData | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('atividade')
+        .insert([activity])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      toast({
+        title: 'Sucesso',
+        description: 'Atividade adicionada com sucesso.',
+      });
+
+      return data as ActivityData;
+    } catch (error: any) {
+      console.error('Error adding activity:', error);
+      toast({
+        title: 'Erro ao adicionar atividade',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return null;
+    }
+  };
+
+  // Update activity
+  const updateActivity = async (activityId: number, updates: Partial<ActivityData>): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('atividade')
+        .update(updates)
+        .eq('id', activityId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Atividade atualizada com sucesso.',
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Error updating activity:', error);
+      toast({
+        title: 'Erro ao atualizar atividade',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  // Delete activity
+  const deleteActivity = async (activityId: number): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('atividade')
+        .delete()
+        .eq('id', activityId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Atividade excluída com sucesso.',
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Error deleting activity:', error);
+      toast({
+        title: 'Erro ao excluir atividade',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   const refetchOpportunities = () => {
     fetchCrmData();
   };
@@ -377,6 +636,13 @@ export const useCrm = () => {
     updateOpportunityKanbanStatus,
     addOpportunity, 
     addLead,
-    refetchOpportunities
+    refetchOpportunities,
+    getOpportunityById,
+    updateOpportunity,
+    deleteOpportunity,
+    getActivitiesForOpportunity,
+    addActivity,
+    updateActivity,
+    deleteActivity
   };
 };

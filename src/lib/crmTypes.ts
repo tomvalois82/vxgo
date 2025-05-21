@@ -1,3 +1,4 @@
+
 export interface KanbanColumnData {
   id: number; // from kanban.id (bigint in DB)
   descricao: string; // from kanban.descricao
@@ -34,7 +35,6 @@ export interface OpportunityData {
   lead?: LeadData; // To store fetched lead details
   // from opotunidade table
   created_at: string; // timestamp
-  session_id_whatsaap?: string | null; // Changed from session_id_whatsapp to match DB
   session_id_olx?: string | null;
 }
 
@@ -45,7 +45,7 @@ export interface ActivityData {
   id_lead: number | null; // bigint
   data_hora: string | null; // timestamp
   descricao: string | null;
-  tipo: string | null; // Ligação, Mensagem, Visita, Reunião
+  tipo: string | null; // Ligação, Mensagem, Visita, Reunião, Outra
   obs: string | null;
   concluida: boolean | null;
   // from opotunidade table

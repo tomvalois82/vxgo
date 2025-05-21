@@ -1,74 +1,62 @@
 
-import React, { memo } from 'react';
+import React from 'react';
 import { OpportunityData } from '@/lib/crmTypes';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react'; // For a drag handle icon
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
-interface OpportunityCardProps {
-  opportunity: OpportunityData;
-}
+// Update the OpportunityCard component to include a "View" button to navigate to details
+const OpportunityCard = ({ opportunity }: { opportunity: OpportunityData }) => {
+  const navigate = useNavigate();
 
-const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity }) => {
-  const opportunityId = `opportunity-${opportunity.id}`;
+  const leadName = opportunity.lead?.nome || 'Sem Lead';
+  const title = opportunity.titulo || 'Sem título';
+  const value = opportunity.valor || '-';
   
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: opportunityId,
-    data: {
-      opportunityId: opportunity.id,
-      currentKanbanId: opportunity.id_kanban,
-      type: 'opportunity',
-      columnId: opportunity.id_kanban // Include the column ID for better drag handling
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '';
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy');
+    } catch (error) {
+      return '';
     }
-  });
+  };
 
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 100 : 'auto',
-    transition: 'opacity 0.2s, box-shadow 0.2s, transform 0.1s', // Add smooth transitions
+  const handleViewDetails = () => {
+    navigate(`/opportunity/${opportunity.id}`);
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <Card className="mb-3 shadow-md hover:shadow-lg transition-shadow duration-200 bg-white cursor-grab">
-        <CardHeader className="p-3">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-base font-medium text-carblue">
-              {opportunity.titulo || 'Sem Título'}
-            </CardTitle>
-            <div {...listeners} className="cursor-grab p-1 -mr-1 -mt-1 text-gray-400 hover:text-gray-600">
-              <GripVertical size={18} />
-            </div>
+    <Card className="mb-3 w-full">
+      <CardContent className="pt-4">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <h3 className="text-sm font-medium">{title}</h3>
+            <p className="text-xs text-muted-foreground">Lead: {leadName}</p>
           </div>
-          {opportunity.lead?.nome && (
-            <CardDescription className="text-xs text-gray-500">
-              Lead: {opportunity.lead.nome}
-            </CardDescription>
-          )}
-        </CardHeader>
-        <CardContent className="p-3 text-sm">
-          {opportunity.valor && (
-            <p className="text-gray-700 font-semibold">
-              Valor: R$ {opportunity.valor}
-            </p>
-          )}
-          {opportunity.resumo && (
-            <p className="text-gray-600 mt-1 truncate">
-              {opportunity.resumo}
-            </p>
-          )}
-        </CardContent>
-        <CardFooter className="p-3 flex justify-between items-center text-xs text-gray-500">
-          <span>ID: {opportunity.id}</span>
-          {opportunity.status && <Badge variant="outline">{opportunity.status}</Badge>}
-        </CardFooter>
-      </Card>
-    </div>
+          <div className="text-sm">
+            <span className="font-semibold">
+              {value}
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-end mt-4">
+          <div className="text-xs text-muted-foreground">
+            {opportunity.data_criacao && formatDate(opportunity.data_criacao)}
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleViewDetails}
+          >
+            Ver detalhes
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
-// Use memo to prevent unnecessary re-renders
-export default memo(OpportunityCard);
+export default OpportunityCard;

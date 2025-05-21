@@ -645,6 +645,7 @@ export type Database = {
         Row: {
           apikeyvoice: string | null
           ativo: boolean | null
+          auth_id: string | null
           cargo: Database["public"]["Enums"]["cargos"] | null
           codVoice: string | null
           config: number | null
@@ -666,6 +667,7 @@ export type Database = {
         Insert: {
           apikeyvoice?: string | null
           ativo?: boolean | null
+          auth_id?: string | null
           cargo?: Database["public"]["Enums"]["cargos"] | null
           codVoice?: string | null
           config?: number | null
@@ -687,6 +689,7 @@ export type Database = {
         Update: {
           apikeyvoice?: string | null
           ativo?: boolean | null
+          auth_id?: string | null
           cargo?: Database["public"]["Enums"]["cargos"] | null
           codVoice?: string | null
           config?: number | null
