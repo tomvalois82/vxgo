@@ -55,23 +55,30 @@ export const useCrm = () => {
             telefone,
             email,
             Origem,
+            idUsuario, 
             created_at,
-            session_id_whatsaap,
+            session_id_whatsapp, 
             session_id_olx
           )
         `)
         .order('created_at', { ascending: false });
 
       if (opportunitiesError) throw opportunitiesError;
-      setOpportunities(opportunitiesData || []);
+      // Ensure that if lead is null or undefined, it's handled appropriately or cast if necessary
+      // Supabase might return lead as null if the foreign key relation doesn't find a match
+      const typedOpportunitiesData = (opportunitiesData || []).map(op => ({
+        ...op,
+        lead: op.lead ? (op.lead as LeadData) : undefined // Explicitly cast or handle null/undefined
+      })) as OpportunityData[];
+      setOpportunities(typedOpportunitiesData);
 
       // Fetch Leads
       const { data: leadsData, error: leadsError } = await supabase
         .from('lead')
-        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx');
+        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsapp, session_id_olx');
 
       if (leadsError) throw leadsError;
-      setLeads((leadsData || []).sort((a, b) => (a.nome || '').localeCompare(b.nome || '')));
+      setLeads((leadsData as LeadData[] || []).sort((a, b) => (a.nome || '').localeCompare(b.nome || '')));
 
     } catch (error: any) {
       console.error('Error fetching CRM data:', error);
@@ -88,6 +95,7 @@ export const useCrm = () => {
   const fetchUserStockVehicles = useCallback(async () => {
     if (!profile?.tbEstoque) {
       setUserStockVehicles([]);
+      setIsUserStockLoading(false); // Ensure loading state is reset
       return;
     }
     setIsUserStockLoading(true);
@@ -100,33 +108,30 @@ export const useCrm = () => {
       if (stockError) {
         console.error(`Error fetching stock vehicles from ${profile.tbEstoque}:`, stockError);
         setUserStockVehicles([]);
-      } else {
-        if (Array.isArray(stockData)) {
+      } else if (stockData && Array.isArray(stockData)) {
           const validVehicles = stockData.filter(
             (item: any): item is StockVehicle => {
-              if (!item) { // Explicit null/undefined check for the item itself
+              if (!item || typeof item !== 'object' || item.error) {
                 return false;
               }
-              // Now item is guaranteed to be non-null here.
-              // Proceed with property checks.
               const hasId = typeof item.id === 'number';
-              // Check for existence; null is acceptable for string | null types like modelo/fabricante
               const hasModelo = Object.prototype.hasOwnProperty.call(item, 'modelo');
               const hasFabricante = Object.prototype.hasOwnProperty.call(item, 'fabricante');
-              const isNotErrorObject = !item.error; 
-
-              return hasId && hasModelo && hasFabricante && isNotErrorObject;
+              return hasId && hasModelo && hasFabricante;
             }
           );
           setUserStockVehicles(validVehicles);
           if (validVehicles.length !== stockData.length) {
             console.warn(`Filtered out some invalid vehicle data from ${profile.tbEstoque}. Original count: ${stockData.length}, Filtered count: ${validVehicles.length}`);
           }
-        } else {
-          setUserStockVehicles([]);
-          if (stockData !== null) {
-             console.warn(`Received non-array data for stock vehicles from ${profile.tbEstoque}:`, stockData);
-          }
+      } else if (stockData && typeof stockData === 'object' && 'error' in stockData) {
+        console.warn(`Received error object in stock data from ${profile.tbEstoque}:`, stockData);
+        setUserStockVehicles([]);
+      }
+       else {
+        setUserStockVehicles([]); // Default to empty array if data is not as expected
+        if (stockData !== null) { // Log if stockData is not null but also not an array or known error object
+             console.warn(`Received unexpected data type for stock vehicles from ${profile.tbEstoque}:`, stockData);
         }
       }
     } catch (error: any) {
@@ -134,8 +139,8 @@ export const useCrm = () => {
       setUserStockVehicles([]);
       toast({
         title: 'Erro ao carregar veículos do estoque',
-        description: `Não foi possível carregar veículos da tabela ${profile.tbEstoque}.`,
-        variant: 'default',
+        description: `Não foi possível carregar veículos da tabela ${profile.tbEstoque}. Detalhe: ${error.message}`,
+        variant: 'default', // Changed to default as it's a common scenario if table name is wrong in profile
       });
     } finally {
       setIsUserStockLoading(false);
@@ -251,8 +256,9 @@ export const useCrm = () => {
                 telefone,
                 email,
                 Origem,
+                idUsuario,
                 created_at,
-                session_id_whatsaap,
+                session_id_whatsapp, 
                 session_id_olx
               )
             `);
@@ -261,17 +267,24 @@ export const useCrm = () => {
 
         if (data) {
             const newOp = data[0] as OpportunityData; 
-            if (newOp.id_lead && !newOp.lead) {
+            // The lead object within newOp might be null if id_lead was null or relation failed.
+            // If newOp.lead is populated by Supabase, it should already have idUsuario.
+            // If we fetch manually, we must ensure idUsuario is included.
+            if (newOp.id_lead && !newOp.lead) { // If lead was not joined but id_lead exists
               const { data: leadData, error: leadError } = await supabase
                 .from('lead')
-                .select('*')
+                .select('id, nome, telefone, email, Origem, idUsuario, created_at, session_id_whatsapp, session_id_olx')
                 .eq('id', newOp.id_lead)
                 .single();
               if (leadError) console.error("Error fetching lead details for new opportunity:", leadError);
-              else newOp.lead = leadData as LeadData;
+              else newOp.lead = leadData as LeadData; // Cast to LeadData
             }
-
-            setOpportunities(prev => [newOp, ...prev]);
+            
+            // Ensure the newOp being added to state matches OpportunityData, especially the nested lead.
+            setOpportunities(prev => [newOp, ...prev].map(op => ({
+              ...op,
+              lead: op.lead ? op.lead as LeadData : undefined // Ensure nested lead type
+            })) as OpportunityData[]);
             toast({
                 title: 'Sucesso!',
                 description: 'Nova oportunidade adicionada.',
@@ -299,14 +312,13 @@ export const useCrm = () => {
     const newLeadPayload = {
       ...leadFormData,
       idUsuario: profile.id,
-      // created_at is set by default by Supabase
     };
 
     try {
       const { data, error } = await supabase
         .from('lead')
         .insert([newLeadPayload])
-        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx') // Ensure all fields are selected
+        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsapp, session_id_olx') // Corrected field name
         .single();
 
       if (error) throw error;
