@@ -47,7 +47,7 @@ export const useCrm = () => {
           ultima_interacao,
           status,
           created_at,
-          session_id_whatsaap, // Corrected field name
+          session_id_whatsaap,
           session_id_olx,
           lead:lead (
             id,
@@ -55,9 +55,9 @@ export const useCrm = () => {
             telefone,
             email,
             Origem,
-            idUsuario, 
+            idUsuario,
             created_at,
-            session_id_whatsaap, // Corrected field name
+            session_id_whatsaap,
             session_id_olx
           )
         `)
@@ -73,7 +73,7 @@ export const useCrm = () => {
       // Fetch Leads
       const { data: leadsData, error: leadsError } = await supabase
         .from('lead')
-        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx'); // Corrected field name
+        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx');
 
       if (leadsError) throw leadsError;
       setLeads((leadsData as LeadData[] || []).sort((a, b) => (a.nome || '').localeCompare(b.nome || '')));
@@ -138,7 +138,7 @@ export const useCrm = () => {
       toast({
         title: 'Erro ao carregar veículos do estoque',
         description: `Não foi possível carregar veículos da tabela ${profile.tbEstoque}. Detalhe: ${error.message}`,
-        variant: 'default', // Changed to default as it's a common scenario if table name is wrong in profile
+        variant: 'default', 
       });
     } finally {
       setIsUserStockLoading(false);
@@ -249,7 +249,7 @@ export const useCrm = () => {
                 Origem,
                 idUsuario,
                 created_at,
-                session_id_whatsaap, // Corrected field name
+                session_id_whatsaap,
                 session_id_olx
               )
             `);
@@ -261,7 +261,7 @@ export const useCrm = () => {
             if (newOp.id_lead && !newOp.lead) { 
               const { data: leadData, error: leadError } = await supabase
                 .from('lead')
-                .select('id, nome, telefone, email, Origem, idUsuario, created_at, session_id_whatsaap, session_id_olx') // Corrected field name
+                .select('id, nome, telefone, email, Origem, idUsuario, created_at, session_id_whatsaap, session_id_olx')
                 .eq('id', newOp.id_lead)
                 .single();
               if (leadError) console.error("Error fetching lead details for new opportunity:", leadError);
@@ -305,7 +305,7 @@ export const useCrm = () => {
       const { data, error } = await supabase
         .from('lead')
         .insert([newLeadPayload])
-        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx') // Corrected field name
+        .select('id, nome, telefone, email, Origem, created_at, idUsuario, session_id_whatsaap, session_id_olx')
         .single();
 
       if (error) throw error;
