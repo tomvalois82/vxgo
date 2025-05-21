@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -123,20 +124,22 @@ export const useCrm = () => {
         console.error(`Error fetching stock vehicles from ${profile.tbEstoque}:`, stockError);
         setUserStockVehicles([]);
       } else if (stockData && Array.isArray(stockData)) {
-        // Filter out any data that doesn't match the StockVehicle type
-        const validVehicles = stockData.filter(
-          (item: any): item is StockVehicle => {
-            if (!item || typeof item !== 'object' || 'error' in item) {
-              return false;
-            }
-            // Ensure the item has the required properties of StockVehicle
-            return (
-              typeof item.id === 'number' &&
-              'modelo' in item &&
-              'fabricante' in item
-            );
-          }
-        );
+        // Create a type guard function to check if an item is a StockVehicle
+        function isStockVehicle(item: any): item is StockVehicle {
+          return (
+            item &&
+            typeof item === 'object' &&
+            !('error' in item) &&
+            typeof item.id === 'number' &&
+            ('modelo' in item || item.modelo === null) &&
+            ('fabricante' in item || item.fabricante === null)
+          );
+        }
+        
+        // Use the type guard to filter the stockData
+        const validVehicles = stockData.filter(isStockVehicle);
+        
+        // Now TypeScript knows validVehicles only contains StockVehicle objects
         setUserStockVehicles(validVehicles);
       } else {
         setUserStockVehicles([]);
