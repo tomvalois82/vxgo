@@ -1,10 +1,9 @@
-
 import React, { useState, useCallback } from 'react';
 import KanbanBoard from '@/components/crm/KanbanBoard';
 import AddOpportunityForm from '@/components/crm/AddOpportunityForm';
 import { DndContext, closestCenter, DragEndEvent, useSensors, useSensor, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { useCrm } from '@/hooks/useCrmData';
+import { useCrm } from '@/hooks/crm/useCrm'; // Updated import path
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,7 +16,7 @@ import {
 import { Plus } from 'lucide-react';
 
 const CrmPage = () => {
-  const { updateOpportunityKanbanStatus, isLoading } = useCrm();
+  const { updateOpportunityKanbanStatus, isLoading } = useCrm(); // isLoading should still work
   const [isAddOpportunityOpen, setIsAddOpportunityOpen] = useState(false);
 
   const sensors = useSensors(

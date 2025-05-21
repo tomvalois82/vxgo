@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useCrm } from '@/hooks/useCrmData';
+import { useCrm } from '@/hooks/crm/useCrm';
 import { Separator } from '@/components/ui/separator';
 import { 
   AlertDialog,

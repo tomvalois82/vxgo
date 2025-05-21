@@ -11,7 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { KanbanColumnData, LeadData } from '@/lib/crmTypes';
-import { useCrm } from '@/hooks/useCrmData';
+import { useCrm } from '@/hooks/crm/useCrm'; // Updated import path
 import { CalendarIcon, Check, ChevronsUpDown, PlusCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -45,7 +45,7 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
     leads, 
     userStockVehicles,
     isUserStockLoading, 
-    isLoading: crmLoading,
+    isLoading: crmOverallLoading, // Use the overall loading state from useCrm
   } = useCrm();
   const [valorField, setValorField] = useState("");
   const [leadSearchOpen, setLeadSearchOpen] = useState(false);
@@ -396,7 +396,7 @@ const AddOpportunityForm: React.FC<AddOpportunityFormProps> = ({ onFormSubmit })
           )}
         />
 
-        <Button type="submit" disabled={form.formState.isSubmitting || crmLoading || isUserStockLoading} className="w-full">
+        <Button type="submit" disabled={form.formState.isSubmitting || crmOverallLoading || isUserStockLoading} className="w-full">
           {form.formState.isSubmitting ? 'Salvando...' : 'Salvar Oportunidade'}
         </Button>
       </form>

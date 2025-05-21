@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Dialog,
@@ -18,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCrm } from '@/hooks/useCrmData';
+import { useCrm } from '@/hooks/crm/useCrm';
 import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { ActivityData } from '@/lib/crmTypes';

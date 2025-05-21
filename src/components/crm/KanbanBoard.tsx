@@ -1,7 +1,6 @@
-
 import React from 'react';
 import KanbanColumn from './KanbanColumn';
-import { useCrm } from '@/hooks/useCrmData';
+import { useCrm } from '@/hooks/crm/useCrm';
 
 const KanbanBoard = () => {
   const { kanbanColumns, opportunities, isLoading } = useCrm();

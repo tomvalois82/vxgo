@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useCrm } from '@/hooks/useCrmData';
+import { useCrm } from '@/hooks/crm/useCrm';
 import { LeadData } from '@/lib/crmTypes';
 
 const leadSchema = z.object({
@@ -77,7 +77,7 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ onLeadCreated, onCancel }) =>
     setIsSubmitting(true);
     const submissionData = {
       nome: values.nome,
-      telefone: values.telefone, // Already formatted with mask
+      telefone: values.telefone, 
       email: values.email || null,
       Origem: values.Origem || null,
     };
@@ -122,7 +122,7 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ onLeadCreated, onCancel }) =>
                   placeholder="(XX) XXXXX-XXXX" 
                   {...field} 
                   onChange={handleTelefoneChange}
-                  maxLength={15} // (XX) XXXXX-XXXX
+                  maxLength={15}
                 />
               </FormControl>
               <FormMessage />
