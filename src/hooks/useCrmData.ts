@@ -123,30 +123,23 @@ export const useCrm = () => {
         console.error(`Error fetching stock vehicles from ${profile.tbEstoque}:`, stockError);
         setUserStockVehicles([]);
       } else if (stockData && Array.isArray(stockData)) {
-        // Filter the data to ensure it contains valid vehicle objects before setting state
+        // Filter out any data that doesn't match the StockVehicle type
         const validVehicles = stockData.filter(
           (item: any): item is StockVehicle => {
             if (!item || typeof item !== 'object' || 'error' in item) {
               return false;
             }
-            const hasId = typeof item.id === 'number';
-            const hasModelo = Object.prototype.hasOwnProperty.call(item, 'modelo');
-            const hasFabricante = Object.prototype.hasOwnProperty.call(item, 'fabricante');
-            return hasId && hasModelo && hasFabricante;
+            // Ensure the item has the required properties of StockVehicle
+            return (
+              typeof item.id === 'number' &&
+              'modelo' in item &&
+              'fabricante' in item
+            );
           }
         );
-        
-        // Now we're sure validVehicles only contains objects that match StockVehicle type
         setUserStockVehicles(validVehicles);
-        
-        if (validVehicles.length !== stockData.length) {
-          console.warn(`Filtered out some invalid vehicle data from ${profile.tbEstoque}. Original count: ${stockData.length}, Filtered count: ${validVehicles.length}`);
-        }
       } else {
         setUserStockVehicles([]);
-        if (stockData !== null) {
-          console.warn(`Received unexpected data type for stock vehicles from ${profile.tbEstoque}:`, stockData);
-        }
       }
     } catch (error: any) {
       console.error(`Error fetching stock vehicles from ${profile.tbEstoque}:`, error);

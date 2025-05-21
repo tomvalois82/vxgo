@@ -25,6 +25,7 @@ function App() {
         <CarProvider>
           <Routes>
             <Route path="/login" element={<Auth />} />
+            <Route path="/auth" element={<Auth />} />
             <Route element={<RequireAuth />}>
               <Route element={<Layout />}>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
