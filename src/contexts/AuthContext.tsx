@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
@@ -15,8 +14,8 @@ interface UserProfile {
   evo_key: string | null;
   tbEstoque: string | null;
   tbHistorico: string | null;
-  credencialOlx: string | null; 
-  n8nOlx: string | null;
+  credencialOlx: string | null; // Added this line
+  n8nOlx: string | null; // Added this line as it's used in Auth.tsx and likely needed in profile
 }
 
 interface AuthContextType {
@@ -40,33 +39,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Use a separate function to set up auth state listener to avoid nesting hooks
-    const setupAuthListener = () => {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (event, session) => {
-          setSession(session);
-          setUser(session?.user ?? null);
-          if (!session) {
-            setProfile(null);
-          }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (!session) {
+          setProfile(null);
         }
-      );
+      }
+    );
 
-      return subscription;
-    };
-
-    const subscription = setupAuthListener();
-
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -147,7 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      navigate('/login');
+      navigate('/auth');
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;

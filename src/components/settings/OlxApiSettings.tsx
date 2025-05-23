@@ -31,8 +31,9 @@ export function OlxApiSettings() {
           
           <Button 
             className="bg-[#6E0AD6] hover:bg-[#5d09b5] flex items-center gap-2"
+            asChild
           >
-            <a href="https://auth.olx.com.br/oauth?client_id=148c0e2bf8bfd9bbc88f934fe385532643583815&response_type=code&scope=basic_user_info%20autoupload%20chat" className="flex items-center gap-2">
+            <a href="https://auth.olx.com.br/oauth?client_id=148c0e2bf8bfd9bbc88f934fe385532643583815&response_type=code&scope=basic_user_info%20autoupload%20chat">
               <img 
                 src="/lovable-uploads/c75297c8-81b0-4e81-a189-7a222022a779.png" 
                 alt="OLX" 
