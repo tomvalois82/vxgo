@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -12,13 +11,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { olxService } from '@/services/olxService';
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  // isLogin será sempre true, isForgotPassword sempre false
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -115,34 +113,8 @@ const Auth = () => {
     setErrorMsg(null);
     
     try {
-      if (isForgotPassword) {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth`,
-        });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Email enviado",
-          description: "Verifique sua caixa de entrada para redefinir sua senha.",
-        });
-        setIsForgotPassword(false);
-      } else if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
-      } else {
-        // Sign up flow
-        const { error } = await signUp(email, password);
-        if (error) throw error;
-        
-        toast({
-          title: "Conta criada",
-          description: "Sua conta foi criada com sucesso. Você já pode fazer login.",
-        });
-        
-        // Switch to login mode after successful registration
-        setIsLogin(true);
-      }
+      const { error } = await signIn(email, password);
+      if (error) throw error;
     } catch (error) {
       console.error("Auth error:", error);
       
@@ -152,10 +124,6 @@ const Auth = () => {
         errorMessage = "Email não confirmado. Por favor, verifique sua caixa de entrada.";
       } else if (errorMessage.includes("Invalid login credentials")) {
         errorMessage = "Credenciais inválidas. Verifique seu email e senha.";
-      } else if (errorMessage.includes("User already registered")) {
-        errorMessage = "Este email já está cadastrado. Tente fazer login.";
-      } else if (errorMessage.includes("Database error saving new user") || errorMessage.includes("violates row level security")) {
-        errorMessage = "Erro ao criar usuário no banco de dados. Por favor, tente novamente ou contate o suporte.";
       }
       
       setErrorMsg(errorMessage);
@@ -191,36 +159,6 @@ const Auth = () => {
     );
   }
 
-  const renderForgotPassword = () => (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={isLoading}
-        />
-      </div>
-      <div>
-        <Button type="submit" className="w-full" loading={isLoading} disabled={isLoading}>
-          Enviar email de recuperação
-        </Button>
-      </div>
-      <div className="text-center">
-        <Button
-          type="button"
-          variant="link"
-          onClick={() => setIsForgotPassword(false)}
-          disabled={isLoading}
-        >
-          Voltar para o login
-        </Button>
-      </div>
-    </form>
-  );
-
   const renderAuthForm = () => (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
@@ -245,32 +183,8 @@ const Auth = () => {
       </div>
       <div>
         <Button type="submit" className="w-full" loading={isLoading} disabled={isLoading}>
-          {isLogin ? 'Entrar' : 'Cadastrar'}
+          Entrar
         </Button>
-      </div>
-      <div className="text-center space-y-2">
-        <Button
-          type="button"
-          variant="link"
-          onClick={() => { setIsLogin(!isLogin); setErrorMsg(null); }}
-          disabled={isLoading}
-        >
-          {isLogin
-            ? 'Não tem uma conta? Cadastre-se'
-            : 'Já tem uma conta? Entre'}
-        </Button>
-        {isLogin && (
-          <div>
-            <Button
-              type="button"
-              variant="link"
-              onClick={() => { setIsForgotPassword(true); setErrorMsg(null); }}
-              disabled={isLoading}
-            >
-              Esqueceu sua senha?
-            </Button>
-          </div>
-        )}
       </div>
     </form>
   );
@@ -280,9 +194,7 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center text-2xl font-bold">
-            {isForgotPassword 
-              ? 'Recuperar Senha'
-              : isLogin ? 'Entrar' : 'Criar conta'}
+            Entrar
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -292,7 +204,7 @@ const Auth = () => {
               <AlertDescription>{errorMsg}</AlertDescription>
             </Alert>
           )}
-          {isForgotPassword ? renderForgotPassword() : renderAuthForm()}
+          {renderAuthForm()}
         </CardContent>
       </Card>
     </div>

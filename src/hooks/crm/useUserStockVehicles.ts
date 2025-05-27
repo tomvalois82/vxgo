@@ -1,74 +1,66 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { PostgrestError } from '@supabase/supabase-js';
-import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast'; // Assuming this is the correct path for use-toast
-import type { StockVehicle } from '@/lib/types';
-import type { Database } from '@/integrations/supabase/types';
+// A importação do tipo Database é feita implicitamente pelo client do Supabase ou deve vir de um local único.
+// Removendo importações duplicadas ou redefinições locais se houver.
+// Se 'Database' for de 'src/integrations/supabase/types.ts', certifique-se de que está correto.
+// import { Database } from '@/integrations/supabase/types'; // Removido se for duplicado ou causar conflito
 
-
-// Type guard to check if the data is an array of StockVehicle
-function isStockVehicleArray(data: unknown): data is StockVehicle[] {
-  if (!Array.isArray(data)) return false;
-  return data.every(item =>
-    typeof item === 'object' && item !== null &&
-    'id' in item &&
-    'modelo' in item &&
-    'fabricante' in item
-  );
+// Definindo um tipo mais específico para o retorno dos veículos, se necessário,
+// ou confiando na inferência de tipo do Supabase.
+export interface Vehicle {
+  id: string; // ou number, dependendo do schema
+  nome: string | null;
+  marca: string | null;
+  modelo: string | null;
+  ano_modelo: number | null;
+  valor: number | null;
+  vendido: boolean | null;
+  placa: string | null;
+  created_at: string | null;
+  km: number | null;
+  renavam: string | null;
+  cor: string | null;
+  cidade_auto: string | null;
+  cambio: string | null;
+  combustivel: string | null;
+  imagem_principal_url: string | null;
+  todas_imagens_urls: string[] | null;
+  // Adicione outros campos conforme necessário
 }
 
-export function useUserStockVehicles() {
-  const { user, profile } = useAuth();
-  const [vehicles, setVehicles] = useState<StockVehicle[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+export const useUserStockVehicles = () => {
+  const { profile, isLoading: authLoading } = useAuth();
 
-  const fetchUserStock = useCallback(async () => {
-    if (!user || !profile || !profile.tbEstoque) {
-      setVehicles([]);
-      setIsLoading(false);
-      return;
+  const fetchUserStockVehicles = async () => {
+    if (!profile || !profile.tbEstoque) {
+      // console.log('Profile or tbEstoque not available');
+      return [];
     }
-    setIsLoading(true);
-    try {
-      const tableName = profile.tbEstoque as string; // Explicitly type as string
 
-      // Explicitly list all fields from StockVehicle type to help with type inference
-      const columnsToSelect = 'id, modelo, fabricante, ano, ano_fabricacao, cambio, caracteristicas, categoria, cautelar, config, cor, created_at, ficha_tecnica, foto, fotos, garantia, idEstoqueBubble, idOlx, km, motor, observacao, status, tipo_veiculo, uid, usuario, valor, video';
-      
-      const { data, error } = await supabase
-        .from(tableName)
-        .select(columnsToSelect)
-        .eq('uid', user.id);
+    // console.log(`Fetching vehicles from table: ${profile.tbEstoque}`);
 
-      if (error) {
-        throw error;
-      }
+    // A lista de colunas a serem selecionadas.
+    const selectColumns = 'id, nome, marca, modelo, ano_modelo, valor, vendido, placa, created_at, km, renavam, cor, cidade_auto, cambio, combustivel, imagem_principal_url, todas_imagens_urls';
 
-      if (isStockVehicleArray(data)) {
-        setVehicles(data);
-      } else if (data !== null && data !== undefined) {
-        console.warn('Fetched stock data is not in expected StockVehicle[] format:', data);
-        toast({ title: 'Aviso', description: 'Dados do estoque em formato inesperado.', variant: 'default' });
-        setVehicles([]);
-      } else {
-        setVehicles([]);
-      }
-    } catch (error: any) {
-      console.error('Error fetching user stock:', error);
-      toast({ title: 'Erro ao buscar estoque', description: error.message, variant: 'destructive' });
-      setVehicles([]);
-    } finally {
-      setIsLoading(false);
+    const { data, error } = await supabase
+      .from(profile.tbEstoque as string) // Cast para string para evitar erro de tipo se tbEstoque for um tipo mais restrito que não bate com o esperado pelo .from()
+      .select(selectColumns);
+
+    if (error) {
+      console.error('Error fetching user stock vehicles:', error);
+      throw new Error(error.message);
     }
-  }, [user, profile]);
+    // console.log('Fetched vehicles:', data);
+    return data as Vehicle[]; // Fazendo um cast para o tipo Vehicle[]
+  };
 
-  useEffect(() => {
-    fetchUserStock();
-  }, [fetchUserStock]);
-
-  return { vehicles, isLoadingUserStock: isLoading, refetchUserStock: fetchUserStock };
-}
-
+  return useQuery<Vehicle[], Error>({
+    queryKey: ['userStockVehicles', profile?.tbEstoque],
+    queryFn: fetchUserStockVehicles,
+    enabled: !authLoading && !!profile && !!profile.tbEstoque,
+    // staleTime: 1000 * 60 * 5, // 5 minutes
+    // cacheTime: 1000 * 60 * 10, // 10 minutes
+  });
+};
