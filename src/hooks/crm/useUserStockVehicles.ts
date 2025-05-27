@@ -1,19 +1,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types'; // Import Database type
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast'; // Updated import path for shadcn toast
-import type { StockVehicle } from '@/lib/types'; // Assuming StockVehicle is defined here
+import { toast } from '@/hooks/use-toast';
+import type { StockVehicle } from '@/lib/types'; // StockVehicle type should now be found
 
 // Type guard to check if the data is an array of StockVehicle
-// This ensures that 'id', 'modelo', and 'fabricante' are present as per the error message
+// This ensures that 'id', 'modelo', and 'fabricante' are present
 function isStockVehicleArray(data: any): data is StockVehicle[] {
   if (!Array.isArray(data)) return false;
   return data.every(item =>
     typeof item === 'object' && item !== null &&
     'id' in item &&
-    'modelo' in item &&
-    'fabricante' in item
+    'modelo' in item && // modelo can be null, 'in' operator checks for presence
+    'fabricante' in item // fabricante can be null, 'in' operator checks for presence
   );
 }
 
@@ -25,13 +26,16 @@ export function useUserStockVehicles() {
   const fetchUserStock = useCallback(async () => {
     if (!user || !profile || !profile.tbEstoque) {
       setVehicles([]);
-      setIsLoading(false); // Ensure loading is set to false
+      setIsLoading(false);
       return;
     }
     setIsLoading(true);
     try {
+      // Cast profile.tbEstoque to a valid table name type for Supabase
+      const tableName = profile.tbEstoque as keyof Database['public']['Tables'];
+      
       const { data, error } = await supabase
-        .from(profile.tbEstoque)
+        .from(tableName)
         .select('*')
         .eq('uid', user.id);
 
@@ -39,12 +43,9 @@ export function useUserStockVehicles() {
         throw error;
       }
 
-      // Line 42 (approximately) would be the setVehicles call.
-      // The fix is to use the type guard before setting state.
       if (data && isStockVehicleArray(data)) {
         setVehicles(data);
       } else if (data) {
-        // Data is present but not in the expected format
         console.warn('Fetched stock data is not in expected StockVehicle[] format:', data);
         toast({ title: 'Aviso', description: 'Dados do estoque em formato inesperado.', variant: 'default' });
         setVehicles([]);
@@ -58,7 +59,7 @@ export function useUserStockVehicles() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, profile]); // Removed tbEstoque from dependency array as it's part of profile
+  }, [user, profile]);
 
   useEffect(() => {
     fetchUserStock();
@@ -66,3 +67,4 @@ export function useUserStockVehicles() {
 
   return { vehicles, isLoadingUserStock: isLoading, refetchUserStock: fetchUserStock };
 }
+
