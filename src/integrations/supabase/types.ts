@@ -9,6 +9,67 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      atividade: {
+        Row: {
+          concluida: boolean | null
+          created_at: string
+          data_hora: string | null
+          descricao: string | null
+          id: number
+          id_lead: number | null
+          id_oportunidade: number | null
+          id_usuario: number | null
+          obs: string | null
+          tipo: string | null
+        }
+        Insert: {
+          concluida?: boolean | null
+          created_at?: string
+          data_hora?: string | null
+          descricao?: string | null
+          id?: number
+          id_lead?: number | null
+          id_oportunidade?: number | null
+          id_usuario?: number | null
+          obs?: string | null
+          tipo?: string | null
+        }
+        Update: {
+          concluida?: boolean | null
+          created_at?: string
+          data_hora?: string | null
+          descricao?: string | null
+          id?: number
+          id_lead?: number | null
+          id_oportunidade?: number | null
+          id_usuario?: number | null
+          obs?: string | null
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "atividade_id_lead_fkey"
+            columns: ["id_lead"]
+            isOneToOne: false
+            referencedRelation: "lead"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atividade_id_oportunidade_fkey"
+            columns: ["id_oportunidade"]
+            isOneToOne: false
+            referencedRelation: "opotunidade"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atividade_id_usuario_fkey"
+            columns: ["id_usuario"]
+            isOneToOne: false
+            referencedRelation: "usuario"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       avaliacoes: {
         Row: {
           created_at: string
@@ -140,6 +201,27 @@ export type Database = {
           id?: number
           sessionid?: string | null
           telefone?: string | null
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          content: string | null
+          embedding: string | null
+          id: number
+          metadata: Json | null
+        }
+        Insert: {
+          content?: string | null
+          embedding?: string | null
+          id?: number
+          metadata?: Json | null
+        }
+        Update: {
+          content?: string | null
+          embedding?: string | null
+          id?: number
+          metadata?: Json | null
         }
         Relationships: []
       }
@@ -343,26 +425,100 @@ export type Database = {
           },
         ]
       }
-      lead: {
+      exemplos_vx: {
         Row: {
           created_at: string
           id: number
-          nome: string | null
-          telefone: string | null
+          mensagem: string | null
+          sugestao: string | null
+          tipo: string | null
+          titulo: string | null
         }
         Insert: {
           created_at?: string
           id?: number
-          nome?: string | null
-          telefone?: string | null
+          mensagem?: string | null
+          sugestao?: string | null
+          tipo?: string | null
+          titulo?: string | null
         }
         Update: {
           created_at?: string
           id?: number
-          nome?: string | null
-          telefone?: string | null
+          mensagem?: string | null
+          sugestao?: string | null
+          tipo?: string | null
+          titulo?: string | null
         }
         Relationships: []
+      }
+      kanban: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: number
+          posicao: number | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: number
+          posicao?: number | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: number
+          posicao?: number | null
+        }
+        Relationships: []
+      }
+      lead: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: number
+          idUsuario: number | null
+          interesse: string | null
+          nome: string | null
+          Origem: string | null
+          session_id_olx: string | null
+          session_id_whatsaap: string | null
+          telefone: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: number
+          idUsuario?: number | null
+          interesse?: string | null
+          nome?: string | null
+          Origem?: string | null
+          session_id_olx?: string | null
+          session_id_whatsaap?: string | null
+          telefone?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: number
+          idUsuario?: number | null
+          interesse?: string | null
+          nome?: string | null
+          Origem?: string | null
+          session_id_olx?: string | null
+          session_id_whatsaap?: string | null
+          telefone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_idUsuario_fkey"
+            columns: ["idUsuario"]
+            isOneToOne: false
+            referencedRelation: "usuario"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       n8n_chat_histories: {
         Row: {
@@ -457,10 +613,87 @@ export type Database = {
         }
         Relationships: []
       }
+      opotunidade: {
+        Row: {
+          created_at: string
+          data_criacao: string | null
+          id: number
+          id_kanban: number | null
+          id_lead: number | null
+          id_usuario: number | null
+          idEstoque: number | null
+          obs: string | null
+          resumo: string | null
+          session_id_olx: string | null
+          session_id_whatsapp: string | null
+          status: string | null
+          titulo: string | null
+          ultima_interacao: string | null
+          valor: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_criacao?: string | null
+          id?: number
+          id_kanban?: number | null
+          id_lead?: number | null
+          id_usuario?: number | null
+          idEstoque?: number | null
+          obs?: string | null
+          resumo?: string | null
+          session_id_olx?: string | null
+          session_id_whatsapp?: string | null
+          status?: string | null
+          titulo?: string | null
+          ultima_interacao?: string | null
+          valor?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_criacao?: string | null
+          id?: number
+          id_kanban?: number | null
+          id_lead?: number | null
+          id_usuario?: number | null
+          idEstoque?: number | null
+          obs?: string | null
+          resumo?: string | null
+          session_id_olx?: string | null
+          session_id_whatsapp?: string | null
+          status?: string | null
+          titulo?: string | null
+          ultima_interacao?: string | null
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opotunidade_id_kanban_fkey"
+            columns: ["id_kanban"]
+            isOneToOne: false
+            referencedRelation: "kanban"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opotunidade_id_lead_fkey"
+            columns: ["id_lead"]
+            isOneToOne: false
+            referencedRelation: "lead"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opotunidade_id_usuario_fkey"
+            columns: ["id_usuario"]
+            isOneToOne: false
+            referencedRelation: "usuario"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usuario: {
         Row: {
           apikeyvoice: string | null
           ativo: boolean | null
+          auth_id: string | null
           cargo: Database["public"]["Enums"]["cargos"] | null
           codVoice: string | null
           config: number | null
@@ -482,6 +715,7 @@ export type Database = {
         Insert: {
           apikeyvoice?: string | null
           ativo?: boolean | null
+          auth_id?: string | null
           cargo?: Database["public"]["Enums"]["cargos"] | null
           codVoice?: string | null
           config?: number | null
@@ -503,6 +737,7 @@ export type Database = {
         Update: {
           apikeyvoice?: string | null
           ativo?: boolean | null
+          auth_id?: string | null
           cargo?: Database["public"]["Enums"]["cargos"] | null
           codVoice?: string | null
           config?: number | null
@@ -536,7 +771,139 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      binary_quantize: {
+        Args: { "": string } | { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_avg: {
+        Args: { "": number[] }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
+      hnsw_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      l2_norm: {
+        Args: { "": unknown } | { "": unknown }
+        Returns: number
+      }
+      l2_normalize: {
+        Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
+      }
+      match_documents: {
+        Args: { query_embedding: string; match_count?: number; filter?: Json }
+        Returns: {
+          id: number
+          content: string
+          metadata: Json
+          similarity: number
+        }[]
+      }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
+      }
+      sparsevec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
+      vector_avg: {
+        Args: { "": number[] }
+        Returns: string
+      }
+      vector_dims: {
+        Args: { "": string } | { "": unknown }
+        Returns: number
+      }
+      vector_norm: {
+        Args: { "": string }
+        Returns: number
+      }
+      vector_out: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: { "": string }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
     }
     Enums: {
       cargos: "Gerente" | "Supervisor" | "Vendedor" | "Avaliador"
