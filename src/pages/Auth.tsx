@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -130,8 +131,17 @@ const Auth = () => {
         const { error } = await signIn(email, password);
         if (error) throw error;
       } else {
+        // Sign up flow
         const { error } = await signUp(email, password);
         if (error) throw error;
+        
+        toast({
+          title: "Conta criada",
+          description: "Sua conta foi criada com sucesso. Você já pode fazer login.",
+        });
+        
+        // Switch to login mode after successful registration
+        setIsLogin(true);
       }
     } catch (error) {
       console.error("Auth error:", error);
@@ -144,8 +154,8 @@ const Auth = () => {
         errorMessage = "Credenciais inválidas. Verifique seu email e senha.";
       } else if (errorMessage.includes("User already registered")) {
         errorMessage = "Este email já está cadastrado. Tente fazer login.";
-      } else if (errorMessage.includes("violates row level security")) {
-        errorMessage = "Erro de permissão no banco de dados. Contate o administrador.";
+      } else if (errorMessage.includes("Database error saving new user") || errorMessage.includes("violates row level security")) {
+        errorMessage = "Erro ao criar usuário no banco de dados. Por favor, tente novamente ou contate o suporte.";
       }
       
       setErrorMsg(errorMessage);

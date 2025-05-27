@@ -70,36 +70,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .maybeSingle();
 
           if (!userProfile) {
-            // Create a default config record first
-            const { data: configData, error: configError } = await supabase
-              .from('config')
-              .insert([
-                { alertaNovo: true }
-              ])
-              .select()
-              .single();
-
-            if (configError) throw configError;
-
-            // Then create the user profile with the config id
-            const { data: newProfile, error: createError } = await supabase
-              .from('usuario')
-              .insert([
-                { 
-                  uid: user.id,
-                  email: user.email,
-                  ativo: true,
-                  tbEstoque: 'estoque', // Default table for new users
-                  config: configData.id
-                }
-              ])
-              .select()
-              .single();
-
-            if (createError) throw createError;
-            userProfile = newProfile;
+            console.log('Creating new user profile for:', user.id);
             
-            navigate('/profile');
+            try {
+              // Create a default config record first
+              const { data: configData, error: configError } = await supabase
+                .from('config')
+                .insert([
+                  { alertaNovo: true }
+                ])
+                .select()
+                .single();
+
+              if (configError) {
+                console.error('Error creating config:', configError);
+                throw configError;
+              }
+
+              console.log('Created config record with ID:', configData.id);
+
+              // Then create the user profile with the config id
+              const { data: newProfile, error: createError } = await supabase
+                .from('usuario')
+                .insert([
+                  { 
+                    uid: user.id,
+                    email: user.email,
+                    ativo: true,
+                    tbEstoque: 'estoque', // Default table for new users
+                    config: configData.id
+                  }
+                ])
+                .select()
+                .single();
+
+              if (createError) {
+                console.error('Error creating user profile:', createError);
+                throw createError;
+              }
+              
+              userProfile = newProfile;
+              console.log('Created user profile:', userProfile);
+              
+              navigate('/profile');
+            } catch (e) {
+              console.error('Error in profile creation process:', e);
+              throw e;
+            }
           }
 
           console.log('User profile loaded:', userProfile);
@@ -115,13 +132,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
+      console.log('Attempting signup for:', email);
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
       });
 
-      if (error) return { error };
+      if (error) {
+        console.error('Signup error:', error);
+        return { error };
+      }
       
+      console.log('Signup successful');
       return {};
     } catch (error) {
       console.error('Signup exception:', error);
@@ -131,13 +154,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('Attempting signin for:', email);
+      
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) return { error };
+      if (error) {
+        console.error('Signin error:', error);
+        return { error };
+      }
       
+      console.log('Signin successful');
       navigate('/');
       return {};
     } catch (error) {
