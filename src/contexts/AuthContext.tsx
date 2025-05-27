@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
@@ -14,8 +15,8 @@ interface UserProfile {
   evo_key: string | null;
   tbEstoque: string | null;
   tbHistorico: string | null;
-  credencialOlx: string | null; // Added this line
-  n8nOlx: string | null; // Added this line as it's used in Auth.tsx and likely needed in profile
+  credencialOlx: string | null;
+  n8nOlx: string | null;
 }
 
 interface AuthContextType {
@@ -69,6 +70,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .maybeSingle();
 
           if (!userProfile) {
+            // Create a default config record first
+            const { data: configData, error: configError } = await supabase
+              .from('config')
+              .insert([
+                { alertaNovo: true }
+              ])
+              .select()
+              .single();
+
+            if (configError) throw configError;
+
+            // Then create the user profile with the config id
             const { data: newProfile, error: createError } = await supabase
               .from('usuario')
               .insert([
@@ -76,7 +89,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   uid: user.id,
                   email: user.email,
                   ativo: true,
-                  tbEstoque: 'estoque' // Default table for new users
+                  tbEstoque: 'estoque', // Default table for new users
+                  config: configData.id
                 }
               ])
               .select()
