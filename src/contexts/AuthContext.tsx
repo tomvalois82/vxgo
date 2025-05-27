@@ -1,8 +1,8 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 interface UserProfile {
   id: number;
@@ -10,13 +10,15 @@ interface UserProfile {
   cargo: 'Gerente' | 'Supervisor' | 'Vendedor' | 'Avaliador' | null;
   telefone: string | null;
   ativo: boolean;
-  config: number;
+  config: number | null;
   evo_instancia: string | null;
   evo_key: string | null;
   tbEstoque: string | null;
   tbHistorico: string | null;
   credencialOlx: string | null;
   n8nOlx: string | null;
+  uid?: string | null;
+  email?: string | null;
 }
 
 interface AuthContextType {
@@ -38,21 +40,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    setIsLoading(true);
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        if (!session) {
+        if (event === 'SIGNED_OUT') {
           setProfile(null);
+          // navigate('/auth');
         }
+        setIsLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
       setIsLoading(false);
     });
 
@@ -60,75 +66,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    async function fetchOrCreateProfile() {
+    async function fetchProfile() {
       if (user) {
         try {
-          let { data: userProfile, error } = await supabase
+          const { data: userProfileData, error } = await supabase
             .from('usuario')
             .select('*')
             .eq('uid', user.id)
-            .maybeSingle();
+            .single();
 
-          if (!userProfile) {
-            console.log('Creating new user profile for:', user.id);
-            
-            try {
-              // Create a default config record first
-              const { data: configData, error: configError } = await supabase
-                .from('config')
-                .insert([
-                  { alertaNovo: true }
-                ])
-                .select()
-                .single();
+          if (error && error.code !== 'PGRST116') {
+            console.error('Error fetching user profile:', error);
+            toast({ title: 'Erro ao carregar perfil', description: error.message, variant: 'destructive' });
+            setProfile(null);
+          } else if (userProfileData) {
+            console.log('User profile loaded:', userProfileData);
+            const processedProfile: UserProfile = {
+              ...userProfileData,
+              config: userProfileData.config as number | null,
+            };
+            setProfile(processedProfile);
 
-              if (configError) {
-                console.error('Error creating config:', configError);
-                throw configError;
-              }
-
-              console.log('Created config record with ID:', configData.id);
-
-              // Then create the user profile with the config id
-              const { data: newProfile, error: createError } = await supabase
-                .from('usuario')
-                .insert([
-                  { 
-                    uid: user.id,
-                    email: user.email,
-                    ativo: true,
-                    tbEstoque: 'estoque', // Default table for new users
-                    config: configData.id
-                  }
-                ])
-                .select()
-                .single();
-
-              if (createError) {
-                console.error('Error creating user profile:', createError);
-                throw createError;
-              }
-              
-              userProfile = newProfile;
-              console.log('Created user profile:', userProfile);
-              
+            const needsCompletion = !processedProfile.nome || !processedProfile.cargo || !processedProfile.telefone;
+            if (needsCompletion && location.pathname !== '/profile' && location.pathname !== '/auth') {
+              console.log('User profile needs completion, redirecting to /profile');
               navigate('/profile');
-            } catch (e) {
-              console.error('Error in profile creation process:', e);
-              throw e;
             }
+          } else {
+            console.log('No user profile found for uid:', user.id);
+            setProfile(null);
           }
-
-          console.log('User profile loaded:', userProfile);
-          setProfile(userProfile);
-        } catch (error) {
-          console.error('Error fetching/creating profile:', error);
+        } catch (error: any) {
+          console.error('Exception fetching user profile:', error);
+          toast({ title: 'Erro ao carregar perfil', description: error.message, variant: 'destructive' });
+          setProfile(null);
         }
+      } else {
+        setProfile(null);
       }
     }
 
-    fetchOrCreateProfile();
-  }, [user, navigate]);
+    if (user) {
+      fetchProfile();
+    } else {
+      setProfile(null);
+    }
+  }, [user, navigate, location.pathname]);
 
   const signUp = async (email: string, password: string) => {
     try {
@@ -179,10 +162,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      setProfile(null);
+      setUser(null);
+      setSession(null);
       navigate('/auth');
     } catch (error) {
       console.error('Error signing out:', error);
-      throw error;
+      setProfile(null);
+      setUser(null);
+      setSession(null);
+      navigate('/auth');
     }
   };
 
