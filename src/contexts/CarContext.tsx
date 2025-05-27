@@ -155,15 +155,10 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     console.log(`Fetching cars from table: ${stockTable}`);
     
-    let data, error;
-    const query = supabase.from(stockTable).select('*').order('created_at', { ascending: false });
-
-    // The dynamic table name requires a cast to any to bypass strict type checking here,
-    // or more elaborate type handling if specific table types are needed.
-    // For now, we assume the structure is compatible enough for mapSupabaseToCar.
-    const result = await (query as any); 
-    data = result.data;
-    error = result.error;
+    const { data, error } = await supabase
+      .from(stockTable as any) // Cast to any for dynamic table name
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
       toast({
@@ -194,18 +189,14 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    // `carData.fotos` should already be an array of URLs from CarForm
     const insertPayload = {
-      ...mapCarFormDataToSupabase(carData), // This now correctly includes fotos as URLs
+      ...mapCarFormDataToSupabase(carData),
       uid: user.id
     };
     
-    // Ensure payload `foto` (singular) is the first of `fotos` if available
     insertPayload.foto = carData.fotos && carData.fotos.length > 0 ? carData.fotos[0] : null;
 
-
-    const { error } = await supabase.from(stockTable).insert([insertPayload] as any);
-
+    const { error } = await supabase.from(stockTable as any).insert([insertPayload] as any); // Cast stockTable to any
 
     if (error) {
       toast({
@@ -230,31 +221,17 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const numericId = parseInt(id, 10);
-    // `carData.fotos` should be URLs if provided
     const mappedPayload = mapCarFormDataToSupabase(carData as CarFormData & { fotos?: string[] });
     
-    // Ensure payload `foto` (singular) is updated correctly
-    if (carData.fotos !== undefined) { // if fotos array is explicitly passed (even if empty)
+    if (carData.fotos !== undefined) {
       mappedPayload.foto = carData.fotos && carData.fotos.length > 0 ? carData.fotos[0] : null;
-    } else {
-      // If carData.fotos is not provided, mapCarFormDataToSupabase would use carData.fotos (undefined)
-      // which results in an empty array for fotos. We might want to preserve existing foto if fotos not touched.
-      // However, current mapCarFormDataToSupabase takes `carData as CarFormData` which might not have original fotos.
-      // This part might need more robust handling if partial updates to fotos are complex.
-      // For now, assume if fotos are part of carData, they are the new source of truth for `foto` field.
-      // If carData.fotos is not in the partial update, mappedPayload.foto would be based on carData.image or be null.
-      // Let's be explicit: if carData.fotos is present, use it for `foto`. Otherwise, `foto` is not part of this partial update unless carData.image is set.
-      // The current `mapCarFormDataToSupabase` sets `foto` based on the `fotos` it receives or null.
-      // This means if `carData.fotos` is not part of the `Partial<>`, `mappedPayload.foto` will likely be null.
-      // This is okay if `foto` is always derived from the `fotos` array.
     }
     
     const updatePayload = {
       ...mappedPayload
     };
 
-
-    const { error } = await supabase.from(stockTable).update(updatePayload as any).eq('id', numericId);
+    const { error } = await supabase.from(stockTable as any).update(updatePayload as any).eq('id', numericId); // Cast stockTable to any
 
     if (error) {
       toast({
@@ -277,7 +254,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (carToDelete?.fotos?.length) {
       const photoFilesToDelete: string[] = [];
       for (const photoUrl of carToDelete.fotos) {
-        const fileName = getFileNameFromPublicUrl(photoUrl);
+        const fileName = getFileNameFromPublicUrl(photoUrl); // This needs to extract from full URL
         if (fileName) {
           photoFilesToDelete.push(fileName);
         } else {
@@ -286,23 +263,25 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       
       if (photoFilesToDelete.length > 0) {
+        console.log("Attempting to delete from storage:", photoFilesToDelete);
         const { error: storageError } = await supabase.storage
           .from('car-fotos')
           .remove(photoFilesToDelete);
             
         if (storageError) {
-          // Log error but proceed with DB deletion
           console.error('Error deleting photos from storage:', storageError);
           toast({
             title: "Aviso: Erro ao deletar algumas fotos do armazenamento",
             description: storageError.message,
             variant: "default"
           });
+        } else {
+          console.log("Photos deleted from storage successfully:", photoFilesToDelete);
         }
       }
     }
     
-    const { error } = await supabase.from(stockTable).delete().eq('id', numericId);
+    const { error } = await supabase.from(stockTable as any).delete().eq('id', numericId); // Cast stockTable to any
 
     if (error) {
       toast({
@@ -310,16 +289,13 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         title: 'Erro ao excluir veículo',
         description: error.message,
       });
-      throw error; // Rethrow to indicate failure
+      throw error;
     }
 
-    // Optimistic update or refetch
     setCars(prevCars => prevCars.filter(car => String(car.id) !== String(id)));
     toast({ 
       title: 'Veículo removido com sucesso!' 
     });
-    // No need to call refreshCars() if doing optimistic update, but if there are side effects, keep it.
-    // await refreshCars(); // Or rely on optimistic update
   };
 
   const getCar = (id: string) => cars.find((car) => String(car.id) === String(id));

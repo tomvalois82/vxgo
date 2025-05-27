@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useCars } from '@/contexts/CarContext';
 import { Car as CarType } from '@/lib/types';
@@ -35,40 +34,62 @@ const CarCard = ({ car, onDelete }: { car: CarType; onDelete: (id: string) => vo
     if (window.confirm(`Tem certeza que deseja excluir o ${car.brand} ${car.model}?`)) {
       try {
         await onDelete(car.id);
-        toast({
-          title: "Veículo excluído",
-          description: "O veículo foi removido com sucesso.",
-        });
+        // Toast for success is now handled in CarContext's deleteCar after optimistic update
       } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Erro ao excluir",
-          description: "Não foi possível excluir o veículo. Tente novamente.",
-        });
+        // Error toast is also handled in CarContext if the error is thrown
+        // However, a local catch can provide more specific UI feedback if needed or prevent unhandled promise rejections.
+        // For now, relying on CarContext's error handling.
+        console.error("Error caught in CarCard handleDelete:", error);
+        // If CarContext rethrows, this might be redundant or could be a place for a generic fallback toast.
+        // toast({
+        //   variant: "destructive",
+        //   title: "Erro ao excluir",
+        //   description: "Não foi possível excluir o veículo. Tente novamente.",
+        // });
       }
     }
   };
 
   const getFirstImage = () => {
-    if (car.fotos && car.fotos.length > 0) {
-      return `https://jivkniqvqfxrqqoekwbu.supabase.co/storage/v1/object/public/car-fotos/${car.fotos[0]}`;
+    // `car.fotos` should be an array of full URLs.
+    if (car.fotos && car.fotos.length > 0 && car.fotos[0]) {
+      return car.fotos[0];
     }
-    return car.image || null;
+    // `car.image` is a fallback, ideally also a full URL.
+    // This field is populated from the 'foto' column in the database,
+    // which `mapCarFormDataToSupabase` sets as the first URL from the 'fotos' array.
+    if (car.image) { 
+      return car.image;
+    }
+    return null; // Return null if no image is available
   };
+
+  const imageUrl = getFirstImage();
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
-        {getFirstImage() ? (
+        {imageUrl ? (
           <img 
-            src={getFirstImage()} 
+            src={imageUrl} 
             alt={`${car.brand} ${car.model}`} 
             className="w-full h-full object-cover"
+            onError={(e) => { 
+              // Optional: handle broken image links, e.g., show placeholder
+              console.warn(`Error loading image: ${imageUrl}`, e);
+              (e.target as HTMLImageElement).style.display = 'none'; // Hide broken image
+              // Or replace with a placeholder: (e.target as HTMLImageElement).src = '/placeholder.svg';
+            }}
           />
         ) : (
           <div className="flex items-center justify-center h-full w-full bg-gray-200">
             <Car size={64} className="text-gray-400" />
           </div>
+        )}
+         {!imageUrl && ( // Show the placeholder if imageUrl is null and the img tag itself wasn't rendered
+            <div className="flex items-center justify-center h-full w-full bg-gray-200 absolute top-0 left-0 -z-10">
+               <Car size={64} className="text-gray-400" />
+            </div>
         )}
       </div>
       <CardContent className="p-4">
@@ -82,7 +103,7 @@ const CarCard = ({ car, onDelete }: { car: CarType; onDelete: (id: string) => vo
             {formatCurrency(car.price)}
           </span>
           <span className="text-gray-600">
-            {car.year} • {car.mileage} km
+            {car.year} • {car.mileage.toLocaleString('pt-BR')} km
           </span>
         </div>
         <div className="mt-3 space-y-1 text-sm text-gray-600">
