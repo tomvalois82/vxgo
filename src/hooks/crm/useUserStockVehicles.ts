@@ -8,7 +8,6 @@ import { toast } from '@/hooks/use-toast';
 import type { StockVehicle } from '@/lib/types';
 
 // Type guard to check if the data is an array of StockVehicle
-// Changed parameter type from 'any' to 'unknown'
 function isStockVehicleArray(data: unknown): data is StockVehicle[] {
   if (!Array.isArray(data)) return false;
   return data.every(item =>
@@ -34,22 +33,25 @@ export function useUserStockVehicles() {
     try {
       const tableName = profile.tbEstoque as keyof Database['public']['Tables'];
       
-      const { data, error } = (await supabase
+      // Remove the explicit cast on the await supabase call
+      // Let Supabase infer the type for rawData and error
+      const { data: rawData, error } = await supabase
         .from(tableName)
         .select('*')
-        .eq('uid', user.id)) as { data: StockVehicle[] | null; error: PostgrestError | null };
+        .eq('uid', user.id);
 
       if (error) {
         throw error;
       }
 
-      if (data && isStockVehicleArray(data)) {
-        setVehicles(data);
-      } else if (data) {
-        console.warn('Fetched stock data is not in expected StockVehicle[] format:', data);
+      // Use the type guard to narrow down rawData
+      if (rawData && isStockVehicleArray(rawData)) {
+        setVehicles(rawData);
+      } else if (rawData) { // rawData is not null, but not in the expected format
+        console.warn('Fetched stock data is not in expected StockVehicle[] format:', rawData);
         toast({ title: 'Aviso', description: 'Dados do estoque em formato inesperado.', variant: 'default' });
         setVehicles([]);
-      } else {
+      } else { // rawData is null
         setVehicles([]);
       }
     } catch (error: any) {
@@ -67,4 +69,3 @@ export function useUserStockVehicles() {
 
   return { vehicles, isLoadingUserStock: isLoading, refetchUserStock: fetchUserStock };
 }
-
