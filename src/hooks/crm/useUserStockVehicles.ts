@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { PostgrestError } from '@supabase/supabase-js'; // Added this import
 import type { Database } from '@/integrations/supabase/types'; // Import Database type
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -34,10 +35,11 @@ export function useUserStockVehicles() {
       // Cast profile.tbEstoque to a valid table name type for Supabase
       const tableName = profile.tbEstoque as keyof Database['public']['Tables'];
       
-      const { data, error } = await supabase
+      // Type assertion added to the awaited expression to help TypeScript resolve complex types
+      const { data, error } = (await supabase
         .from(tableName)
         .select('*')
-        .eq('uid', user.id);
+        .eq('uid', user.id)) as { data: StockVehicle[] | null; error: PostgrestError | null };
 
       if (error) {
         throw error;
@@ -67,4 +69,3 @@ export function useUserStockVehicles() {
 
   return { vehicles, isLoadingUserStock: isLoading, refetchUserStock: fetchUserStock };
 }
-
