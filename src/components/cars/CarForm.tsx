@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CarFormData } from '@/lib/types';
@@ -10,7 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { uploadCarImages } from "@/lib/uploadCarImages";
 import { Car, List, Pencil, DollarSign, Palette, Gauge, FileText, Video, FileSpreadsheet, Shield, LayoutList, Calendar, LoaderCircle, Tag } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+// supabase client is not directly used here for image URLs anymore, but kept for potential future use.
+// import { supabase } from "@/integrations/supabase/client"; 
 import { VehicleType, useFipeBrands } from '@/hooks/useFipeBrands';
 import { toast } from '@/components/ui/use-toast';
 import { formatCurrency, formatMileage, extractNumericValue } from '@/lib/formUtils';
@@ -19,9 +20,14 @@ import { carFormSchema, type CarFormSchema } from './carFormSchema';
 import ImageUploadGrid from './ImageUploadGrid';
 
 interface CarFormProps {
-  initialData?: Partial<CarFormData>;
-  onSubmit: (data: CarFormData) => void;
+  initialData?: Partial<CarFormData & { fotos?: string[] }>; // fotos will be URLs
+  onSubmit: (data: CarFormData & { fotos?: string[] }) => void;
   isEditing?: boolean;
+}
+
+interface LocalFileData {
+  file: File;
+  blobUrl: string;
 }
 
 const CarForm: React.FC<CarFormProps> = ({
@@ -29,11 +35,13 @@ const CarForm: React.FC<CarFormProps> = ({
   onSubmit,
   isEditing = false,
 }) => {
-  // Initialize form with initial data
   let initialPrice = initialData.price || 0;
   if (typeof initialData.price === 'string') {
     initialPrice = extractNumericValue(initialData.price);
   }
+
+  // initialData.fotos are now guaranteed to be URLs by CarContext
+  const initialPhotoUrlsFromProps = initialData?.fotos || [];
 
   const form = useForm<CarFormSchema>({
     resolver: zodResolver(carFormSchema),
@@ -49,10 +57,10 @@ const CarForm: React.FC<CarFormProps> = ({
       fuelType: initialData.fuelType || '1.0',
       transmission: initialData.transmission || 'Manual',
       inStock: initialData.inStock !== undefined ? initialData.inStock : true,
-      image: initialData.image || '', 
+      // 'image' (singular) is deprecated from form; using 'fotos' array
       description: initialData.description || '',
       characteristics: initialData.characteristics || '',
-      idOlx: initialData.idOlx || '', // Adicionado idOlx
+      idOlx: initialData.idOlx || '',
       video: initialData.video || '',
       cautionReport: initialData.cautionReport || '',
       technicalSheet: initialData.technicalSheet || '',
@@ -62,62 +70,56 @@ const CarForm: React.FC<CarFormProps> = ({
   });
 
   // Image handling state
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [orderedPreviewUrls, setOrderedPreviewUrls] = useState<string[]>(initialPhotoUrlsFromProps);
+  const [localFilesData, setLocalFilesData] = useState<LocalFileData[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [previewUrls, setPreviewUrls] = useState<string[]>(
-    Array.isArray((initialData as any).fotos)
-      ? (initialData as any).fotos.map((nome: string) =>
-        supabase.storage.from("car-fotos").getPublicUrl(nome).data.publicUrl
-      )
-      : []
-  );
-  const [photoNames, setPhotoNames] = useState<string[]>(
-    Array.isArray((initialData as any).fotos) ? (initialData as any).fotos : []
-  );
+  
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      localFilesData.forEach(item => URL.revokeObjectURL(item.blobUrl));
+    };
+  }, [localFilesData]);
 
   const vehicleType = form.watch('vehicleType') as VehicleType;
   const selectedYear = form.watch('year');
   const { data: brands, isLoading: isLoadingBrands } = useFipeBrands(vehicleType);
 
-  // Update manufacturingYear options when year changes
   useEffect(() => {
     const manufacturingYear = form.getValues('manufacturingYear');
     if (manufacturingYear !== selectedYear && manufacturingYear !== selectedYear - 1) {
-      // Ensure a valid default if current is not one of the two options
       form.setValue('manufacturingYear', selectedYear - 1);
     }
   }, [selectedYear, form]);
 
-  // Image handling functions
   const handleImageFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const newFiles = Array.from(files);
-      setImageFiles(prevFiles => [...prevFiles, ...newFiles]);
-      const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
-      setPreviewUrls(prevUrls => [...prevUrls, ...newPreviewUrls]);
+      const newFilesArray = Array.from(files);
+      const newLocalFiles: LocalFileData[] = newFilesArray.map(file => ({
+        file,
+        blobUrl: URL.createObjectURL(file),
+      }));
+      
+      setLocalFilesData(prev => [...prev, ...newLocalFiles]);
+      setOrderedPreviewUrls(prev => [...prev, ...newLocalFiles.map(item => item.blobUrl)]);
+      // Reset file input to allow selecting the same file again if removed
+      e.target.value = ""; 
     }
   };
 
-  const handleDeletePhoto = (index: number) => {
-    if (index < photoNames.length) {
-      const newPhotoNames = [...photoNames];
-      newPhotoNames.splice(index, 1);
-      setPhotoNames(newPhotoNames);
-      
-      const newPreviewUrls = [...previewUrls];
-      newPreviewUrls.splice(index, 1);
-      setPreviewUrls(newPreviewUrls);
-    } else {
-      const newFileIndex = index - photoNames.length;
-      const newFiles = [...imageFiles];
-      newFiles.splice(newFileIndex, 1);
-      setImageFiles(newFiles);
-      
-      const newPreviewUrls = [...previewUrls];
-      newPreviewUrls.splice(index, 1);
-      setPreviewUrls(newPreviewUrls);
+  const handleDeletePhoto = (indexToDelete: number) => {
+    const urlToDelete = orderedPreviewUrls[indexToDelete];
+    
+    setOrderedPreviewUrls(prev => prev.filter((_, i) => i !== indexToDelete));
+    
+    const localFileMatch = localFilesData.find(item => item.blobUrl === urlToDelete);
+    if (localFileMatch) {
+      URL.revokeObjectURL(localFileMatch.blobUrl);
+      setLocalFilesData(prev => prev.filter(item => item.blobUrl !== urlToDelete));
     }
+    // If it was a DB URL, it's simply removed from `orderedPreviewUrls`.
+    // `handleSubmit` will then submit the remaining `orderedPreviewUrls`.
   };
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
@@ -134,59 +136,35 @@ const CarForm: React.FC<CarFormProps> = ({
     
     if (sourceIndex === targetIndex) return;
 
-    const updatedPreviewUrls = [...previewUrls];
-    const movedPreview = updatedPreviewUrls.splice(sourceIndex, 1)[0];
-    updatedPreviewUrls.splice(targetIndex, 0, movedPreview);
-    setPreviewUrls(updatedPreviewUrls);
+    const newOrderedPreviewUrls = [...orderedPreviewUrls];
+    const [movedItem] = newOrderedPreviewUrls.splice(sourceIndex, 1);
+    newOrderedPreviewUrls.splice(targetIndex, 0, movedItem);
+    setOrderedPreviewUrls(newOrderedPreviewUrls);
 
-    const newPhotoNames = [...photoNames];
-    const newImageFiles = [...imageFiles];
-
-    const sourceIsExisting = sourceIndex < newPhotoNames.length;
-    const targetIsExistingBoundary = targetIndex <= newPhotoNames.length; 
-
-    if (sourceIsExisting) { 
-      const movedPhotoName = newPhotoNames.splice(sourceIndex, 1)[0];
-      if (targetIsExistingBoundary) { 
-        const adjustedTargetIndex = targetIndex > sourceIndex ? targetIndex -1 : targetIndex;
-        newPhotoNames.splice(adjustedTargetIndex, 0, movedPhotoName);
-      } else { 
-        toast({
-          title: "Não é possível reorganizar entre fotos existentes e novas diretamente dessa forma.",
-          description: "Salve o formulário primeiro para organizar todas as fotos consolidadas.",
-          variant: "destructive"
-        });
-        setPreviewUrls(previewUrls); 
-        return;
-      }
-    } else { 
-      const sourceFileIndex = sourceIndex - newPhotoNames.length;
-      const movedFile = newImageFiles.splice(sourceFileIndex, 1)[0];
-      if (!targetIsExistingBoundary) { 
-        const adjustedTargetFileIndex = (targetIndex > sourceIndex ? targetIndex -1 : targetIndex) - newPhotoNames.length;
-        newImageFiles.splice(adjustedTargetFileIndex, 0, movedFile);
-      } else { 
-        toast({
-          title: "Não é possível reorganizar entre fotos existentes e novas diretamente dessa forma.",
-          description: "Salve o formulário primeiro para organizar todas as fotos consolidadas.",
-          variant: "destructive"
-        });
-        setPreviewUrls(previewUrls); 
-        return;
-      }
-    }
-    setPhotoNames(newPhotoNames);
-    setImageFiles(newImageFiles);
+    // Note: localFilesData does not need reordering here.
+    // handleSubmit will map blobUrls from the (reordered) orderedPreviewUrls
+    // to their corresponding File objects from localFilesData for upload.
   };
 
   async function handleSubmit(values: CarFormSchema) {
     setUploading(true);
-    let updatedPhotoNames = [...photoNames]; 
 
-    if (imageFiles.length > 0) {
+    const filesToUpload: File[] = [];
+    const blobUrlsPresentInOrder: string[] = [];
+
+    // Collect files that are new (blob URLs) in their current display order
+    orderedPreviewUrls.forEach(url => {
+      const localFile = localFilesData.find(item => item.blobUrl === url);
+      if (localFile) {
+        filesToUpload.push(localFile.file);
+        blobUrlsPresentInOrder.push(localFile.blobUrl);
+      }
+    });
+    
+    let newlyUploadedPublicUrls: string[] = [];
+    if (filesToUpload.length > 0) {
       try {
-        const newUploadedImageNames = await uploadCarImages(imageFiles);
-        updatedPhotoNames = [...photoNames, ...newUploadedImageNames];
+        newlyUploadedPublicUrls = await uploadCarImages(filesToUpload);
       } catch (err: any) {
         toast({
           title: "Erro ao enviar imagens",
@@ -197,40 +175,32 @@ const CarForm: React.FC<CarFormProps> = ({
         return;
       }
     }
+
+    const blobToPublicUrlMap = new Map<string, string>();
+    blobUrlsPresentInOrder.forEach((blobUrl, index) => {
+      blobToPublicUrlMap.set(blobUrl, newlyUploadedPublicUrls[index]);
+    });
+
+    const finalPhotoUrlsToSubmit: string[] = orderedPreviewUrls.map(previewUrl => {
+      if (blobToPublicUrlMap.has(previewUrl)) {
+        return blobToPublicUrlMap.get(previewUrl)!; // It's a newly uploaded file
+      }
+      return previewUrl; // It's an existing DB photo URL (or was passed as such)
+    });
     
-    const finalFotos: string[] = [];
-    let newUploadedNamesFromSubmit: string[] = [];
-    if (imageFiles.length > 0) {
-        // This assumes newUploadedImageNames were successfully generated if imageFiles existed
-        // and that updatedPhotoNames contains them at the end.
-        newUploadedNamesFromSubmit = updatedPhotoNames.slice(photoNames.length);
-    }
-    const newUploadedNamesCopy = [...newUploadedNamesFromSubmit];
-
-
-    for (const url of previewUrls) {
-        let found = false;
-        for (const name of photoNames) { // Compare with original photoNames that correspond to existing URLs
-            if (supabase.storage.from("car-fotos").getPublicUrl(name).data.publicUrl === url) {
-                finalFotos.push(name);
-                found = true;
-                break;
-            }
-        }
-        if (found) continue;
-
-        if (newUploadedNamesCopy.length > 0) {
-            finalFotos.push(newUploadedNamesCopy.shift()!); 
-        }
-    }
     setUploading(false);
-    const dataToSubmit = { ...values, fotos: finalFotos.length > 0 ? finalFotos : updatedPhotoNames };
+    // Clean up local blob URLs that are now uploaded
+    blobUrlsPresentInOrder.forEach(blobUrl => URL.revokeObjectURL(blobUrl));
+    setLocalFilesData(prev => prev.filter(item => !blobUrlsPresentInOrder.includes(item.blobUrl)));
+    
+    const dataToSubmit = { ...values, fotos: finalPhotoUrlsToSubmit };
     onSubmit(dataToSubmit as CarFormData);
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        {/* Tipo de Veículo e Marca */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -285,6 +255,7 @@ const CarForm: React.FC<CarFormProps> = ({
           />
         </div>
 
+        {/* Modelo, Ano, Ano de Fabricação */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <FormField
             control={form.control}
@@ -316,9 +287,9 @@ const CarForm: React.FC<CarFormProps> = ({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="bg-white z-50">
-                    {years.map((year) => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
+                    {years.map((yearVal) => (
+                      <SelectItem key={yearVal} value={yearVal.toString()}>
+                        {yearVal}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -336,7 +307,7 @@ const CarForm: React.FC<CarFormProps> = ({
                 <FormLabel className="flex items-center gap-2"><Calendar size={16} /> Ano de Fabricação</FormLabel>
                 <Select
                   onValueChange={(value) => field.onChange(Number(value))}
-                  defaultValue={field.value.toString()}
+                  defaultValue={String(field.value)} // Ensure current value is string for Select
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -353,12 +324,13 @@ const CarForm: React.FC<CarFormProps> = ({
             )}
           />
         </div>
-
+        
+        {/* Preço, Cor, Categoria */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="price"
-            render={({ field: { onChange, ...rest } }) => (
+            render={({ field: { onChange, value, ...rest } }) => ( // Destructure value here
               <FormItem>
                 <FormLabel className="flex items-center gap-2"><DollarSign size={16} /> Preço (R$)</FormLabel>
                 <FormControl>
@@ -367,14 +339,13 @@ const CarForm: React.FC<CarFormProps> = ({
                     placeholder="R$ 0,00"
                     onChange={(e) => {
                       const formatted = formatCurrency(e.target.value);
-                      e.target.value = formatted; 
+                      // e.target.value = formatted; // Let React control the input value display
                       const numericValue = parseFloat(formatted.replace(/[^\d,]/g, '').replace(',', '.')) ; 
                       onChange(isNaN(numericValue) ? 0 : numericValue);
                     }}
-                    value={typeof rest.value === 'number' ? 
-                      rest.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
-                      (initialData.price && typeof initialData.price === 'string' ? initialData.price : 'R$ 0,00') 
-                    }
+                    // Display formatted value from React Hook Form state
+                    value={value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {...rest} // Pass other field properties like name, onBlur, ref
                   />
                 </FormControl>
                 <FormMessage />
@@ -439,11 +410,12 @@ const CarForm: React.FC<CarFormProps> = ({
           />
         </div>
 
+        {/* Quilometragem, Motor, Transmissão */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="mileage"
-            render={({ field: { onChange, ...rest } }) => (
+            render={({ field: { onChange, value, ...rest } }) => ( // Destructure value
               <FormItem>
                 <FormLabel className="flex items-center gap-2"><Gauge size={16} /> Quilometragem</FormLabel>
                 <FormControl>
@@ -452,14 +424,12 @@ const CarForm: React.FC<CarFormProps> = ({
                     placeholder="0"
                     onChange={(e) => {
                       const formatted = formatMileage(e.target.value);
-                      e.target.value = formatted; 
+                      // e.target.value = formatted; // Let React control value display
                       const numericValue = parseInt(formatted.replace(/\./g, ''), 10);
                       onChange(isNaN(numericValue) ? 0 : numericValue);
                     }}
-                     value={typeof rest.value === 'number' ? 
-                      rest.value.toLocaleString('pt-BR') : 
-                      (initialData.mileage?.toString() ?? '0') 
-                    }
+                    value={value.toLocaleString('pt-BR')} // Display formatted value
+                    {...rest}
                   />
                 </FormControl>
                 <FormMessage />
@@ -524,6 +494,7 @@ const CarForm: React.FC<CarFormProps> = ({
           />
         </div>
 
+        {/* Disponível em Estoque */}
         <FormField
           control={form.control}
           name="inStock"
@@ -542,6 +513,7 @@ const CarForm: React.FC<CarFormProps> = ({
           )}
         />
 
+        {/* Link do Vídeo, Garantia */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -571,6 +543,7 @@ const CarForm: React.FC<CarFormProps> = ({
           />
         </div>
 
+        {/* Link para Cautelar, Link para Ficha Técnica */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -602,8 +575,9 @@ const CarForm: React.FC<CarFormProps> = ({
           />
         </div>
 
+        {/* ImageUploadGrid */}
         <ImageUploadGrid
-          previewUrls={previewUrls}
+          previewUrls={orderedPreviewUrls}
           onImageFilesChange={handleImageFilesChange}
           onDeletePhoto={handleDeletePhoto}
           onDragStart={handleDragStart}
@@ -612,6 +586,7 @@ const CarForm: React.FC<CarFormProps> = ({
           uploading={uploading}
         />
 
+        {/* Observações, Características */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -648,7 +623,8 @@ const CarForm: React.FC<CarFormProps> = ({
             )}
           />
         </div>
-
+        
+        {/* Código do anúncio OLX */}
         <FormField
           control={form.control}
           name="idOlx"
@@ -664,7 +640,7 @@ const CarForm: React.FC<CarFormProps> = ({
         />
 
         <Button type="submit" className="bg-carblue hover:bg-carblue-dark" loading={uploading || form.formState.isSubmitting} disabled={uploading || form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? <LoaderCircle className="animate-spin mr-2" size={16} /> : null}
+          { (uploading || form.formState.isSubmitting) ? <LoaderCircle className="animate-spin mr-2" size={16} /> : null}
           {isEditing ? 'Atualizar Veículo' : 'Adicionar Veículo'}
         </Button>
       </form>
