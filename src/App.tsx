@@ -11,6 +11,7 @@ import AddCar from "@/pages/AddCar";
 import EditCar from "@/pages/EditCar";
 import CarDetails from "@/pages/CarDetails";
 import Settings from "@/pages/Settings";
+import Connections from "@/pages/Connections";
 import About from "@/pages/About";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
@@ -40,6 +41,7 @@ const App = () => (
                   <Route path="/edit-car/:id" element={<EditCar />} />
                   <Route path="/car/:id" element={<CarDetails />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/connections" element={<Connections />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/profile" element={<Profile />} />
                 </Route>
