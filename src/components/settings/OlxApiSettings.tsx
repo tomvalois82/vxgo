@@ -39,7 +39,7 @@ export function OlxApiSettings() {
                 alt="OLX" 
                 className="w-6 h-6" 
               />
-              {hasOlxCredentials ? "Reconectar à OLX" : "Conectar à OLX"}
+              <span>{hasOlxCredentials ? "Reconectar à OLX" : "Conectar à OLX"}</span>
             </a>
           </Button>
         </div>
@@ -47,3 +47,4 @@ export function OlxApiSettings() {
     </Card>
   );
 }
+

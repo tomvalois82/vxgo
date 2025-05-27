@@ -1,21 +1,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { PostgrestError } from '@supabase/supabase-js'; // Added this import
-import type { Database } from '@/integrations/supabase/types'; // Import Database type
+import type { PostgrestError } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import type { StockVehicle } from '@/lib/types'; // StockVehicle type should now be found
+import type { StockVehicle } from '@/lib/types';
 
 // Type guard to check if the data is an array of StockVehicle
-// This ensures that 'id', 'modelo', and 'fabricante' are present
-function isStockVehicleArray(data: any): data is StockVehicle[] {
+// Changed parameter type from 'any' to 'unknown'
+function isStockVehicleArray(data: unknown): data is StockVehicle[] {
   if (!Array.isArray(data)) return false;
   return data.every(item =>
     typeof item === 'object' && item !== null &&
     'id' in item &&
-    'modelo' in item && // modelo can be null, 'in' operator checks for presence
-    'fabricante' in item // fabricante can be null, 'in' operator checks for presence
+    'modelo' in item && 
+    'fabricante' in item 
   );
 }
 
@@ -32,10 +32,8 @@ export function useUserStockVehicles() {
     }
     setIsLoading(true);
     try {
-      // Cast profile.tbEstoque to a valid table name type for Supabase
       const tableName = profile.tbEstoque as keyof Database['public']['Tables'];
       
-      // Type assertion added to the awaited expression to help TypeScript resolve complex types
       const { data, error } = (await supabase
         .from(tableName)
         .select('*')
@@ -69,3 +67,4 @@ export function useUserStockVehicles() {
 
   return { vehicles, isLoadingUserStock: isLoading, refetchUserStock: fetchUserStock };
 }
+
