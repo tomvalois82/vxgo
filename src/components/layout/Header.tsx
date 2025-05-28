@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Car, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCars } from '@/contexts/CarContext';
 import { useAuth } from '@/contexts/AuthContext';
+
 const Header = () => {
   const {
     setSearchTerm,
@@ -16,8 +17,11 @@ const Header = () => {
   } = useAuth();
   return <header className="bg-cardark text-white py-4 px-6 flex justify-between items-center shadow-md">
       <div className="flex items-center space-x-2">
-        <Car size={24} className="text-carblue" />
-        
+        <img 
+          src="/lovable-uploads/34823516-601b-400c-8c83-fcd390078e2a.png" 
+          alt="VGO Logo" 
+          className="h-6 w-auto"
+        />
       </div>
       <div className="flex-1 max-w-md mx-4">
         <div className="relative">
