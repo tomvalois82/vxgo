@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
@@ -20,7 +21,7 @@ const Header = () => {
         <img 
           src="/lovable-uploads/34823516-601b-400c-8c83-fcd390078e2a.png" 
           alt="VGO Logo" 
-          className="h-6 w-auto"
+          className="w-[282px] h-[150px] object-contain"
         />
       </div>
       <div className="flex-1 max-w-md mx-4">
