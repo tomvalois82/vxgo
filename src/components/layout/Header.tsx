@@ -16,7 +16,7 @@ const Header = () => {
     signOut,
     profile
   } = useAuth();
-  return <header className="bg-cardark text-white py-4 px-6 flex justify-between items-center shadow-md">
+  return <header className="text-white py-4 px-6 flex justify-between items-center shadow-md" style={{ backgroundColor: '#030f1d' }}>
       <div className="flex items-center space-x-2">
         <img 
           src="/lovable-uploads/34823516-601b-400c-8c83-fcd390078e2a.png" 
@@ -49,4 +49,5 @@ const Header = () => {
       </div>
     </header>;
 };
+
 export default Header;
