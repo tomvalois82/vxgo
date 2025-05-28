@@ -21,7 +21,7 @@ const Header = () => {
         <img 
           src="/lovable-uploads/34823516-601b-400c-8c83-fcd390078e2a.png" 
           alt="VGO Logo" 
-          className="w-[282px] h-[150px] object-contain"
+          className="w-[141px] h-[75px] object-contain"
         />
       </div>
       <div className="flex-1 max-w-md mx-4">
