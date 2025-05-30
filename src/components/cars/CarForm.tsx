@@ -210,7 +210,7 @@ const CarForm: React.FC<CarFormProps> = ({
                 <FormLabel className="flex items-center gap-2"><Car size={16} /> Tipo de Veículo</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-carblue focus:ring-carblue">
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                   </FormControl>
@@ -237,7 +237,7 @@ const CarForm: React.FC<CarFormProps> = ({
                   disabled={isLoadingBrands || !brands}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-carblue focus:ring-carblue">
                       <SelectValue placeholder={isLoadingBrands ? "Carregando..." : "Selecione a marca"} />
                     </SelectTrigger>
                   </FormControl>
@@ -282,7 +282,7 @@ const CarForm: React.FC<CarFormProps> = ({
                   defaultValue={field.value.toString()}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-carblue focus:ring-carblue">
                       <SelectValue placeholder="Selecione o ano" />
                     </SelectTrigger>
                   </FormControl>
@@ -310,7 +310,7 @@ const CarForm: React.FC<CarFormProps> = ({
                   defaultValue={String(field.value)} // Ensure current value is string for Select
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-carblue focus:ring-carblue">
                       <SelectValue placeholder="Selecione o ano de fabricação" />
                     </SelectTrigger>
                   </FormControl>
@@ -364,7 +364,7 @@ const CarForm: React.FC<CarFormProps> = ({
                   defaultValue={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-carblue focus:ring-carblue">
                       <SelectValue placeholder="Selecione a cor" />
                     </SelectTrigger>
                   </FormControl>
@@ -392,7 +392,7 @@ const CarForm: React.FC<CarFormProps> = ({
                   defaultValue={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-carblue focus:ring-carblue">
                       <SelectValue placeholder="Selecione a categoria" />
                     </SelectTrigger>
                   </FormControl>
@@ -448,7 +448,7 @@ const CarForm: React.FC<CarFormProps> = ({
                   defaultValue={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-carblue focus:ring-carblue">
                       <SelectValue placeholder="Selecione o motor" />
                     </SelectTrigger>
                   </FormControl>
@@ -476,7 +476,7 @@ const CarForm: React.FC<CarFormProps> = ({
                   defaultValue={field.value}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-carblue focus:ring-carblue">
                       <SelectValue placeholder="Selecione a transmissão" />
                     </SelectTrigger>
                   </FormControl>

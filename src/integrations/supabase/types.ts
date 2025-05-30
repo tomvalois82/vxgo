@@ -139,9 +139,11 @@ export type Database = {
           empresa: string | null
           evo_instancia: string | null
           evo_key: string | null
+          fotoloja: string | null
           grupoReceptor: string | null
           id: number
           idusuario: number | null
+          promptwtz: string | null
           receptor: Database["public"]["Enums"]["cargos"] | null
           telefone: string | null
         }
@@ -153,9 +155,11 @@ export type Database = {
           empresa?: string | null
           evo_instancia?: string | null
           evo_key?: string | null
+          fotoloja?: string | null
           grupoReceptor?: string | null
           id?: number
           idusuario?: number | null
+          promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
         }
@@ -167,9 +171,11 @@ export type Database = {
           empresa?: string | null
           evo_instancia?: string | null
           evo_key?: string | null
+          fotoloja?: string | null
           grupoReceptor?: string | null
           id?: number
           idusuario?: number | null
+          promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
         }
@@ -643,6 +649,24 @@ export type Database = {
         }
         Relationships: []
       }
+      n8n_historico_iputinga_prime: {
+        Row: {
+          id: number
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          id?: number
+          message: Json
+          session_id: string
+        }
+        Update: {
+          id?: number
+          message?: Json
+          session_id?: string
+        }
+        Relationships: []
+      }
       n8n_historico_olx_vx: {
         Row: {
           id: number
@@ -811,6 +835,7 @@ export type Database = {
           idbubble: string | null
           n8nOlx: string | null
           nome: string | null
+          prompt_whatsapp: string | null
           tbEstoque: string | null
           tbHistorico: string | null
           tbHistoricoOlx: string | null
@@ -833,6 +858,7 @@ export type Database = {
           idbubble?: string | null
           n8nOlx?: string | null
           nome?: string | null
+          prompt_whatsapp?: string | null
           tbEstoque?: string | null
           tbHistorico?: string | null
           tbHistoricoOlx?: string | null
@@ -855,6 +881,7 @@ export type Database = {
           idbubble?: string | null
           n8nOlx?: string | null
           nome?: string | null
+          prompt_whatsapp?: string | null
           tbEstoque?: string | null
           tbHistorico?: string | null
           tbHistoricoOlx?: string | null
