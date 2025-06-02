@@ -11,7 +11,7 @@ export const engineSizes = [
 ];
 
 export const colors = [
-  'Branco', 'Preto', 'Prata', 'Cinza', 'Vermelho', 'Marrom', 'Verde', 'Amarelo'
+  'Branco', 'Preto', 'Prata', 'Cinza', 'Vermelho', 'Marrom', 'Verde', 'Amarelo', 'Azul'
 ];
 
 export const categories = [
