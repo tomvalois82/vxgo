@@ -146,6 +146,8 @@ const CarForm: React.FC<CarFormProps> = ({
     // to their corresponding File objects from localFilesData for upload.
   };
 
+  const characteristicsValue = form.watch('characteristics') || '';
+
   async function handleSubmit(values: CarFormSchema) {
     setUploading(true);
 
@@ -586,43 +588,30 @@ const CarForm: React.FC<CarFormProps> = ({
           uploading={uploading}
         />
 
-        {/* Observações, Características */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Observações</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Descreva observações sobre o veículo"
-                    className="min-h-[120px]"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="characteristics"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Características</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Descreva características do veículo"
-                    className="min-h-[120px]"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        {/* Características (campo único) */}
+        <FormField
+          control={form.control}
+          name="characteristics"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Características (Máx.: 250 caracteres)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Descreva características do veículo"
+                  className="min-h-[120px]"
+                  maxLength={250}
+                  {...field}
+                />
+              </FormControl>
+              <div className="flex justify-end">
+                <span className="text-sm text-gray-500">
+                  {characteristicsValue.length}/250
+                </span>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
         {/* Código do anúncio OLX */}
         <FormField
