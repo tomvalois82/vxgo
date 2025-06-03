@@ -152,7 +152,7 @@ const Auth = () => {
         {/* Login Card */}
         <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-3xl font-bold text-gray-900">Login</CardTitle>
+            <CardTitle className="font-bold text-xl text-slate-500">Login</CardTitle>
             <p className="text-gray-600 mt-2">Entre com suas credenciais para acessar sua conta</p>
           </CardHeader>
           <CardContent className="px-8 pb-8">
