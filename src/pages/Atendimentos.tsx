@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MessageCircle, User, RefreshCw } from 'lucide-react';
+import ReleaseInterventionButton from '@/components/crm/ReleaseInterventionButton';
 
 const Atendimentos = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -64,6 +65,13 @@ const Atendimentos = () => {
     if (sessionId) {
       refetchMessages();
     }
+  };
+
+  const shouldShowReleaseButton = (lead: Lead) => {
+    if (!lead.intervencao) return false;
+    const interventionDate = new Date(lead.intervencao);
+    const now = new Date();
+    return interventionDate > now;
   };
 
   return (
@@ -172,6 +180,16 @@ const Atendimentos = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Release Intervention Button */}
+            {shouldShowReleaseButton(selectedLead) && (
+              <div className="p-4 border-b border-gray-200">
+                <ReleaseInterventionButton
+                  leadId={selectedLead.id}
+                  interventionTime={selectedLead.intervencao!}
+                />
+              </div>
+            )}
 
             {/* Messages Area */}
             <ScrollArea className="flex-1 p-4">
