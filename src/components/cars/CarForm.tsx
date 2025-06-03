@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,8 +11,6 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { uploadCarImages } from "@/lib/uploadCarImages";
 import { Car, List, Pencil, DollarSign, Palette, Gauge, FileText, Video, FileSpreadsheet, Shield, LayoutList, Calendar, LoaderCircle, Tag } from "lucide-react";
-// supabase client is not directly used here for image URLs anymore, but kept for potential future use.
-// import { supabase } from "@/integrations/supabase/client"; 
 import { VehicleType, useFipeBrands } from '@/hooks/useFipeBrands';
 import { toast } from '@/components/ui/use-toast';
 import { formatCurrency, formatMileage, extractNumericValue } from '@/lib/formUtils';
@@ -57,8 +56,6 @@ const CarForm: React.FC<CarFormProps> = ({
       fuelType: initialData.fuelType || '1.0',
       transmission: initialData.transmission || 'Manual',
       inStock: initialData.inStock !== undefined ? initialData.inStock : true,
-      // 'image' (singular) is deprecated from form; using 'fotos' array
-      description: initialData.description || '',
       characteristics: initialData.characteristics || '',
       idOlx: initialData.idOlx || '',
       video: initialData.video || '',

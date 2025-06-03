@@ -20,7 +20,7 @@ interface ConfigData {
 }
 
 const Settings = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState<ConfigData | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -34,17 +34,17 @@ const Settings = () => {
 
   // Load user config
   useEffect(() => {
-    if (user) {
+    if (profile?.id) {
       loadConfig();
     }
-  }, [user]);
+  }, [profile?.id]);
 
   const loadConfig = async () => {
     try {
       const { data, error } = await supabase
         .from('config')
         .select('*')
-        .eq('idusuario', user?.id)
+        .eq('idusuario', profile?.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -68,7 +68,7 @@ const Settings = () => {
       } else {
         // Create default config if doesn't exist
         const defaultConfig = {
-          idusuario: user?.id,
+          idusuario: profile?.id,
           ativo: true,
           pausa: 15,
           alertaNovo: true
@@ -147,7 +147,7 @@ const Settings = () => {
       const { error } = await supabase
         .from('config')
         .update(configData)
-        .eq('idusuario', user?.id);
+        .eq('idusuario', profile?.id);
 
       if (error) throw error;
 
