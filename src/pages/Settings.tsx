@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info, Upload, X } from 'lucide-react';
+import { Info, Upload, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { uploadCarImages } from '@/lib/uploadCarImages';
@@ -99,9 +99,22 @@ const Settings = () => {
     }
   };
 
+  const adjustTime = (field: 'hours' | 'minutes', direction: 'up' | 'down') => {
+    const currentHours = parseInt(watch('pausaHours')) || 0;
+    const currentMinutes = parseInt(watch('pausaMinutes')) || 0;
+    
+    if (field === 'hours') {
+      const newValue = direction === 'up' ? Math.min(currentHours + 1, 99) : Math.max(currentHours - 1, 0);
+      setValue('pausaHours', newValue.toString().padStart(2, '0'));
+    } else {
+      const newValue = direction === 'up' ? Math.min(currentMinutes + 1, 59) : Math.max(currentMinutes - 1, 0);
+      setValue('pausaMinutes', newValue.toString().padStart(2, '0'));
+    }
+  };
+
   const formatTimeInput = (value: string, type: 'hours' | 'minutes') => {
     const numericValue = value.replace(/\D/g, '');
-    const maxValue = type === 'hours' ? 23 : 59;
+    const maxValue = type === 'hours' ? 99 : 59;
     const intValue = Math.min(parseInt(numericValue) || 0, maxValue);
     return intValue.toString().padStart(2, '0');
   };
@@ -235,29 +248,65 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <Input
-                type="text"
-                placeholder="00"
-                maxLength={2}
-                className="w-16 text-center"
-                {...register('pausaHours')}
-                onChange={(e) => {
-                  const formatted = formatTimeInput(e.target.value, 'hours');
-                  setValue('pausaHours', formatted);
-                }}
-              />
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="00"
+                  maxLength={2}
+                  className="w-16 text-center pr-8"
+                  {...register('pausaHours')}
+                  onChange={(e) => {
+                    const formatted = formatTimeInput(e.target.value, 'hours');
+                    setValue('pausaHours', formatted);
+                  }}
+                />
+                <div className="absolute right-1 top-0 flex flex-col h-full">
+                  <button
+                    type="button"
+                    className="flex-1 px-1 hover:bg-gray-100 rounded-t flex items-center justify-center"
+                    onClick={() => adjustTime('hours', 'up')}
+                  >
+                    <ChevronUp size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 px-1 hover:bg-gray-100 rounded-b flex items-center justify-center"
+                    onClick={() => adjustTime('hours', 'down')}
+                  >
+                    <ChevronDown size={12} />
+                  </button>
+                </div>
+              </div>
               <span>:</span>
-              <Input
-                type="text"
-                placeholder="00"
-                maxLength={2}
-                className="w-16 text-center"
-                {...register('pausaMinutes')}
-                onChange={(e) => {
-                  const formatted = formatTimeInput(e.target.value, 'minutes');
-                  setValue('pausaMinutes', formatted);
-                }}
-              />
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="00"
+                  maxLength={2}
+                  className="w-16 text-center pr-8"
+                  {...register('pausaMinutes')}
+                  onChange={(e) => {
+                    const formatted = formatTimeInput(e.target.value, 'minutes');
+                    setValue('pausaMinutes', formatted);
+                  }}
+                />
+                <div className="absolute right-1 top-0 flex flex-col h-full">
+                  <button
+                    type="button"
+                    className="flex-1 px-1 hover:bg-gray-100 rounded-t flex items-center justify-center"
+                    onClick={() => adjustTime('minutes', 'up')}
+                  >
+                    <ChevronUp size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 px-1 hover:bg-gray-100 rounded-b flex items-center justify-center"
+                    onClick={() => adjustTime('minutes', 'down')}
+                  >
+                    <ChevronDown size={12} />
+                  </button>
+                </div>
+              </div>
               <span className="text-sm text-gray-500 ml-2">(horas:minutos)</span>
             </div>
           </CardContent>

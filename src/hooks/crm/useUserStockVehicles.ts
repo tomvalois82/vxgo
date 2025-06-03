@@ -36,8 +36,8 @@ export const useUserStockVehicles = () => {
     // A lista de colunas a serem selecionadas.
     const selectColumns = 'id, nome, marca, modelo, ano_modelo, valor, vendido, placa, created_at, km, renavam, cor, cidade_auto, cambio, combustivel, imagem_principal_url, todas_imagens_urls';
 
-    // Using the table name dynamically but casting to avoid TypeScript errors
-    const { data, error } = await supabase
+    // Using any to bypass TypeScript strict typing for dynamic table names
+    const { data, error } = await (supabase as any)
       .from(profile.tbEstoque)
       .select(selectColumns);
 
