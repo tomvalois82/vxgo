@@ -13,10 +13,12 @@ import CarDetails from "@/pages/CarDetails";
 import Connections from "@/pages/Connections";
 import Settings from "@/pages/Settings";
 import Atendimentos from "@/pages/Atendimentos";
+import Users from "@/pages/Users";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
 import RequireAuth from "@/components/auth/RequireAuth";
+import RequireAdmin from "@/components/auth/RequireAdmin";
 
 // Import React Query components
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -44,6 +46,11 @@ const App = () => (
                   <Route path="/connections" element={<Connections />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/users" element={
+                    <RequireAdmin>
+                      <Users />
+                    </RequireAdmin>
+                  } />
                 </Route>
               </Route>
               <Route path="*" element={<NotFound />} />

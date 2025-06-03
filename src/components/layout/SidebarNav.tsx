@@ -1,11 +1,13 @@
 
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Car, Link2, Settings, MessageCircle } from 'lucide-react';
+import { Car, Link2, Settings, MessageCircle, Users } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SidebarNav = () => {
   // Force component to only render when we have access to Router context
   const location = useLocation();
+  const { profile } = useAuth();
   
   const navLinks = [
     { to: '/', icon: <Car size={20} />, label: 'Estoque', exact: true },
@@ -13,6 +15,16 @@ const SidebarNav = () => {
     { to: '/connections', icon: <Link2 size={20} />, label: 'Conexões', exact: false },
     { to: '/settings', icon: <Settings size={20} />, label: 'Configurações', exact: false },
   ];
+
+  // Adicionar link de usuários apenas para super administradores
+  if (profile?.superadm) {
+    navLinks.push({
+      to: '/users',
+      icon: <Users size={20} />,
+      label: 'Usuários',
+      exact: false
+    });
+  }
 
   return (
     <nav className="bg-white shadow-sm h-full px-4 py-6">

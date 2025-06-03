@@ -855,6 +855,7 @@ export type Database = {
           n8nOlx: string | null
           nome: string | null
           prompt_whatsapp: string | null
+          superadm: boolean | null
           tbEstoque: string | null
           tbHistorico: string | null
           tbHistoricoOlx: string | null
@@ -878,6 +879,7 @@ export type Database = {
           n8nOlx?: string | null
           nome?: string | null
           prompt_whatsapp?: string | null
+          superadm?: boolean | null
           tbEstoque?: string | null
           tbHistorico?: string | null
           tbHistoricoOlx?: string | null
@@ -901,6 +903,7 @@ export type Database = {
           n8nOlx?: string | null
           nome?: string | null
           prompt_whatsapp?: string | null
+          superadm?: boolean | null
           tbEstoque?: string | null
           tbHistorico?: string | null
           tbHistoricoOlx?: string | null
