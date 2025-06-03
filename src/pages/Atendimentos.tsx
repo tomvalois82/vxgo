@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MessageCircle, User, RefreshCw } from 'lucide-react';
 import ReleaseInterventionButton from '@/components/crm/ReleaseInterventionButton';
 
@@ -65,6 +66,36 @@ const Atendimentos = () => {
     if (!interest) return '';
     if (interest.length <= maxLength) return interest;
     return interest.substring(0, maxLength) + '...';
+  };
+
+  const truncateInterestWithTooltip = (interest: string | null, maxLength: number = 100) => {
+    if (!interest) return null;
+    
+    const isTruncated = interest.length > maxLength;
+    const displayText = isTruncated ? interest.substring(0, maxLength) + '...' : interest;
+
+    if (isTruncated) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className="text-sm text-gray-500 mt-1 cursor-help">
+                Interesse: {displayText}
+              </p>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-md">
+              <p>Interesse: {interest}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    return (
+      <p className="text-sm text-gray-500 mt-1">
+        Interesse: {displayText}
+      </p>
+    );
   };
 
   const handleRefreshMessages = () => {
@@ -180,11 +211,7 @@ const Atendimentos = () => {
                         {formatPhoneNumber(selectedLead.telefone)}
                       </p>
                     )}
-                    {selectedLead.interesse && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        Interesse: {selectedLead.interesse}
-                      </p>
-                    )}
+                    {selectedLead.interesse && truncateInterestWithTooltip(selectedLead.interesse, 100)}
                   </div>
                 </div>
                 <Button
