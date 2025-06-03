@@ -198,9 +198,7 @@ const Auth = () => {
 
         {/* Footer */}
         <div className="text-center">
-          <p className="text-sm text-gray-500">
-            © 2024 Sua empresa. Todos os direitos reservados.
-          </p>
+          <p className="text-sm text-gray-500">© 2024 VX Motors . Todos os direitos reservados.</p>
         </div>
       </div>
     </div>;
