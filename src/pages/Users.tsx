@@ -81,10 +81,9 @@ const Users = () => {
     },
   });
 
+  // Filtrar apenas por nome
   const filteredUsers = users?.filter(user =>
-    user.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.telefone?.includes(searchTerm)
+    user.nome?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const handleEditUser = (user: User) => {
@@ -126,12 +125,12 @@ const Users = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Barra de pesquisa */}
+          {/* Barra de pesquisa - busca apenas por nome */}
           <div className="mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Buscar por nome, email ou telefone..."
+                placeholder="Buscar por nome..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -144,9 +143,7 @@ const Users = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Telefone</TableHead>
+                  <TableHead className="w-1/3">Nome</TableHead>
                   <TableHead>Instância</TableHead>
                   <TableHead>Estoque</TableHead>
                   <TableHead>Histórico</TableHead>
@@ -158,7 +155,7 @@ const Users = () => {
               <TableBody>
                 {filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                       Nenhum usuário encontrado
                     </TableCell>
                   </TableRow>
@@ -168,9 +165,9 @@ const Users = () => {
                       key={user.id}
                       className={!user.ativo ? 'opacity-60 bg-gray-50' : ''}
                     >
-                      <TableCell className="font-medium">{user.nome || '-'}</TableCell>
-                      <TableCell>{user.email || '-'}</TableCell>
-                      <TableCell>{user.telefone || '-'}</TableCell>
+                      <TableCell className="font-medium w-1/3 break-words">
+                        {user.nome || '-'}
+                      </TableCell>
                       <TableCell>{user.evo_instancia || '-'}</TableCell>
                       <TableCell>{user.tbEstoque || '-'}</TableCell>
                       <TableCell>{user.tbHistorico || '-'}</TableCell>
