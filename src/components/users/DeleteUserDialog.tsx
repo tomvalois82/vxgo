@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +18,14 @@ interface User {
   uid: string | null;
   nome: string | null;
   email: string | null;
+  evo_key: string | null;
+  telefone: string | null;
+  evo_instancia: string | null;
+  tbEstoque: string | null;
+  tbHistorico: string | null;
+  ativo: boolean;
+  superadm: boolean;
+  cargo: string | null;
 }
 
 interface DeleteUserDialogProps {

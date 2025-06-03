@@ -21,6 +21,7 @@ interface User {
   telefone: string | null;
   email: string | null;
   evo_instancia: string | null;
+  evo_key: string | null;
   tbEstoque: string | null;
   tbHistorico: string | null;
   ativo: boolean;

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
@@ -17,6 +18,7 @@ interface UserProfile {
   tbHistorico: string | null;
   credencialOlx: string | null;
   n8nOlx: string | null;
+  superadm: boolean;
   uid?: string | null;
   email?: string | null;
 }
