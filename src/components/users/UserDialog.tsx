@@ -133,11 +133,33 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
     },
   });
 
+  const updatePasswordMutation = useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const { data, error } = await supabase.functions.invoke('admin-update-user-password', {
+        body: {
+          userId,
+          newPassword: password,
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onError: (error) => {
+      console.error('Error updating password:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar senha.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateUserMutation = useMutation({
     mutationFn: async (userData: typeof formData) => {
       if (!user) throw new Error('Usuário não encontrado');
 
-      // Atualizar dados na tabela usuario
+      // Atualizar dados na tabela usuario (exceto senha)
       const { error: userError } = await supabase
         .from('usuario')
         .update({
@@ -155,14 +177,12 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
 
       if (userError) throw userError;
 
-      // Se senha foi fornecida, atualizar no auth
+      // Se senha foi fornecida, atualizar via Edge Function
       if (userData.password && user.uid) {
-        const { error: passwordError } = await supabase.auth.admin.updateUserById(
-          user.uid,
-          { password: userData.password }
-        );
-        
-        if (passwordError) throw passwordError;
+        await updatePasswordMutation.mutateAsync({
+          userId: user.uid,
+          password: userData.password,
+        });
       }
     },
     onSuccess: () => {
@@ -204,6 +224,16 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
       return;
     }
 
+    // Validação de força da senha (se fornecida)
+    if (formData.password && formData.password.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (user) {
       updateUserMutation.mutate(formData);
     } else {
@@ -211,7 +241,7 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
     }
   };
 
-  const isLoading = createUserMutation.isPending || updateUserMutation.isPending;
+  const isLoading = createUserMutation.isPending || updateUserMutation.isPending || updatePasswordMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -308,7 +338,7 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
 
             <div className="col-span-2">
               <Label htmlFor="password">
-                {user ? 'Nova Senha (deixe em branco para não alterar)' : 'Senha *'}
+                {user ? 'Nova Senha (deixe em branco para não alterar - mínimo 6 caracteres)' : 'Senha * (mínimo 6 caracteres)'}
               </Label>
               <Input
                 id="password"
@@ -316,6 +346,7 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required={!user}
+                minLength={6}
               />
             </div>
           </div>
