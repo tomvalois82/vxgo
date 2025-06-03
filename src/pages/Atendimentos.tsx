@@ -45,16 +45,19 @@ const Atendimentos = () => {
   };
 
   const getOriginInfo = (lead: Lead) => {
-    if (lead.session_id_whatsaap) {
-      return { text: 'WhatsApp', color: 'bg-green-200 text-green-800' };
+    const origem = lead.Origem?.toLowerCase() || '';
+    
+    if (origem.includes('whatsapp')) {
+      return { text: 'WhatsApp', backgroundColor: '#b4f5d3' };
     }
-    if (lead.session_id_olx) {
-      return { text: 'OLX', color: 'bg-purple-200 text-purple-800' };
+    if (origem.includes('olx')) {
+      return { text: 'OLX', backgroundColor: '#f0e6ff' };
     }
-    if (lead.Origem?.toLowerCase().includes('instagram')) {
-      return { text: 'Instagram', color: 'bg-pink-200 text-pink-800' };
+    if (origem.includes('instagram')) {
+      return { text: 'Instagram', backgroundColor: '#f8b4e1' };
     }
-    return { text: 'Desconhecido', color: 'bg-gray-200 text-gray-800' };
+    
+    return { text: 'Desconhecido', backgroundColor: '#f2f2f2' };
   };
 
   const handleRefreshMessages = () => {
@@ -106,9 +109,12 @@ const Atendimentos = () => {
                           <p className="text-sm font-medium text-gray-900 truncate">
                             {getLeadDisplayName(lead)}
                           </p>
-                          <Badge className={`text-xs ${originInfo.color} border-0`}>
+                          <span 
+                            className="text-xs font-medium text-gray-800 px-2 py-1 rounded"
+                            style={{ backgroundColor: originInfo.backgroundColor }}
+                          >
                             {originInfo.text}
-                          </Badge>
+                          </span>
                         </div>
                         {lead.telefone && (
                           <p className="text-xs text-gray-500 truncate">
