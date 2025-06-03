@@ -17,6 +17,8 @@ export const useReleaseIntervention = () => {
       if (error) {
         throw new Error(error.message);
       }
+      
+      return leadId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] });
@@ -35,7 +37,7 @@ export const useReleaseIntervention = () => {
   });
 
   return {
-    releaseIntervention: releaseInterventionMutation.mutate,
+    releaseIntervention: releaseInterventionMutation.mutateAsync,
     isLoading: releaseInterventionMutation.isPending,
   };
 };

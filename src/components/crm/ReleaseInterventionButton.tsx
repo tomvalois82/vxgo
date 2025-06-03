@@ -7,11 +7,13 @@ import { useReleaseIntervention } from '@/hooks/crm/useReleaseIntervention';
 interface ReleaseInterventionButtonProps {
   leadId: number;
   interventionTime: string;
+  onInterventionReleased?: () => void;
 }
 
 const ReleaseInterventionButton: React.FC<ReleaseInterventionButtonProps> = ({
   leadId,
   interventionTime,
+  onInterventionReleased,
 }) => {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [shouldShow, setShouldShow] = useState<boolean>(false);
@@ -42,8 +44,16 @@ const ReleaseInterventionButton: React.FC<ReleaseInterventionButtonProps> = ({
     return () => clearInterval(interval);
   }, [interventionTime]);
 
-  const handleRelease = () => {
-    releaseIntervention(leadId);
+  const handleRelease = async () => {
+    try {
+      await releaseIntervention(leadId);
+      // Trigger reload of the conversation after successful release
+      if (onInterventionReleased) {
+        onInterventionReleased();
+      }
+    } catch (error) {
+      console.error('Error releasing intervention:', error);
+    }
   };
 
   if (!shouldShow) {

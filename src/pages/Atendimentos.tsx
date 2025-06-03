@@ -11,7 +11,7 @@ import ReleaseInterventionButton from '@/components/crm/ReleaseInterventionButto
 
 const Atendimentos = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const { data: leads, isLoading: leadsLoading } = useLeads();
+  const { data: leads, isLoading: leadsLoading, refetch: refetchLeads } = useLeads();
   
   // Get session ID for the selected lead (prioritize WhatsApp over OLX)
   const sessionId = selectedLead?.session_id_whatsaap || selectedLead?.session_id_olx || null;
@@ -61,6 +61,12 @@ const Atendimentos = () => {
     return { text: 'Desconhecido', backgroundColor: '#f2f2f2' };
   };
 
+  const truncateInterest = (interest: string | null, maxLength: number = 30) => {
+    if (!interest) return '';
+    if (interest.length <= maxLength) return interest;
+    return interest.substring(0, maxLength) + '...';
+  };
+
   const handleRefreshMessages = () => {
     if (sessionId) {
       refetchMessages();
@@ -72,6 +78,14 @@ const Atendimentos = () => {
     const interventionDate = new Date(lead.intervencao);
     const now = new Date();
     return interventionDate > now;
+  };
+
+  const handleInterventionReleased = async () => {
+    // Reload both leads list and current conversation
+    await refetchLeads();
+    if (sessionId) {
+      await refetchMessages();
+    }
   };
 
   return (
@@ -131,7 +145,7 @@ const Atendimentos = () => {
                         )}
                         {lead.interesse && (
                           <p className="text-xs text-gray-600 truncate mt-1">
-                            Interesse: {lead.interesse}
+                            Interesse: {truncateInterest(lead.interesse, 30)}
                           </p>
                         )}
                       </div>
@@ -166,6 +180,11 @@ const Atendimentos = () => {
                         {formatPhoneNumber(selectedLead.telefone)}
                       </p>
                     )}
+                    {selectedLead.interesse && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Interesse: {selectedLead.interesse}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <Button
@@ -187,6 +206,7 @@ const Atendimentos = () => {
                 <ReleaseInterventionButton
                   leadId={selectedLead.id}
                   interventionTime={selectedLead.intervencao!}
+                  onInterventionReleased={handleInterventionReleased}
                 />
               </div>
             )}
