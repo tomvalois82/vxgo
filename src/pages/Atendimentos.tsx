@@ -5,6 +5,7 @@ import { useMessages } from '@/hooks/crm/useMessages';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { MessageCircle, User, RefreshCw } from 'lucide-react';
 
 const Atendimentos = () => {
@@ -43,11 +44,17 @@ const Atendimentos = () => {
     return phone ? phone.slice(-2) : '??';
   };
 
-  const getOriginColor = (lead: Lead) => {
-    if (lead.session_id_whatsaap) return 'bg-green-100'; // WhatsApp - Verde claro
-    if (lead.session_id_olx) return 'bg-purple-100'; // OLX - Roxo
-    if (lead.Origem?.toLowerCase().includes('instagram')) return 'bg-pink-100'; // Instagram - Lilás
-    return 'bg-gray-50'; // Default
+  const getOriginInfo = (lead: Lead) => {
+    if (lead.session_id_whatsaap) {
+      return { text: 'WhatsApp', color: 'bg-green-200 text-green-800' };
+    }
+    if (lead.session_id_olx) {
+      return { text: 'OLX', color: 'bg-purple-200 text-purple-800' };
+    }
+    if (lead.Origem?.toLowerCase().includes('instagram')) {
+      return { text: 'Instagram', color: 'bg-pink-200 text-pink-800' };
+    }
+    return { text: 'Desconhecido', color: 'bg-gray-200 text-gray-800' };
   };
 
   const handleRefreshMessages = () => {
@@ -78,45 +85,46 @@ const Atendimentos = () => {
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {leads.map((lead) => (
-                <div
-                  key={lead.id}
-                  onClick={() => setSelectedLead(lead)}
-                  className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedLead?.id === lead.id ? 'bg-blue-50 border-r-2 border-carblue' : ''
-                  } ${getOriginColor(lead)}`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-12 w-12">
-                      <AvatarFallback className="bg-carblue text-white text-sm">
-                        {getLeadInitials(lead)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {getLeadDisplayName(lead)}
-                        </p>
-                        {lead.Origem && (
-                          <span className="text-xs text-gray-500 bg-white/50 px-2 py-1 rounded-full">
-                            {lead.Origem}
-                          </span>
+              {leads.map((lead) => {
+                const originInfo = getOriginInfo(lead);
+                return (
+                  <div
+                    key={lead.id}
+                    onClick={() => setSelectedLead(lead)}
+                    className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
+                      selectedLead?.id === lead.id ? 'bg-blue-50 border-r-2 border-carblue' : ''
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback className="bg-carblue text-white text-sm">
+                          {getLeadInitials(lead)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {getLeadDisplayName(lead)}
+                          </p>
+                          <Badge className={`text-xs ${originInfo.color} border-0`}>
+                            {originInfo.text}
+                          </Badge>
+                        </div>
+                        {lead.telefone && (
+                          <p className="text-xs text-gray-500 truncate">
+                            {formatPhoneNumber(lead.telefone)}
+                          </p>
+                        )}
+                        {lead.interesse && (
+                          <p className="text-xs text-gray-600 truncate mt-1">
+                            Interesse: {lead.interesse}
+                          </p>
                         )}
                       </div>
-                      {lead.telefone && (
-                        <p className="text-xs text-gray-500 truncate">
-                          {formatPhoneNumber(lead.telefone)}
-                        </p>
-                      )}
-                      {lead.interesse && (
-                        <p className="text-xs text-gray-600 truncate mt-1">
-                          Interesse: {lead.interesse}
-                        </p>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </ScrollArea>
