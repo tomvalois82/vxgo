@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useCars } from '@/contexts/CarContext';
@@ -8,34 +7,33 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Edit, Trash2, ArrowLeft, Car } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-
 const CarDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const navigate = useNavigate();
-  const { getCar, deleteCar } = useCars();
-  
+  const {
+    getCar,
+    deleteCar
+  } = useCars();
   const car = id ? getCar(id) : undefined;
-
   if (!car) {
-    return (
-      <div className="flex flex-col items-center justify-center py-10">
+    return <div className="flex flex-col items-center justify-center py-10">
         <h2 className="text-2xl font-bold mb-4">Carro não encontrado</h2>
         <Link to="/">
           <Button>Voltar ao Estoque</Button>
         </Link>
-      </div>
-    );
+      </div>;
   }
-
   const handleDelete = () => {
     if (confirm(`Tem certeza que deseja excluir o ${car.brand} ${car.model}?`)) {
       deleteCar(car.id);
       navigate('/');
     }
   };
-
-  return (
-    <div>
+  return <div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
@@ -52,11 +50,7 @@ const CarDetail = () => {
               <span>Editar</span>
             </Button>
           </Link>
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-1 text-carred hover:text-white hover:bg-carred"
-            onClick={handleDelete}
-          >
+          <Button variant="outline" className="flex items-center gap-1 text-carred hover:text-white hover:bg-carred" onClick={handleDelete}>
             <Trash2 size={16} />
             <span>Excluir</span>
           </Button>
@@ -67,13 +61,9 @@ const CarDetail = () => {
         <div className="md:col-span-2">
           <Card className="overflow-hidden">
             <div className="aspect-video bg-gray-100 flex items-center justify-center">
-              {car.image ? (
-                <img src={car.image} alt={`${car.brand} ${car.model}`} className="w-full h-full object-cover" />
-              ) : (
-                <div className="flex items-center justify-center h-full w-full bg-gray-200">
+              {car.image ? <img src={car.image} alt={`${car.brand} ${car.model}`} className="w-full h-full object-cover" /> : <div className="flex items-center justify-center h-full w-full bg-gray-200">
                   <Car size={96} className="text-gray-400" />
-                </div>
-              )}
+                </div>}
             </div>
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-4">Descrição</h2>
@@ -105,7 +95,7 @@ const CarDetail = () => {
                   <div>
                     <h3 className="font-medium text-gray-500">Especificações</h3>
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      <div className="text-sm">Combustível:</div>
+                      <div className="text-sm">Motor:</div>
                       <div className="text-sm font-medium">{car.fuelType}</div>
                       
                       <div className="text-sm">Transmissão:</div>
@@ -116,11 +106,7 @@ const CarDetail = () => {
                       
                       <div className="text-sm">Status:</div>
                       <div className="text-sm font-medium">
-                        {car.inStock ? (
-                          <Badge className="bg-green-500 hover:bg-green-600">Em estoque</Badge>
-                        ) : (
-                          <Badge variant="destructive">Fora de estoque</Badge>
-                        )}
+                        {car.inStock ? <Badge className="bg-green-500 hover:bg-green-600">Em estoque</Badge> : <Badge variant="destructive">Fora de estoque</Badge>}
                       </div>
                     </div>
                   </div>
@@ -146,23 +132,17 @@ const CarDetail = () => {
                   <div>{new Date(car.updatedAt).toLocaleDateString('pt-BR')}</div>
                 </div>
                 
-                <Separator />
+                
                 
                 <div className="flex flex-col gap-2">
-                  <Button className="w-full bg-carblue hover:bg-carblue-dark">
-                    Reservar Veículo
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    Solicitar Informações
-                  </Button>
+                  
+                  
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default CarDetail;
