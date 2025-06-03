@@ -134,6 +134,7 @@ export type Database = {
         Row: {
           alertaNovo: boolean | null
           apikeyvoice: string | null
+          ativo: boolean | null
           codVoice: string | null
           created_at: string
           empresa: string | null
@@ -143,6 +144,7 @@ export type Database = {
           grupoReceptor: string | null
           id: number
           idusuario: number | null
+          pausa: number | null
           promptwtz: string | null
           receptor: Database["public"]["Enums"]["cargos"] | null
           telefone: string | null
@@ -150,6 +152,7 @@ export type Database = {
         Insert: {
           alertaNovo?: boolean | null
           apikeyvoice?: string | null
+          ativo?: boolean | null
           codVoice?: string | null
           created_at?: string
           empresa?: string | null
@@ -159,6 +162,7 @@ export type Database = {
           grupoReceptor?: string | null
           id?: number
           idusuario?: number | null
+          pausa?: number | null
           promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
@@ -166,6 +170,7 @@ export type Database = {
         Update: {
           alertaNovo?: boolean | null
           apikeyvoice?: string | null
+          ativo?: boolean | null
           codVoice?: string | null
           created_at?: string
           empresa?: string | null
@@ -175,6 +180,7 @@ export type Database = {
           grupoReceptor?: string | null
           id?: number
           idusuario?: number | null
+          pausa?: number | null
           promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
@@ -586,11 +592,13 @@ export type Database = {
       }
       lead: {
         Row: {
+          config: number | null
           created_at: string
           email: string | null
           id: number
           idUsuario: number | null
           interesse: string | null
+          intervencao: string | null
           nome: string | null
           Origem: string | null
           session_id_olx: string | null
@@ -598,11 +606,13 @@ export type Database = {
           telefone: string | null
         }
         Insert: {
+          config?: number | null
           created_at?: string
           email?: string | null
           id?: number
           idUsuario?: number | null
           interesse?: string | null
+          intervencao?: string | null
           nome?: string | null
           Origem?: string | null
           session_id_olx?: string | null
@@ -610,11 +620,13 @@ export type Database = {
           telefone?: string | null
         }
         Update: {
+          config?: number | null
           created_at?: string
           email?: string | null
           id?: number
           idUsuario?: number | null
           interesse?: string | null
+          intervencao?: string | null
           nome?: string | null
           Origem?: string | null
           session_id_olx?: string | null
@@ -622,6 +634,13 @@ export type Database = {
           telefone?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_config_fkey"
+            columns: ["config"]
+            isOneToOne: false
+            referencedRelation: "config"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lead_idUsuario_fkey"
             columns: ["idUsuario"]
