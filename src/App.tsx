@@ -13,6 +13,7 @@ import CarDetails from "@/pages/CarDetails";
 import Connections from "@/pages/Connections";
 import Settings from "@/pages/Settings";
 import About from "@/pages/About";
+import Atendimentos from "@/pages/Atendimentos";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
@@ -40,6 +41,7 @@ const App = () => (
                   <Route path="/add-car" element={<AddCar />} />
                   <Route path="/edit-car/:id" element={<EditCar />} />
                   <Route path="/car/:id" element={<CarDetails />} />
+                  <Route path="/atendimentos" element={<Atendimentos />} />
                   <Route path="/connections" element={<Connections />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/about" element={<About />} />

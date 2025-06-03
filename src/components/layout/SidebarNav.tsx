@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Car, Info, Link2, Settings } from 'lucide-react';
+import { Car, Info, Link2, Settings, MessageCircle } from 'lucide-react';
 
 const SidebarNav = () => {
   // Force component to only render when we have access to Router context
@@ -9,6 +9,7 @@ const SidebarNav = () => {
   
   const navLinks = [
     { to: '/', icon: <Car size={20} />, label: 'Estoque', exact: true },
+    { to: '/atendimentos', icon: <MessageCircle size={20} />, label: 'Atendimentos', exact: false },
     { to: '/connections', icon: <Link2 size={20} />, label: 'Conexões', exact: false },
     { to: '/settings', icon: <Settings size={20} />, label: 'Configurações', exact: false },
     { to: '/about', icon: <Info size={20} />, label: 'Sobre', exact: false },
