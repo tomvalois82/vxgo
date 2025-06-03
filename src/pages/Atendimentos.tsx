@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLeads, Lead } from '@/hooks/crm/useLeads';
 import { useMessages } from '@/hooks/crm/useMessages';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MessageCircle, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MessageCircle, User, RefreshCw } from 'lucide-react';
 
 const Atendimentos = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -12,7 +13,16 @@ const Atendimentos = () => {
   
   // Get session ID for the selected lead (prioritize WhatsApp over OLX)
   const sessionId = selectedLead?.session_id_whatsaap || selectedLead?.session_id_olx || null;
-  const { data: messages, isLoading: messagesLoading } = useMessages(sessionId);
+  const { data: messages, isLoading: messagesLoading, refetch: refetchMessages } = useMessages(sessionId);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages load or update
+  useEffect(() => {
+    if (messages && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const formatPhoneNumber = (phone: string | null) => {
     if (!phone) return '';
@@ -31,6 +41,19 @@ const Atendimentos = () => {
     }
     const phone = formatPhoneNumber(lead.telefone);
     return phone ? phone.slice(-2) : '??';
+  };
+
+  const getOriginColor = (lead: Lead) => {
+    if (lead.session_id_whatsaap) return 'bg-green-100'; // WhatsApp - Verde claro
+    if (lead.session_id_olx) return 'bg-purple-100'; // OLX - Roxo
+    if (lead.Origem?.toLowerCase().includes('instagram')) return 'bg-pink-100'; // Instagram - Lilás
+    return 'bg-gray-50'; // Default
+  };
+
+  const handleRefreshMessages = () => {
+    if (sessionId) {
+      refetchMessages();
+    }
   };
 
   return (
@@ -61,7 +84,7 @@ const Atendimentos = () => {
                   onClick={() => setSelectedLead(lead)}
                   className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
                     selectedLead?.id === lead.id ? 'bg-blue-50 border-r-2 border-carblue' : ''
-                  }`}
+                  } ${getOriginColor(lead)}`}
                 >
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-12 w-12">
@@ -75,7 +98,7 @@ const Atendimentos = () => {
                           {getLeadDisplayName(lead)}
                         </p>
                         {lead.Origem && (
-                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                          <span className="text-xs text-gray-500 bg-white/50 px-2 py-1 rounded-full">
                             {lead.Origem}
                           </span>
                         )}
@@ -105,22 +128,34 @@ const Atendimentos = () => {
           <>
             {/* Chat Header */}
             <div className="p-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center space-x-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-carblue text-white text-sm">
-                    {getLeadInitials(selectedLead)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h3 className="font-medium text-gray-900">
-                    {getLeadDisplayName(selectedLead)}
-                  </h3>
-                  {selectedLead.telefone && (
-                    <p className="text-sm text-gray-500">
-                      {formatPhoneNumber(selectedLead.telefone)}
-                    </p>
-                  )}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-carblue text-white text-sm">
+                      {getLeadInitials(selectedLead)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-medium text-gray-900">
+                      {getLeadDisplayName(selectedLead)}
+                    </h3>
+                    {selectedLead.telefone && (
+                      <p className="text-sm text-gray-500">
+                        {formatPhoneNumber(selectedLead.telefone)}
+                      </p>
+                    )}
+                  </div>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefreshMessages}
+                  disabled={messagesLoading}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw size={16} className={messagesLoading ? 'animate-spin' : ''} />
+                  Atualizar
+                </Button>
               </div>
             </div>
 
@@ -137,25 +172,37 @@ const Atendimentos = () => {
               ) : (
                 <div className="space-y-4">
                   {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        message.type === 'human' ? 'justify-start' : 'justify-end'
-                      }`}
-                    >
+                    <div key={message.id}>
                       <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.type === 'human'
-                            ? 'bg-gray-100 text-gray-900'
-                            : 'bg-carblue text-white'
+                        className={`flex ${
+                          message.type === 'human' ? 'justify-start' : 'justify-end'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
+                        <div
+                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                            message.type === 'human'
+                              ? 'bg-gray-100 text-gray-900'
+                              : 'bg-carblue text-white'
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap break-words">
+                            {message.content}
+                          </p>
+                        </div>
                       </div>
+                      {/* Show intervention notice for AI messages */}
+                      {message.type === 'ai' && message.interventionRequested && (
+                        <div className="flex justify-end mt-1">
+                          <div className="max-w-xs lg:max-w-md">
+                            <p className="text-xs text-gray-500 italic">
+                              Intervenção Humana Solicitada 📢
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </ScrollArea>

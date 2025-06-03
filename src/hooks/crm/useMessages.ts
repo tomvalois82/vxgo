@@ -14,6 +14,7 @@ export interface ParsedMessage {
   type: 'human' | 'ai';
   content: string;
   timestamp?: string;
+  interventionRequested?: boolean;
 }
 
 const parseMessageContent = (message: any): ParsedMessage | null => {
@@ -29,6 +30,7 @@ const parseMessageContent = (message: any): ParsedMessage | null => {
 
   if (message.type === 'ai') {
     let content = message.content || '';
+    let interventionRequested = false;
     
     // Try to parse JSON content for AI responses
     if (content.includes('```json')) {
@@ -37,10 +39,22 @@ const parseMessageContent = (message: any): ParsedMessage | null => {
         if (jsonMatch) {
           const jsonData = JSON.parse(jsonMatch[1]);
           content = jsonData.response || content;
+          interventionRequested = jsonData.acionar_gerencia === true;
         }
       } catch (e) {
         // If parsing fails, use original content
         console.warn('Failed to parse AI message JSON:', e);
+      }
+    } else {
+      // Try to parse direct JSON format
+      try {
+        const jsonData = JSON.parse(content);
+        if (jsonData.response) {
+          content = jsonData.response;
+          interventionRequested = jsonData.acionar_gerencia === true;
+        }
+      } catch (e) {
+        // Not JSON, use as is
       }
     }
 
@@ -48,6 +62,7 @@ const parseMessageContent = (message: any): ParsedMessage | null => {
       id: Math.random(),
       type: 'ai',
       content,
+      interventionRequested,
     };
   }
 
