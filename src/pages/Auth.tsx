@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -5,13 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle, LoaderCircle } from 'lucide-react';
+import { AlertCircle, LoaderCircle, Mail, Lock } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { olxService } from '@/services/olxService';
 
 const Auth = () => {
-  // isLogin será sempre true, isForgotPassword sempre false
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -141,10 +141,10 @@ const Auth = () => {
   // Show loading state when processing OLX auth
   if (isLoading && new URLSearchParams(location.search).get('code')) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-center text-2xl font-bold">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md shadow-xl border-0">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-gray-900">
               Processando integração OLX
             </CardTitle>
           </CardHeader>
@@ -159,54 +159,106 @@ const Auth = () => {
     );
   }
 
-  const renderAuthForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={isLoading}
-        />
-      </div>
-      <div>
-        <Input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={isLoading}
-        />
-      </div>
-      <div>
-        <Button type="submit" className="w-full" loading={isLoading} disabled={isLoading}>
-          Entrar
-        </Button>
-      </div>
-    </form>
-  );
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl font-bold">
-            Entrar
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {errorMsg && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{errorMsg}</AlertDescription>
-            </Alert>
-          )}
-          {renderAuthForm()}
-        </CardContent>
-      </Card>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        {/* Logo */}
+        <div className="text-center">
+          <img 
+            src="/lovable-uploads/52138b81-a214-4f96-b29d-aecb7152eb1e.png" 
+            alt="Logo" 
+            className="mx-auto h-24 w-auto mb-8"
+          />
+        </div>
+
+        {/* Login Card */}
+        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-3xl font-bold text-gray-900">
+              Entrar
+            </CardTitle>
+            <p className="text-gray-600 mt-2">Entre com suas credenciais para acessar sua conta</p>
+          </CardHeader>
+          <CardContent className="px-8 pb-8">
+            {errorMsg && (
+              <Alert variant="destructive" className="mb-6 border-red-200 bg-red-50">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-red-800">{errorMsg}</AlertDescription>
+              </Alert>
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                {/* Email Input */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <Input
+                    type="email"
+                    placeholder="Digite seu e-mail"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    className="pl-10 h-12 border-gray-300 focus:border-primary focus:ring-primary rounded-lg text-gray-900 placeholder:text-gray-500"
+                  />
+                </div>
+
+                {/* Password Input */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <Input
+                    type="password"
+                    placeholder="Digite sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    className="pl-10 h-12 border-gray-300 focus:border-primary focus:ring-primary rounded-lg text-gray-900 placeholder:text-gray-500"
+                  />
+                </div>
+              </div>
+
+              {/* Login Button */}
+              <Button 
+                type="submit" 
+                className="w-full h-12 bg-gradient-to-r from-carblue to-carblue-dark hover:from-carblue-dark hover:to-carblue text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]" 
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar'
+                )}
+              </Button>
+            </form>
+
+            {/* Forgot Password Link */}
+            <div className="mt-6 text-center">
+              <a 
+                href="#" 
+                className="text-sm text-carblue hover:text-carblue-dark transition-colors duration-200 font-medium"
+                onClick={(e) => e.preventDefault()}
+              >
+                Esqueceu sua senha?
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Footer */}
+        <div className="text-center">
+          <p className="text-sm text-gray-500">
+            © 2024 Sua empresa. Todos os direitos reservados.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
