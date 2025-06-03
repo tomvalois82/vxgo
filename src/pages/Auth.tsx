@@ -9,6 +9,7 @@ import { AlertCircle, LoaderCircle, Mail, Lock } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { olxService } from '@/services/olxService';
+
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -96,6 +97,7 @@ const Auth = () => {
       handleOlxAuth();
     }
   }, [location.search, user, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -146,12 +148,16 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center">
-          <img alt="Logo" className="mx-auto h-24 w-auto mb-8" src="/lovable-uploads/a466d3f7-b8f0-43e6-a383-1410d2e26da0.png" />
+          <img alt="Logo" className="mx-auto h-20 w-auto" src="/lovable-uploads/a466d3f7-b8f0-43e6-a383-1410d2e26da0.png" />
         </div>
 
         {/* Login Card */}
         <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
           <CardHeader className="text-center pb-4">
+            {/* Logo */}
+            <div className="mb-6">
+              <img alt="Logo" className="mx-auto h-20 w-auto" src="/lovable-uploads/a466d3f7-b8f0-43e6-a383-1410d2e26da0.png" />
+            </div>
             <CardTitle className="font-bold text-xl text-slate-500">Login</CardTitle>
             <p className="text-gray-600 mt-2">Entre com suas credenciais para acessar sua conta</p>
           </CardHeader>
@@ -203,4 +209,5 @@ const Auth = () => {
       </div>
     </div>;
 };
+
 export default Auth;
