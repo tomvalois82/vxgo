@@ -14,6 +14,7 @@ import Connections from "@/pages/Connections";
 import Settings from "@/pages/Settings";
 import Atendimentos from "@/pages/Atendimentos";
 import Users from "@/pages/Users";
+import PromptEditor from "@/pages/PromptEditor";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
@@ -49,6 +50,11 @@ const App = () => (
                   <Route path="/users" element={
                     <RequireAdmin>
                       <Users />
+                    </RequireAdmin>
+                  } />
+                  <Route path="/prompt-editor/:configId" element={
+                    <RequireAdmin>
+                      <PromptEditor />
                     </RequireAdmin>
                   } />
                 </Route>

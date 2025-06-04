@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Bot } from 'lucide-react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import UserDialog from '@/components/users/UserDialog';
 import DeleteUserDialog from '@/components/users/DeleteUserDialog';
-import { Navigate } from 'react-router-dom';
 
 interface User {
   id: number;
@@ -27,10 +26,12 @@ interface User {
   ativo: boolean;
   superadm: boolean;
   cargo: string | null;
+  config: number | null;
 }
 
 const Users = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
@@ -102,6 +103,18 @@ const Users = () => {
 
   const handleStatusChange = (userId: number, ativo: boolean) => {
     updateUserStatus.mutate({ userId, ativo });
+  };
+
+  const handleEditPrompt = (user: User) => {
+    if (user.config) {
+      navigate(`/prompt-editor/${user.config}`);
+    } else {
+      toast({
+        title: "Erro",
+        description: "Este usuário não possui configuração associada.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -190,6 +203,15 @@ const Users = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditPrompt(user)}
+                            title="Editar Prompt"
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Bot className="w-4 h-4" />
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
