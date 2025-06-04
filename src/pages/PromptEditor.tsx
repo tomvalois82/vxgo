@@ -9,8 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Save, Bold, Italic, Code, List, ListOrdered, Quote, Link, Image, Table, Hash, Minus, Eye, Edit } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 const PromptEditor = () => {
   const { configId } = useParams<{ configId: string }>();
@@ -108,6 +106,31 @@ const PromptEditor = () => {
         textareaRef.focus();
       }
     }, 0);
+  };
+
+  // Função simples para renderizar markdown básico
+  const renderMarkdown = (text: string) => {
+    let html = text
+      // Headers
+      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-5 mb-3">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-6 mb-4 border-b border-gray-200 pb-2">$1</h1>')
+      // Bold and Italic
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // Code
+      .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">$1</code>')
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:underline">$1</a>')
+      // Lists
+      .replace(/^\- (.*$)/gim, '<li class="ml-4">• $1</li>')
+      .replace(/^\d+\. (.*$)/gim, '<li class="ml-4">$1</li>')
+      // Blockquotes
+      .replace(/^> (.*$)/gim, '<blockquote class="border-l-4 border-gray-300 pl-4 my-4 italic text-gray-600">$1</blockquote>')
+      // Line breaks
+      .replace(/\n/g, '<br>');
+
+    return html;
   };
 
   const toolbarButtons = [
@@ -217,7 +240,7 @@ const PromptEditor = () => {
         </div>
       </div>
 
-      {/* Editor/Viewer Area */}
+      {/* Editor/Viewer Area - Full Width */}
       <div className="flex-1 p-4">
         <Card className="h-full">
           <CardHeader className="pb-2">
@@ -229,88 +252,12 @@ const PromptEditor = () => {
             {viewMode ? (
               // Modo Visualização
               <div 
-                className="w-full h-full p-4 overflow-y-auto prose prose-sm max-w-none prose-headings:mt-4 prose-headings:mb-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-base prose-h5:text-sm prose-h6:text-xs prose-table:border-collapse prose-table:w-full prose-th:border prose-th:border-gray-300 prose-th:bg-gray-100 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-td:border prose-td:border-gray-300 prose-td:px-4 prose-td:py-2"
+                className="w-full h-full p-4 overflow-y-auto prose prose-sm max-w-none"
                 style={{ minHeight: 'calc(100vh - 240px)' }}
-              >
-                {content ? (
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      table: ({ children }) => (
-                        <table className="border-collapse w-full my-4 border border-gray-300">
-                          {children}
-                        </table>
-                      ),
-                      thead: ({ children }) => (
-                        <thead className="bg-gray-100">
-                          {children}
-                        </thead>
-                      ),
-                      th: ({ children }) => (
-                        <th className="border border-gray-300 px-4 py-2 text-left font-semibold">
-                          {children}
-                        </th>
-                      ),
-                      td: ({ children }) => (
-                        <td className="border border-gray-300 px-4 py-2">
-                          {children}
-                        </td>
-                      ),
-                      h1: ({ children }) => (
-                        <h1 className="text-2xl font-bold mt-6 mb-4 border-b border-gray-200 pb-2">
-                          {children}
-                        </h1>
-                      ),
-                      h2: ({ children }) => (
-                        <h2 className="text-xl font-bold mt-5 mb-3">
-                          {children}
-                        </h2>
-                      ),
-                      h3: ({ children }) => (
-                        <h3 className="text-lg font-semibold mt-4 mb-2">
-                          {children}
-                        </h3>
-                      ),
-                      h4: ({ children }) => (
-                        <h4 className="text-base font-semibold mt-3 mb-2">
-                          {children}
-                        </h4>
-                      ),
-                      h5: ({ children }) => (
-                        <h5 className="text-sm font-semibold mt-2 mb-1">
-                          {children}
-                        </h5>
-                      ),
-                      h6: ({ children }) => (
-                        <h6 className="text-xs font-semibold mt-2 mb-1 text-gray-600">
-                          {children}
-                        </h6>
-                      ),
-                      blockquote: ({ children }) => (
-                        <blockquote className="border-l-4 border-gray-300 pl-4 my-4 italic text-gray-600">
-                          {children}
-                        </blockquote>
-                      ),
-                      code: ({ children, ...props }) => (
-                        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props}>
-                          {children}
-                        </code>
-                      ),
-                      pre: ({ children }) => (
-                        <pre className="bg-gray-100 p-4 rounded overflow-x-auto my-4">
-                          {children}
-                        </pre>
-                      ),
-                    }}
-                  >
-                    {content}
-                  </ReactMarkdown>
-                ) : (
-                  <p className="text-gray-400">Nenhum conteúdo para visualizar...</p>
-                )}
-              </div>
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+              />
             ) : (
-              // Modo Edição
+              // Modo Edição - Full Width
               <Textarea
                 ref={setTextareaRef}
                 value={content}
