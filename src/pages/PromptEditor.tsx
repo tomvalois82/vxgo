@@ -10,38 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Save, Bold, Italic, Code, List, ListOrdered, Quote, Link, Image, Table, Hash, Minus } from 'lucide-react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-
-// Função simples para converter Markdown para HTML
-const parseMarkdown = (text: string): string => {
-  return text
-    // Headers
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    // Bold
-    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
-    .replace(/__(.*)\__/gim, '<strong>$1</strong>')
-    // Italic
-    .replace(/\*(.*)\*/gim, '<em>$1</em>')
-    .replace(/_(.*)\_ /gim, '<em>$1</em>')
-    // Code inline
-    .replace(/`(.*)`/gim, '<code>$1</code>')
-    // Links
-    .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-    // Line breaks
-    .replace(/\n$/gim, '<br>')
-    .replace(/\n/gim, '<br>')
-    // Quote
-    .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
-    // Lists
-    .replace(/^\* (.*$)/gim, '<li>$1</li>')
-    .replace(/^- (.*$)/gim, '<li>$1</li>')
-    .replace(/^[0-9]+\. (.*$)/gim, '<li>$1</li>')
-    // Horizontal rule
-    .replace(/^---$/gim, '<hr>')
-    .replace(/^\*\*\*$/gim, '<hr>')
-    .replace(/^___$/gim, '<hr>');
-};
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const PromptEditor = () => {
   const { configId } = useParams<{ configId: string }>();
@@ -256,12 +226,86 @@ const PromptEditor = () => {
               </CardHeader>
               <CardContent className="h-full overflow-y-auto">
                 <div 
-                  className="prose prose-sm max-w-none h-full"
+                  className="prose prose-sm max-w-none h-full prose-headings:mt-4 prose-headings:mb-2 prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-base prose-h5:text-sm prose-h6:text-xs prose-table:border-collapse prose-table:w-full prose-th:border prose-th:border-gray-300 prose-th:bg-gray-100 prose-th:px-4 prose-th:py-2 prose-th:text-left prose-td:border prose-td:border-gray-300 prose-td:px-4 prose-td:py-2"
                   style={{ minHeight: 'calc(100vh - 280px)' }}
-                  dangerouslySetInnerHTML={{
-                    __html: content ? parseMarkdown(content) : '<p class="text-gray-400">O preview aparecerá aqui conforme você digita...</p>'
-                  }}
-                />
+                >
+                  {content ? (
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        table: ({ children }) => (
+                          <table className="border-collapse w-full my-4 border border-gray-300">
+                            {children}
+                          </table>
+                        ),
+                        thead: ({ children }) => (
+                          <thead className="bg-gray-100">
+                            {children}
+                          </thead>
+                        ),
+                        th: ({ children }) => (
+                          <th className="border border-gray-300 px-4 py-2 text-left font-semibold">
+                            {children}
+                          </th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="border border-gray-300 px-4 py-2">
+                            {children}
+                          </td>
+                        ),
+                        h1: ({ children }) => (
+                          <h1 className="text-2xl font-bold mt-6 mb-4 border-b border-gray-200 pb-2">
+                            {children}
+                          </h1>
+                        ),
+                        h2: ({ children }) => (
+                          <h2 className="text-xl font-bold mt-5 mb-3">
+                            {children}
+                          </h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-lg font-semibold mt-4 mb-2">
+                            {children}
+                          </h3>
+                        ),
+                        h4: ({ children }) => (
+                          <h4 className="text-base font-semibold mt-3 mb-2">
+                            {children}
+                          </h4>
+                        ),
+                        h5: ({ children }) => (
+                          <h5 className="text-sm font-semibold mt-2 mb-1">
+                            {children}
+                          </h5>
+                        ),
+                        h6: ({ children }) => (
+                          <h6 className="text-xs font-semibold mt-2 mb-1 text-gray-600">
+                            {children}
+                          </h6>
+                        ),
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-4 border-gray-300 pl-4 my-4 italic text-gray-600">
+                            {children}
+                          </blockquote>
+                        ),
+                        code: ({ children, ...props }) => (
+                          <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props}>
+                            {children}
+                          </code>
+                        ),
+                        pre: ({ children }) => (
+                          <pre className="bg-gray-100 p-4 rounded overflow-x-auto my-4">
+                            {children}
+                          </pre>
+                        ),
+                      }}
+                    >
+                      {content}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="text-gray-400">O preview aparecerá aqui conforme você digita...</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </ResizablePanel>
