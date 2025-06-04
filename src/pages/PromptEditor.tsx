@@ -45,20 +45,24 @@ const PromptEditor = () => {
     enabled: !!configId,
   });
 
-  // Atualizar conteúdo quando os dados carregarem
+  // Atualizar conteúdo quando os dados carregarem - SEM limitação de caracteres
   useEffect(() => {
     if (config?.promptwtz) {
+      // Carrega o conteúdo COMPLETO sem qualquer limitação
       setContent(config.promptwtz);
+      console.log('Conteúdo carregado - tamanho:', config.promptwtz.length);
     }
   }, [config]);
 
-  // Mutation para salvar
+  // Mutation para salvar - SEM limitação de caracteres
   const saveMutation = useMutation({
     mutationFn: async (newContent: string) => {
       if (!configId) throw new Error('Config ID não fornecido');
       
       const configIdNumber = parseInt(configId, 10);
       if (isNaN(configIdNumber)) throw new Error('Config ID inválido');
+      
+      console.log('Salvando conteúdo - tamanho:', newContent.length);
       
       const { error } = await supabase
         .from('config')
@@ -85,6 +89,7 @@ const PromptEditor = () => {
   });
 
   const handleSave = () => {
+    console.log('Salvando conteúdo com tamanho:', content.length);
     saveMutation.mutate(content);
   };
 
@@ -108,7 +113,7 @@ const PromptEditor = () => {
     }, 0);
   };
 
-  // Função simples para renderizar markdown básico
+  // Função para renderizar markdown básico
   const renderMarkdown = (text: string) => {
     let html = text
       // Headers
@@ -185,7 +190,7 @@ const PromptEditor = () => {
           <div>
             <h1 className="text-xl font-bold">Editor de Prompt</h1>
             <p className="text-sm text-gray-600">
-              Usuário: {config.usuario?.nome || 'N/A'}
+              Usuário: {config.usuario?.nome || 'N/A'} | Caracteres: {content.length}
             </p>
           </div>
         </div>
@@ -257,12 +262,12 @@ const PromptEditor = () => {
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
               />
             ) : (
-              // Modo Edição - Full Width
+              // Modo Edição - Full Width, SEM limitação de caracteres
               <Textarea
                 ref={setTextareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Digite seu prompt em Markdown aqui..."
+                placeholder="Digite seu prompt em Markdown aqui... (sem limitação de caracteres)"
                 className="w-full h-full border-0 resize-none focus:ring-0 font-mono text-sm leading-relaxed"
                 style={{ minHeight: 'calc(100vh - 240px)' }}
               />
