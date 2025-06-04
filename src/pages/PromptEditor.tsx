@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Save, Bold, Italic, Code, List, ListOrdered, Quote, Link, Image, Table, Hash, Minus, Eye, Edit } from 'lucide-react';
@@ -296,8 +295,7 @@ const PromptEditor = () => {
                 placeholder="Digite seu prompt em Markdown aqui... (SEM limitação de caracteres)"
                 className="w-full h-full border-0 resize-none focus:ring-0 font-mono text-sm leading-relaxed p-4 outline-none"
                 style={{ 
-                  minHeight: 'calc(100vh - 240px)',
-                  maxLength: undefined // Explicitamente remove qualquer limitação
+                  minHeight: 'calc(100vh - 240px)'
                 }}
                 spellCheck={false}
               />
