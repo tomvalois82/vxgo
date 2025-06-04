@@ -24,7 +24,7 @@ const PromptEditor = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Buscar dados da configuração
+  // Buscar dados da configuração - GARANTINDO que não há limitação de tamanho
   const { data: config, isLoading } = useQuery({
     queryKey: ['config', configId],
     queryFn: async () => {
@@ -33,28 +33,44 @@ const PromptEditor = () => {
       const configIdNumber = parseInt(configId, 10);
       if (isNaN(configIdNumber)) throw new Error('Config ID inválido');
       
+      console.log('Buscando configuração ID:', configIdNumber);
+      
+      // Busca DIRETA sem limitações - usando maybeSingle para evitar problemas
       const { data, error } = await supabase
         .from('config')
         .select('promptwtz, usuario:idusuario(nome)')
         .eq('id', configIdNumber)
-        .single();
+        .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar config:', error);
+        throw error;
+      }
+      
+      console.log('Dados recebidos:', data);
+      if (data?.promptwtz) {
+        console.log('Tamanho do promptwtz recebido:', data.promptwtz.length);
+      }
+      
       return data;
     },
     enabled: !!configId,
   });
 
-  // Atualizar conteúdo quando os dados carregarem - SEM limitação de caracteres
+  // Atualizar conteúdo quando os dados carregarem - CARREGAMENTO COMPLETO
   useEffect(() => {
     if (config?.promptwtz) {
-      // Carrega o conteúdo COMPLETO sem qualquer limitação
+      console.log('Carregando conteúdo completo. Tamanho original:', config.promptwtz.length);
+      // Define o conteúdo COMPLETO, sem qualquer tipo de limitação
       setContent(config.promptwtz);
-      console.log('Conteúdo carregado - tamanho:', config.promptwtz.length);
+      console.log('Conteúdo definido no state. Tamanho:', config.promptwtz.length);
+    } else if (config?.promptwtz === '') {
+      console.log('Campo promptwtz está vazio');
+      setContent('');
     }
   }, [config]);
 
-  // Mutation para salvar - SEM limitação de caracteres
+  // Mutation para salvar - SALVA CONTEÚDO COMPLETO
   const saveMutation = useMutation({
     mutationFn: async (newContent: string) => {
       if (!configId) throw new Error('Config ID não fornecido');
@@ -62,14 +78,21 @@ const PromptEditor = () => {
       const configIdNumber = parseInt(configId, 10);
       if (isNaN(configIdNumber)) throw new Error('Config ID inválido');
       
-      console.log('Salvando conteúdo - tamanho:', newContent.length);
+      console.log('Iniciando salvamento. Tamanho do conteúdo:', newContent.length);
+      console.log('Primeiros 100 caracteres:', newContent.substring(0, 100));
+      console.log('Últimos 100 caracteres:', newContent.substring(newContent.length - 100));
       
       const { error } = await supabase
         .from('config')
         .update({ promptwtz: newContent })
         .eq('id', configIdNumber);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao salvar:', error);
+        throw error;
+      }
+      
+      console.log('Conteúdo salvo com sucesso. Tamanho final:', newContent.length);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config', configId] });
@@ -89,7 +112,7 @@ const PromptEditor = () => {
   });
 
   const handleSave = () => {
-    console.log('Salvando conteúdo com tamanho:', content.length);
+    console.log('Iniciando salvamento via handleSave. Tamanho atual:', content.length);
     saveMutation.mutate(content);
   };
 
@@ -262,14 +285,21 @@ const PromptEditor = () => {
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
               />
             ) : (
-              // Modo Edição - Full Width, SEM limitação de caracteres
-              <Textarea
+              // Modo Edição - TEXTAREA SEM LIMITAÇÕES
+              <textarea
                 ref={setTextareaRef}
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Digite seu prompt em Markdown aqui... (sem limitação de caracteres)"
-                className="w-full h-full border-0 resize-none focus:ring-0 font-mono text-sm leading-relaxed"
-                style={{ minHeight: 'calc(100vh - 240px)' }}
+                onChange={(e) => {
+                  console.log('Mudança no textarea. Novo tamanho:', e.target.value.length);
+                  setContent(e.target.value);
+                }}
+                placeholder="Digite seu prompt em Markdown aqui... (SEM limitação de caracteres)"
+                className="w-full h-full border-0 resize-none focus:ring-0 font-mono text-sm leading-relaxed p-4 outline-none"
+                style={{ 
+                  minHeight: 'calc(100vh - 240px)',
+                  maxLength: undefined // Explicitamente remove qualquer limitação
+                }}
+                spellCheck={false}
               />
             )}
           </CardContent>
