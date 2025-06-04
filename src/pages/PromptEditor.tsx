@@ -9,6 +9,39 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { ArrowLeft, Save, Bold, Italic, Code, List, ListOrdered, Quote, Link, Image, Table, Hash, Minus } from 'lucide-react';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+
+// Função simples para converter Markdown para HTML
+const parseMarkdown = (text: string): string => {
+  return text
+    // Headers
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    // Bold
+    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+    .replace(/__(.*)\__/gim, '<strong>$1</strong>')
+    // Italic
+    .replace(/\*(.*)\*/gim, '<em>$1</em>')
+    .replace(/_(.*)\_ /gim, '<em>$1</em>')
+    // Code inline
+    .replace(/`(.*)`/gim, '<code>$1</code>')
+    // Links
+    .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    // Line breaks
+    .replace(/\n$/gim, '<br>')
+    .replace(/\n/gim, '<br>')
+    // Quote
+    .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
+    // Lists
+    .replace(/^\* (.*$)/gim, '<li>$1</li>')
+    .replace(/^- (.*$)/gim, '<li>$1</li>')
+    .replace(/^[0-9]+\. (.*$)/gim, '<li>$1</li>')
+    // Horizontal rule
+    .replace(/^---$/gim, '<hr>')
+    .replace(/^\*\*\*$/gim, '<hr>')
+    .replace(/^___$/gim, '<hr>');
+};
 
 const PromptEditor = () => {
   const { configId } = useParams<{ configId: string }>();
@@ -29,10 +62,13 @@ const PromptEditor = () => {
     queryFn: async () => {
       if (!configId) throw new Error('Config ID não fornecido');
       
+      const configIdNumber = parseInt(configId, 10);
+      if (isNaN(configIdNumber)) throw new Error('Config ID inválido');
+      
       const { data, error } = await supabase
         .from('config')
         .select('promptwtz, usuario:idusuario(nome)')
-        .eq('id', configId)
+        .eq('id', configIdNumber)
         .single();
       
       if (error) throw error;
@@ -53,10 +89,13 @@ const PromptEditor = () => {
     mutationFn: async (newContent: string) => {
       if (!configId) throw new Error('Config ID não fornecido');
       
+      const configIdNumber = parseInt(configId, 10);
+      if (isNaN(configIdNumber)) throw new Error('Config ID inválido');
+      
       const { error } = await supabase
         .from('config')
         .update({ promptwtz: newContent })
-        .eq('id', configId);
+        .eq('id', configIdNumber);
       
       if (error) throw error;
     },
@@ -185,20 +224,48 @@ const PromptEditor = () => {
         </div>
       </div>
 
-      {/* Editor */}
+      {/* Editor com 2 colunas */}
       <div className="flex-1 p-4">
-        <Card className="h-full">
-          <CardContent className="p-0 h-full">
-            <Textarea
-              ref={setTextareaRef}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Digite seu prompt em Markdown aqui..."
-              className="w-full h-full min-h-[600px] border-0 resize-none focus:ring-0 font-mono text-sm leading-relaxed"
-              style={{ minHeight: 'calc(100vh - 200px)' }}
-            />
-          </CardContent>
-        </Card>
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Coluna Esquerda - Editor */}
+          <ResizablePanel defaultSize={50} minSize={30}>
+            <Card className="h-full mr-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">📝 Editor Markdown</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 h-full">
+                <Textarea
+                  ref={setTextareaRef}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Digite seu prompt em Markdown aqui..."
+                  className="w-full h-full min-h-[600px] border-0 resize-none focus:ring-0 font-mono text-sm leading-relaxed"
+                  style={{ minHeight: 'calc(100vh - 280px)' }}
+                />
+              </CardContent>
+            </Card>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* Coluna Direita - Preview */}
+          <ResizablePanel defaultSize={50} minSize={30}>
+            <Card className="h-full ml-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">👁️ Visualização</CardTitle>
+              </CardHeader>
+              <CardContent className="h-full overflow-y-auto">
+                <div 
+                  className="prose prose-sm max-w-none h-full"
+                  style={{ minHeight: 'calc(100vh - 280px)' }}
+                  dangerouslySetInnerHTML={{
+                    __html: content ? parseMarkdown(content) : '<p class="text-gray-400">O preview aparecerá aqui conforme você digita...</p>'
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   );
