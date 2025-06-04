@@ -16,6 +16,7 @@ export interface Lead {
   config: number | null;
   idUsuario: number | null;
   intervencao: string | null;
+  stop: boolean | null;
 }
 
 export const useLeads = () => {
