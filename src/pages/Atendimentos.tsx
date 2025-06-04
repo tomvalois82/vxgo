@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MessageCircle, User, RefreshCw } from 'lucide-react';
 import ReleaseInterventionButton from '@/components/crm/ReleaseInterventionButton';
+import LeadAutomationToggle from '@/components/crm/LeadAutomationToggle';
 
 const Atendimentos = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -119,6 +120,15 @@ const Atendimentos = () => {
     }
   };
 
+  const handleAutomationToggle = (newStopValue: boolean) => {
+    if (selectedLead) {
+      // Update the selected lead's stop value locally for immediate UI feedback
+      setSelectedLead({ ...selectedLead, stop: newStopValue });
+      // Refetch leads to update the list
+      refetchLeads();
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-8rem)] bg-gray-50">
       {/* Left Column - Leads List */}
@@ -214,16 +224,23 @@ const Atendimentos = () => {
                     {selectedLead.interesse && truncateInterestWithTooltip(selectedLead.interesse, 100)}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRefreshMessages}
-                  disabled={messagesLoading}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw size={16} className={messagesLoading ? 'animate-spin' : ''} />
-                  Atualizar
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRefreshMessages}
+                    disabled={messagesLoading}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw size={16} className={messagesLoading ? 'animate-spin' : ''} />
+                    Atualizar
+                  </Button>
+                  <LeadAutomationToggle
+                    leadId={selectedLead.id}
+                    isAutomationStopped={selectedLead.stop || false}
+                    onToggleSuccess={handleAutomationToggle}
+                  />
+                </div>
               </div>
             </div>
 

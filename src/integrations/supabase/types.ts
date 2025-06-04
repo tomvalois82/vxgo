@@ -603,6 +603,7 @@ export type Database = {
           Origem: string | null
           session_id_olx: string | null
           session_id_whatsaap: string | null
+          stop: boolean | null
           telefone: string | null
         }
         Insert: {
@@ -617,6 +618,7 @@ export type Database = {
           Origem?: string | null
           session_id_olx?: string | null
           session_id_whatsaap?: string | null
+          stop?: boolean | null
           telefone?: string | null
         }
         Update: {
@@ -631,6 +633,7 @@ export type Database = {
           Origem?: string | null
           session_id_olx?: string | null
           session_id_whatsaap?: string | null
+          stop?: boolean | null
           telefone?: string | null
         }
         Relationships: [
