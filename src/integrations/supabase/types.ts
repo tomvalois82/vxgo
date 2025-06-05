@@ -132,9 +132,11 @@ export type Database = {
       }
       config: {
         Row: {
+          access_token_olx: string | null
           alertaNovo: boolean | null
           apikeyvoice: string | null
           ativo: boolean | null
+          codeolx: string | null
           codVoice: string | null
           created_at: string
           empresa: string | null
@@ -148,11 +150,14 @@ export type Database = {
           promptwtz: string | null
           receptor: Database["public"]["Enums"]["cargos"] | null
           telefone: string | null
+          webhook_olx: string | null
         }
         Insert: {
+          access_token_olx?: string | null
           alertaNovo?: boolean | null
           apikeyvoice?: string | null
           ativo?: boolean | null
+          codeolx?: string | null
           codVoice?: string | null
           created_at?: string
           empresa?: string | null
@@ -166,11 +171,14 @@ export type Database = {
           promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
+          webhook_olx?: string | null
         }
         Update: {
+          access_token_olx?: string | null
           alertaNovo?: boolean | null
           apikeyvoice?: string | null
           ativo?: boolean | null
+          codeolx?: string | null
           codVoice?: string | null
           created_at?: string
           empresa?: string | null
@@ -184,6 +192,7 @@ export type Database = {
           promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
+          webhook_olx?: string | null
         }
         Relationships: [
           {

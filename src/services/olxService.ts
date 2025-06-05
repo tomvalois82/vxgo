@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
 
 interface OlxTokenResponse {
   access_token: string;
@@ -15,6 +14,7 @@ export const olxService = {
       formData.append('client_id', '148c0e2bf8bfd9bbc88f934fe385532643583815');
       formData.append('client_secret', 'd24a4511b5d6e55414ec2addb7fcb485');
       formData.append('grant_type', 'authorization_code');
+      formData.append('redirect_uri', 'https://app.vxmotors.com.br/connections');
       
       const response = await fetch('https://auth.olx.com.br/oauth/token', {
         method: 'POST',
