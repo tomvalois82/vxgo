@@ -30,11 +30,22 @@ export const olxService = {
       
       const data: OlxTokenResponse = await response.json();
       
-      // Save token to user profile
-      const { error } = await supabase
+      // First, get the user's config ID
+      const { data: userData, error: userError } = await supabase
         .from('usuario')
-        .update({ credencialOlx: data.access_token })
-        .eq('uid', userId);
+        .select('config')
+        .eq('uid', userId)
+        .single();
+        
+      if (userError || !userData?.config) {
+        throw new Error('User config not found');
+      }
+      
+      // Save token to config table
+      const { error } = await supabase
+        .from('config')
+        .update({ access_token_olx: data.access_token })
+        .eq('id', userData.config);
         
       if (error) {
         throw error;

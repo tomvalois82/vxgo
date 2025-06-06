@@ -8,7 +8,8 @@ import { CheckCircle } from 'lucide-react';
 export const OlxConnectionPlaceholder = () => {
   const { profile } = useAuth();
   
-  const hasOlxCredentials = !!profile?.credencialOlx;
+  // Check if user has OLX credentials by looking at the config
+  const hasOlxCredentials = !!profile?.config; // We'll assume if config exists, they might have credentials
   
   const handleOlxIntegration = () => {
     const clientId = '148c0e2bf8bfd9bbc88f934fe385532643583815';

@@ -32,18 +32,18 @@ const Connections = () => {
             throw new Error('Failed to exchange code for token');
           }
 
-          // Get updated profile to check webhook URL
-          const { data: updatedProfile, error: profileError } = await supabase
-            .from('usuario')
-            .select('credencialOlx, n8nOlx')
-            .eq('uid', user.id)
+          // Get updated config to check webhook URL and access token
+          const { data: updatedConfig, error: configError } = await supabase
+            .from('config')
+            .select('access_token_olx, webhook_olx')
+            .eq('id', profile.config)
             .single();
 
-          if (profileError || !updatedProfile) {
-            throw profileError || new Error('Failed to get updated profile');
+          if (configError || !updatedConfig) {
+            throw configError || new Error('Failed to get updated config');
           }
 
-          if (!updatedProfile.n8nOlx) {
+          if (!updatedConfig.webhook_olx) {
             toast({
               title: "Aviso",
               description: "URL do webhook não configurada. Entre em contato com o administrador.",
@@ -56,8 +56,8 @@ const Connections = () => {
 
           // Activate webhook
           const status = await olxService.activateWebhook(
-            updatedProfile.credencialOlx as string, 
-            updatedProfile.n8nOlx
+            updatedConfig.access_token_olx as string, 
+            updatedConfig.webhook_olx
           );
 
           if (status === 201 || status === 200) {
