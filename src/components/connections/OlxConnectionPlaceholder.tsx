@@ -41,14 +41,9 @@ export const OlxConnectionPlaceholder = () => {
           
           <Button 
             onClick={handleOlxIntegration}
-            className="bg-[#6E0AD6] hover:bg-[#5d09b5] flex items-center gap-2"
+            className="bg-[#6E0AD6] hover:bg-[#5d09b5]"
           >
-            <img 
-              src="/lovable-uploads/c75297c8-81b0-4e81-a189-7a222022a779.png" 
-              alt="OLX" 
-              className="w-6 h-6" 
-            />
-            <span>{hasOlxCredentials ? "Reconectar à OLX" : "Integrar OLX"}</span>
+            {hasOlxCredentials ? "Reconectar à OLX" : "Integrar OLX"}
           </Button>
         </div>
       </CardContent>
