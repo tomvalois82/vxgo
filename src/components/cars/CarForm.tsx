@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,6 +16,7 @@ import { formatCurrency, formatMileage, extractNumericValue } from '@/lib/formUt
 import { currentYear, years, engineSizes, colors, categories } from './formConstants';
 import { carFormSchema, type CarFormSchema } from './carFormSchema';
 import ImageUploadGrid from './ImageUploadGrid';
+import { OlxIdTagInput } from './OlxIdTagInput';
 
 interface CarFormProps {
   initialData?: Partial<CarFormData & { fotos?: string[] }>; // fotos will be URLs
@@ -57,7 +57,7 @@ const CarForm: React.FC<CarFormProps> = ({
       transmission: initialData.transmission || 'Manual',
       inStock: initialData.inStock !== undefined ? initialData.inStock : true,
       characteristics: initialData.characteristics || '',
-      idOlx: initialData.idOlx || '',
+      idanuncioolx: initialData.idanuncioolx || [],
       video: initialData.video || '',
       cautionReport: initialData.cautionReport || '',
       technicalSheet: initialData.technicalSheet || '',
@@ -610,15 +610,19 @@ const CarForm: React.FC<CarFormProps> = ({
           )}
         />
         
-        {/* Código do anúncio OLX */}
+        {/* IDs dos anúncios OLX */}
         <FormField
           control={form.control}
-          name="idOlx"
+          name="idanuncioolx"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="flex items-center gap-2"><Tag size={16}/> Código do anúncio OLX</FormLabel>
+              <FormLabel className="flex items-center gap-2"><Tag size={16}/> IDs dos anúncios OLX</FormLabel>
               <FormControl>
-                <Input placeholder="Cole aqui o código do anúncio da OLX" {...field} />
+                <OlxIdTagInput
+                  value={field.value || []}
+                  onChange={field.onChange}
+                  placeholder="Digite os IDs dos anúncios separados por vírgula"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

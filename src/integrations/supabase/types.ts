@@ -136,7 +136,6 @@ export type Database = {
           alertaNovo: boolean | null
           apikeyvoice: string | null
           ativo: boolean | null
-          codeolx: string | null
           codVoice: string | null
           created_at: string
           empresa: string | null
@@ -147,6 +146,7 @@ export type Database = {
           id: number
           idusuario: number | null
           pausa: number | null
+          promptolx: string | null
           promptwtz: string | null
           receptor: Database["public"]["Enums"]["cargos"] | null
           telefone: string | null
@@ -157,7 +157,6 @@ export type Database = {
           alertaNovo?: boolean | null
           apikeyvoice?: string | null
           ativo?: boolean | null
-          codeolx?: string | null
           codVoice?: string | null
           created_at?: string
           empresa?: string | null
@@ -168,6 +167,7 @@ export type Database = {
           id?: number
           idusuario?: number | null
           pausa?: number | null
+          promptolx?: string | null
           promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
@@ -178,7 +178,6 @@ export type Database = {
           alertaNovo?: boolean | null
           apikeyvoice?: string | null
           ativo?: boolean | null
-          codeolx?: string | null
           codVoice?: string | null
           created_at?: string
           empresa?: string | null
@@ -189,6 +188,7 @@ export type Database = {
           id?: number
           idusuario?: number | null
           pausa?: number | null
+          promptolx?: string | null
           promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
@@ -263,6 +263,7 @@ export type Database = {
           fotos: string[] | null
           garantia: string | null
           id: number
+          idanuncioolx: string[] | null
           idEstoqueBubble: string | null
           idOlx: string | null
           km: string | null
@@ -292,6 +293,7 @@ export type Database = {
           fotos?: string[] | null
           garantia?: string | null
           id?: number
+          idanuncioolx?: string[] | null
           idEstoqueBubble?: string | null
           idOlx?: string | null
           km?: string | null
@@ -321,6 +323,7 @@ export type Database = {
           fotos?: string[] | null
           garantia?: string | null
           id?: number
+          idanuncioolx?: string[] | null
           idEstoqueBubble?: string | null
           idOlx?: string | null
           km?: string | null
@@ -463,6 +466,7 @@ export type Database = {
           fotos: string[] | null
           garantia: string | null
           id: number
+          idanuncioolx: string[] | null
           idEstoqueBubble: string | null
           idOlx: string | null
           km: string | null
@@ -492,6 +496,7 @@ export type Database = {
           fotos?: string[] | null
           garantia?: string | null
           id?: number
+          idanuncioolx?: string[] | null
           idEstoqueBubble?: string | null
           idOlx?: string | null
           km?: string | null
@@ -521,6 +526,7 @@ export type Database = {
           fotos?: string[] | null
           garantia?: string | null
           id?: number
+          idanuncioolx?: string[] | null
           idEstoqueBubble?: string | null
           idOlx?: string | null
           km?: string | null

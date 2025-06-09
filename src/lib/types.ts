@@ -1,3 +1,4 @@
+
 import { VehicleType } from "@/hooks/useFipeBrands";
 
 export interface Car {
@@ -22,13 +23,12 @@ export interface Car {
   category?: string;
   manufacturingYear?: number; // ano_fabricacao
   fotos?: string[];
-  idOlx?: string; // Novo campo
+  idanuncioolx?: string[]; // Novo campo array
   createdAt: Date;
   updatedAt: Date;
 }
 
 export type CarFormData = Omit<Car, 'id' | 'createdAt' | 'updatedAt'>;
-
 
 export interface StockVehicle {
   id: number; // From 'estoque' table, 'id' is typically a number (bigint)
@@ -48,7 +48,7 @@ export interface StockVehicle {
   fotos?: string[] | null;
   garantia?: string | null;
   idEstoqueBubble?: string | null;
-  idOlx?: string | null;
+  idanuncioolx?: string[] | null; // Novo campo array
   km?: string | null;
   motor?: string | null;
   observacao?: string | null;

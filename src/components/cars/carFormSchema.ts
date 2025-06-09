@@ -15,7 +15,7 @@ export const carFormSchema = z.object({
   transmission: z.string().min(1, 'Tipo de transmissão é obrigatório'),
   inStock: z.boolean().default(true),
   characteristics: z.string().max(250, 'Características deve ter no máximo 250 caracteres').optional(),
-  idOlx: z.string().optional(),
+  idanuncioolx: z.array(z.string()).optional(),
   video: z.string().optional(),
   cautionReport: z.string().optional(),
   technicalSheet: z.string().optional(),

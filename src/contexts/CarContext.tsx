@@ -93,7 +93,7 @@ function mapSupabaseToCar(row: any): Car {
     warranty: row.garantia || '',
     category: row.categoria || '',
     fotos: carFotos, // Now guaranteed to be URLs
-    idOlx: row.idOlx || undefined,
+    idanuncioolx: row.idanuncioolx || [], // Array field
     createdAt: row.created_at ? new Date(row.created_at) : new Date(),
     updatedAt: row.created_at ? new Date(row.created_at) : new Date()
   };
@@ -129,7 +129,7 @@ function mapCarFormDataToSupabase(car: CarFormData & { fotos?: string[] }) {
     // The CarForm doesn't explicitly set a single `image` field anymore, it relies on `fotos`.
     // Let's ensure `foto` (singular) is the first of `fotos` or null.
     foto: fotosToSave.length > 0 ? fotosToSave[0] : null,
-    idOlx: car.idOlx || null,
+    idanuncioolx: car.idanuncioolx || null, // Array field
     fotos: fotosToSave, // Save the array of URLs
   };
 }
