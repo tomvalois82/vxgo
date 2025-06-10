@@ -15,7 +15,9 @@ import { uploadCarImages } from '@/lib/uploadCarImages';
 
 interface ConfigData {
   ativo: boolean;
+  ativoolx: boolean;
   pausa: number; // em minutos
+  temporesposta: number; // em segundos
   fotoloja?: string;
 }
 
@@ -28,8 +30,10 @@ const Settings = () => {
   
   const { register, handleSubmit, setValue, watch, reset } = useForm<{
     ativo: boolean;
+    ativoolx: boolean;
     pausaHours: string;
     pausaMinutes: string;
+    temporesposta: string;
   }>();
 
   // Load user config
@@ -58,8 +62,10 @@ const Settings = () => {
         
         reset({
           ativo: data.ativo,
+          ativoolx: data.ativoolx || false,
           pausaHours: hours.toString().padStart(2, '0'),
           pausaMinutes: minutes.toString().padStart(2, '0'),
+          temporesposta: (data.temporesposta || 15).toString(),
         });
         
         if (data.fotoloja) {
@@ -70,7 +76,9 @@ const Settings = () => {
         const defaultConfig = {
           idusuario: profile?.id,
           ativo: true,
+          ativoolx: false,
           pausa: 15,
+          temporesposta: 15,
           alertaNovo: true
         };
         
@@ -85,8 +93,10 @@ const Settings = () => {
         setConfig(newConfig);
         reset({
           ativo: true,
+          ativoolx: false,
           pausaHours: '00',
           pausaMinutes: '15',
+          temporesposta: '15',
         });
       }
     } catch (error) {
@@ -139,6 +149,18 @@ const Settings = () => {
   const onSubmit = async (data: any) => {
     setLoading(true);
     try {
+      // Validate temporesposta
+      const temporesposta = parseInt(data.temporesposta);
+      if (temporesposta < 5 || temporesposta > 60) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Tempo de resposta deve estar entre 5 e 60 segundos",
+        });
+        setLoading(false);
+        return;
+      }
+
       let fotoloja = config?.fotoloja;
 
       // Upload new image if selected
@@ -153,7 +175,9 @@ const Settings = () => {
 
       const configData = {
         ativo: data.ativo,
+        ativoolx: data.ativoolx,
         pausa: pausaInMinutes,
+        temporesposta: temporesposta,
         fotoloja,
       };
 
@@ -184,6 +208,7 @@ const Settings = () => {
   };
 
   const watchedAtivo = watch('ativo');
+  const watchedAtivoOlx = watch('ativoolx');
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -195,22 +220,22 @@ const Settings = () => {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Atendimento IA */}
+        {/* Atendimento IA (WhatsApp) */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              Atendimento IA
+              Atendimento IA (WhatsApp)
               <Tooltip>
                 <TooltipTrigger>
                   <Info size={16} className="text-gray-500 hover:text-gray-700" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Ao desativar a Inteligência Artificial, ela deixará de responder todas as mensagens.</p>
+                  <p>Ao desativar a Inteligência Artificial, ela deixará de responder mensagens do WhatsApp.</p>
                 </TooltipContent>
               </Tooltip>
             </CardTitle>
             <CardDescription>
-              Controle se a IA deve responder às mensagens automaticamente
+              Controle se a IA deve responder às mensagens do WhatsApp automaticamente
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -223,6 +248,39 @@ const Settings = () => {
               />
               <Label htmlFor="ativo">
                 {watchedAtivo ? 'Ativado' : 'Desativado'}
+              </Label>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Atendimento IA (OLX) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Atendimento IA (OLX)
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info size={16} className="text-gray-500 hover:text-gray-700" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ao desativar a Inteligência Artificial, ela deixará de responder mensagens da OLX.</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardTitle>
+            <CardDescription>
+              Controle se a IA deve responder às mensagens da OLX automaticamente
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="ativoolx"
+                {...register('ativoolx')}
+                checked={watchedAtivoOlx}
+                onCheckedChange={(checked) => setValue('ativoolx', checked)}
+              />
+              <Label htmlFor="ativoolx">
+                {watchedAtivoOlx ? 'Ativado' : 'Desativado'}
               </Label>
             </div>
           </CardContent>
@@ -308,6 +366,44 @@ const Settings = () => {
                 </div>
               </div>
               <span className="text-sm text-gray-500 ml-2">(horas:minutos)</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tempo de Resposta */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Tempo de Resposta
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info size={16} className="text-gray-500 hover:text-gray-700" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Define o tempo que a IA aguarda antes de responder uma mensagem (entre 5 e 60 segundos).</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardTitle>
+            <CardDescription>
+              Tempo de espera antes da IA responder (5 a 60 segundos)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min="5"
+                max="60"
+                className="w-20"
+                {...register('temporesposta')}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (value >= 5 && value <= 60) {
+                    setValue('temporesposta', e.target.value);
+                  }
+                }}
+              />
+              <span className="text-sm text-gray-500">segundos</span>
             </div>
           </CardContent>
         </Card>

@@ -136,6 +136,7 @@ export type Database = {
           alertaNovo: boolean | null
           apikeyvoice: string | null
           ativo: boolean | null
+          ativoolx: boolean | null
           codVoice: string | null
           created_at: string
           empresa: string | null
@@ -150,6 +151,7 @@ export type Database = {
           promptwtz: string | null
           receptor: Database["public"]["Enums"]["cargos"] | null
           telefone: string | null
+          temporesposta: number | null
           webhook_olx: string | null
         }
         Insert: {
@@ -157,6 +159,7 @@ export type Database = {
           alertaNovo?: boolean | null
           apikeyvoice?: string | null
           ativo?: boolean | null
+          ativoolx?: boolean | null
           codVoice?: string | null
           created_at?: string
           empresa?: string | null
@@ -171,6 +174,7 @@ export type Database = {
           promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
+          temporesposta?: number | null
           webhook_olx?: string | null
         }
         Update: {
@@ -178,6 +182,7 @@ export type Database = {
           alertaNovo?: boolean | null
           apikeyvoice?: string | null
           ativo?: boolean | null
+          ativoolx?: boolean | null
           codVoice?: string | null
           created_at?: string
           empresa?: string | null
@@ -192,6 +197,7 @@ export type Database = {
           promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
+          temporesposta?: number | null
           webhook_olx?: string | null
         }
         Relationships: [
