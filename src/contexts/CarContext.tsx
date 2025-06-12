@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { CarFormData } from '@/lib/types';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from './AuthContext';
-import { convertToWords, convertFromWords, formatCurrency } from '@/lib/formUtils';
+import { convertToWords, convertFromWords } from '@/lib/formUtils';
+import { VehicleType } from '@/hooks/useFipeBrands';
 
 interface Car {
   id: string;
@@ -26,7 +27,7 @@ interface Car {
   technicalSheet: string;
   warranty: string;
   category: string;
-  vehicleType: string;
+  vehicleType: VehicleType;
   image?: string;
   description?: string;
   createdAt: Date;
@@ -86,27 +87,33 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
               price = car.valor;
             }
             
+            // Ensure vehicleType is properly typed
+            let vehicleType: VehicleType = 'carros';
+            if (car.tipo_veiculo === 'motos' || car.tipo_veiculo === 'caminhoes') {
+              vehicleType = car.tipo_veiculo;
+            }
+            
             return {
               id: car.id.toString(),
-              brand: car.marca || car.fabricante,
-              model: car.modelo,
-              year: car.ano_modelo || car.ano,
-              manufacturingYear: car.ano_fabricacao,
+              brand: car.marca || car.fabricante || '',
+              model: car.modelo || '',
+              year: parseInt(car.ano_modelo || car.ano || '0'),
+              manufacturingYear: parseInt(car.ano_fabricacao || '0'),
               price: price,
-              color: car.cor,
-              mileage: car.km,
-              fuelType: car.combustivel || car.motor,
-              transmission: car.cambio,
+              color: car.cor || '',
+              mileage: parseInt(car.km || '0'),
+              fuelType: car.combustivel || car.motor || '',
+              transmission: car.cambio || '',
               inStock: car.disponivel_estoque !== false,
-              characteristics: car.caracteristicas,
+              characteristics: car.caracteristicas || '',
               fotos: car.fotos || [],
               idanuncioolx: car.idanuncioolx || [],
-              video: car.video,
-              cautionReport: car.cautelar,
-              technicalSheet: car.ficha_tecnica,
-              warranty: car.garantia,
-              category: car.categoria,
-              vehicleType: car.tipo_veiculo,
+              video: car.video || '',
+              cautionReport: car.cautelar || '',
+              technicalSheet: car.ficha_tecnica || '',
+              warranty: car.garantia || '',
+              category: car.categoria || '',
+              vehicleType: vehicleType,
               image: car.foto,
               description: car.observacao,
               createdAt: new Date(car.created_at),
@@ -157,15 +164,20 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
 
       if (data && data.length > 0) {
         const newCar = data[0];
+        let vehicleType: VehicleType = 'carros';
+        if (newCar.tipo_veiculo === 'motos' || newCar.tipo_veiculo === 'caminhoes') {
+          vehicleType = newCar.tipo_veiculo;
+        }
+
         setCars([...cars, {
           id: newCar.id.toString(),
           brand: newCar.marca || newCar.fabricante,
           model: newCar.modelo,
-          year: newCar.ano_modelo || newCar.ano,
-          manufacturingYear: newCar.ano_fabricacao,
+          year: parseInt(newCar.ano_modelo || newCar.ano || '0'),
+          manufacturingYear: parseInt(newCar.ano_fabricacao || '0'),
           price: convertFromWords(newCar.valor),
           color: newCar.cor,
-          mileage: newCar.km,
+          mileage: parseInt(newCar.km || '0'),
           fuelType: newCar.combustivel || newCar.motor,
           transmission: newCar.cambio,
           inStock: newCar.disponivel_estoque !== false,
@@ -177,7 +189,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
           technicalSheet: newCar.ficha_tecnica,
           warranty: newCar.garantia,
           category: newCar.categoria,
-          vehicleType: newCar.tipo_veiculo,
+          vehicleType: vehicleType,
           image: newCar.foto,
           description: newCar.observacao,
           createdAt: new Date(newCar.created_at),
@@ -227,21 +239,21 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
               brand: car.brand,
               model: car.model,
               year: car.year,
-              manufacturingYear: car.manufacturingYear,
+              manufacturingYear: car.manufacturingYear || car.year,
               price: car.price,
               color: car.color,
               mileage: car.mileage,
               fuelType: car.fuelType,
               transmission: car.transmission,
               inStock: car.inStock,
-              characteristics: car.characteristics,
+              characteristics: car.characteristics || '',
               fotos: car.fotos || [],
               idanuncioolx: car.idanuncioolx || [],
-              video: car.video,
-              cautionReport: car.cautionReport,
-              technicalSheet: car.technicalSheet,
-              warranty: car.warranty,
-              category: car.category,
+              video: car.video || '',
+              cautionReport: car.cautionReport || '',
+              technicalSheet: car.technicalSheet || '',
+              warranty: car.warranty || '',
+              category: car.category || '',
               vehicleType: car.vehicleType,
               image: car.fotos?.[0],
               description: car.characteristics,
@@ -308,7 +320,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
       ano_fabricacao: formData.manufacturingYear,
       valor: convertToWords(formData.price),
       cor: formData.color,
-      km: formData.mileage,
+      km: formData.mileage.toString(),
       combustivel: formData.fuelType,
       motor: formData.fuelType,
       cambio: formData.transmission,
