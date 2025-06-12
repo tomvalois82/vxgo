@@ -13,6 +13,7 @@ import { Car, List, Pencil, DollarSign, Palette, Gauge, FileText, Video, FileSpr
 import { VehicleType, useFipeBrands } from '@/hooks/useFipeBrands';
 import { toast } from '@/components/ui/use-toast';
 import { formatCurrency, formatMileage, extractNumericValue } from '@/lib/formUtils';
+import { numberToWords } from '@/lib/numberToWords';
 import { currentYear, years, engineSizes, colors, categories } from './formConstants';
 import { carFormSchema, type CarFormSchema } from './carFormSchema';
 import ImageUploadGrid from './ImageUploadGrid';
@@ -70,6 +71,21 @@ const CarForm: React.FC<CarFormProps> = ({
   const [orderedPreviewUrls, setOrderedPreviewUrls] = useState<string[]>(initialPhotoUrlsFromProps);
   const [localFilesData, setLocalFilesData] = useState<LocalFileData[]>([]);
   const [uploading, setUploading] = useState(false);
+  
+  // State for price in words
+  const [priceInWords, setPriceInWords] = useState<string>('');
+  
+  // Watch price field changes
+  const currentPrice = form.watch('price');
+  
+  // Update price in words when price changes
+  useEffect(() => {
+    if (currentPrice && currentPrice > 0) {
+      setPriceInWords(numberToWords(currentPrice));
+    } else {
+      setPriceInWords('');
+    }
+  }, [currentPrice]);
   
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -329,7 +345,7 @@ const CarForm: React.FC<CarFormProps> = ({
           <FormField
             control={form.control}
             name="price"
-            render={({ field: { onChange, value, ...rest } }) => ( // Destructure value here
+            render={({ field: { onChange, value, ...rest } }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-2"><DollarSign size={16} /> Preço (R$)</FormLabel>
                 <FormControl>
@@ -338,15 +354,18 @@ const CarForm: React.FC<CarFormProps> = ({
                     placeholder="R$ 0,00"
                     onChange={(e) => {
                       const formatted = formatCurrency(e.target.value);
-                      // e.target.value = formatted; // Let React control the input value display
                       const numericValue = parseFloat(formatted.replace(/[^\d,]/g, '').replace(',', '.')) ; 
                       onChange(isNaN(numericValue) ? 0 : numericValue);
                     }}
-                    // Display formatted value from React Hook Form state
                     value={value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    {...rest} // Pass other field properties like name, onBlur, ref
+                    {...rest}
                   />
                 </FormControl>
+                {priceInWords && (
+                  <div className="text-sm text-gray-600 mt-1 italic">
+                    {priceInWords}
+                  </div>
+                )}
                 <FormMessage />
               </FormItem>
             )}
