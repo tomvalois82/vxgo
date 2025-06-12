@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -102,21 +101,6 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
       return data as Config;
     },
     enabled: !!user?.config,
-  });
-
-  // Buscar valores possíveis para o campo receptor (cargos)
-  const { data: cargos } = useQuery({
-    queryKey: ['cargos'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .rpc('get_enum_values', { enum_name: 'cargos' });
-      
-      if (error) {
-        // Fallback para valores padrão se a função não existir
-        return ['Gerente', 'Supervisor', 'Vendedor', 'Avaliador'];
-      }
-      return data;
-    },
   });
 
   useEffect(() => {
@@ -304,7 +288,21 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
         // Atualizar config existente
         const { error: configError } = await supabase
           .from('config')
-          .update(configData)
+          .update({
+            empresa: configData.empresa,
+            evo_instancia: configData.evo_instancia,
+            evo_key: configData.evo_key,
+            telefone: configData.telefone,
+            receptor: configData.receptor as any,
+            apikeyvoice: configData.apikeyvoice,
+            codVoice: configData.codVoice,
+            pausa: configData.pausa,
+            temporesposta: configData.temporesposta,
+            ativo: configData.ativo,
+            ativoolx: configData.ativoolx,
+            access_token_olx: configData.access_token_olx,
+            webhook_olx: configData.webhook_olx,
+          })
           .eq('id', user.config);
 
         if (configError) throw configError;
@@ -585,11 +583,10 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
                     <SelectValue placeholder="Selecione o receptor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {cargos?.map((cargo) => (
-                      <SelectItem key={cargo} value={cargo}>
-                        {cargo}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="Gerente">Gerente</SelectItem>
+                    <SelectItem value="Supervisor">Supervisor</SelectItem>
+                    <SelectItem value="Vendedor">Vendedor</SelectItem>
+                    <SelectItem value="Avaliador">Avaliador</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
