@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CarFormData } from '@/lib/types';
@@ -26,10 +27,17 @@ interface Car {
   warranty: string;
   category: string;
   vehicleType: string;
+  image?: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface CarContextType {
   cars: Car[];
+  filteredCars: Car[];
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
   getCar: (id: string) => Car | undefined;
   addCar: (car: CarFormData & { fotos?: string[] }) => Promise<void>;
   updateCar: (id: string, car: CarFormData & { fotos?: string[] }) => Promise<void>;
@@ -41,8 +49,17 @@ const CarContext = createContext<CarContextType | undefined>(undefined);
 
 export function CarProvider({ children }: { children: React.ReactNode }) {
   const [cars, setCars] = useState<Car[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const { profile } = useAuth();
+
+  // Filter cars based on search term
+  const filteredCars = cars.filter(car => 
+    car.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    car.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    car.color.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    car.year.toString().includes(searchTerm)
+  );
 
   useEffect(() => {
     async function fetchCars() {
@@ -53,7 +70,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const { data, error } = await supabase
-          .from(profile.tbEstoque)
+          .from(profile.tbEstoque as any)
           .select('*');
 
         if (error) {
@@ -61,7 +78,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (data) {
-          const typedCars = data.map(car => {
+          const typedCars = data.map((car: any) => {
             let price = 0;
             if (typeof car.valor === 'string') {
               price = convertFromWords(car.valor);
@@ -70,17 +87,17 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
             }
             
             return {
-              id: car.id,
-              brand: car.marca,
+              id: car.id.toString(),
+              brand: car.marca || car.fabricante,
               model: car.modelo,
-              year: car.ano_modelo,
+              year: car.ano_modelo || car.ano,
               manufacturingYear: car.ano_fabricacao,
               price: price,
               color: car.cor,
               mileage: car.km,
-              fuelType: car.combustivel,
+              fuelType: car.combustivel || car.motor,
               transmission: car.cambio,
-              inStock: car.disponivel_estoque,
+              inStock: car.disponivel_estoque !== false,
               characteristics: car.caracteristicas,
               fotos: car.fotos || [],
               idanuncioolx: car.idanuncioolx || [],
@@ -90,6 +107,10 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
               warranty: car.garantia,
               category: car.categoria,
               vehicleType: car.tipo_veiculo,
+              image: car.foto,
+              description: car.observacao,
+              createdAt: new Date(car.created_at),
+              updatedAt: new Date(car.created_at),
             } as Car;
           });
           setCars(typedCars);
@@ -126,7 +147,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
       const mappedCar = mapCarFormDataToSupabase(car);
 
       const { data, error } = await supabase
-        .from(profile.tbEstoque)
+        .from(profile.tbEstoque as any)
         .insert([mappedCar])
         .select();
 
@@ -137,17 +158,17 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
       if (data && data.length > 0) {
         const newCar = data[0];
         setCars([...cars, {
-          id: newCar.id,
-          brand: newCar.marca,
+          id: newCar.id.toString(),
+          brand: newCar.marca || newCar.fabricante,
           model: newCar.modelo,
-          year: newCar.ano_modelo,
+          year: newCar.ano_modelo || newCar.ano,
           manufacturingYear: newCar.ano_fabricacao,
           price: convertFromWords(newCar.valor),
           color: newCar.cor,
           mileage: newCar.km,
-          fuelType: newCar.combustivel,
+          fuelType: newCar.combustivel || newCar.motor,
           transmission: newCar.cambio,
-          inStock: newCar.disponivel_estoque,
+          inStock: newCar.disponivel_estoque !== false,
           characteristics: newCar.caracteristicas,
           fotos: newCar.fotos || [],
           idanuncioolx: newCar.idanuncioolx || [],
@@ -157,6 +178,10 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
           warranty: newCar.garantia,
           category: newCar.categoria,
           vehicleType: newCar.tipo_veiculo,
+          image: newCar.foto,
+          description: newCar.observacao,
+          createdAt: new Date(newCar.created_at),
+          updatedAt: new Date(newCar.created_at),
         }]);
         toast({
           title: 'Carro adicionado',
@@ -186,7 +211,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
       const mappedCar = mapCarFormDataToSupabase(car);
 
       const { error } = await supabase
-        .from(profile.tbEstoque)
+        .from(profile.tbEstoque as any)
         .update(mappedCar)
         .eq('id', id);
 
@@ -218,6 +243,10 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
               warranty: car.warranty,
               category: car.category,
               vehicleType: car.vehicleType,
+              image: car.fotos?.[0],
+              description: car.characteristics,
+              createdAt: c.createdAt,
+              updatedAt: new Date(),
             }
             : c
         )
@@ -247,7 +276,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const { error } = await supabase
-        .from(profile.tbEstoque)
+        .from(profile.tbEstoque as any)
         .delete()
         .eq('id', id);
 
@@ -272,17 +301,22 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
   const mapCarFormDataToSupabase = (formData: CarFormData): any => {
     return {
       marca: formData.brand,
+      fabricante: formData.brand,
       modelo: formData.model,
       ano_modelo: formData.year,
+      ano: formData.year,
       ano_fabricacao: formData.manufacturingYear,
-      valor: convertToWords(formData.price), // Save as words instead of formatted currency
+      valor: convertToWords(formData.price),
       cor: formData.color,
       km: formData.mileage,
       combustivel: formData.fuelType,
+      motor: formData.fuelType,
       cambio: formData.transmission,
       disponivel_estoque: formData.inStock,
       caracteristicas: formData.characteristics,
+      observacao: formData.characteristics,
       fotos: formData.fotos,
+      foto: formData.fotos?.[0],
       idanuncioolx: formData.idanuncioolx,
       video: formData.video,
       cautelar: formData.cautionReport,
@@ -295,6 +329,9 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
 
   const value: CarContextType = {
     cars,
+    filteredCars,
+    searchTerm,
+    setSearchTerm,
     getCar,
     addCar,
     updateCar,

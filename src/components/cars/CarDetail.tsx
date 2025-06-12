@@ -7,33 +7,45 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Edit, Trash2, ArrowLeft, Car } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+
 const CarDetail = () => {
-  const {
-    id
-  } = useParams<{
-    id: string;
-  }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const {
-    getCar,
-    deleteCar
-  } = useCars();
+  const { getCar, deleteCar } = useCars();
   const car = id ? getCar(id) : undefined;
+
   if (!car) {
-    return <div className="flex flex-col items-center justify-center py-10">
+    return (
+      <div className="flex flex-col items-center justify-center py-10">
         <h2 className="text-2xl font-bold mb-4">Carro não encontrado</h2>
         <Link to="/">
           <Button>Voltar ao Estoque</Button>
         </Link>
-      </div>;
+      </div>
+    );
   }
+
   const handleDelete = () => {
     if (confirm(`Tem certeza que deseja excluir o ${car.brand} ${car.model}?`)) {
       deleteCar(car.id);
       navigate('/');
     }
   };
-  return <div>
+
+  const getFirstImage = () => {
+    if (car.fotos && car.fotos.length > 0 && car.fotos[0]) {
+      return car.fotos[0];
+    }
+    if (car.image) { 
+      return car.image;
+    }
+    return null;
+  };
+
+  const imageUrl = getFirstImage();
+
+  return (
+    <div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
@@ -61,13 +73,17 @@ const CarDetail = () => {
         <div className="md:col-span-2">
           <Card className="overflow-hidden">
             <div className="aspect-video bg-gray-100 flex items-center justify-center">
-              {car.image ? <img src={car.image} alt={`${car.brand} ${car.model}`} className="w-full h-full object-cover" /> : <div className="flex items-center justify-center h-full w-full bg-gray-200">
+              {imageUrl ? (
+                <img src={imageUrl} alt={`${car.brand} ${car.model}`} className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex items-center justify-center h-full w-full bg-gray-200">
                   <Car size={96} className="text-gray-400" />
-                </div>}
+                </div>
+              )}
             </div>
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold mb-4">Descrição</h2>
-              <p className="text-gray-700">{car.description || "Sem descrição disponível."}</p>
+              <p className="text-gray-700">{car.characteristics || car.description || "Sem descrição disponível."}</p>
 
               <Separator className="my-6" />
 
@@ -106,7 +122,11 @@ const CarDetail = () => {
                       
                       <div className="text-sm">Status:</div>
                       <div className="text-sm font-medium">
-                        {car.inStock ? <Badge className="bg-green-500 hover:bg-green-600">Em estoque</Badge> : <Badge variant="destructive">Fora de estoque</Badge>}
+                        {car.inStock ? (
+                          <Badge className="bg-green-500 hover:bg-green-600">Em estoque</Badge>
+                        ) : (
+                          <Badge variant="destructive">Fora de estoque</Badge>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -124,18 +144,15 @@ const CarDetail = () => {
                 
                 <div className="text-sm text-gray-500">
                   <div>Data de cadastro:</div>
-                  <div>{new Date(car.createdAt).toLocaleDateString('pt-BR')}</div>
+                  <div>{car.createdAt.toLocaleDateString('pt-BR')}</div>
                 </div>
                 
                 <div className="text-sm text-gray-500">
                   <div>Última atualização:</div>
-                  <div>{new Date(car.updatedAt).toLocaleDateString('pt-BR')}</div>
+                  <div>{car.updatedAt.toLocaleDateString('pt-BR')}</div>
                 </div>
                 
-                
-                
                 <div className="flex flex-col gap-2">
-                  
                   
                 </div>
               </div>
@@ -143,6 +160,8 @@ const CarDetail = () => {
           </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default CarDetail;
