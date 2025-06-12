@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -28,6 +28,24 @@ interface User {
   ativo: boolean;
   superadm: boolean;
   cargo: string | null;
+  config: number | null;
+}
+
+interface Config {
+  id: number;
+  empresa: string | null;
+  evo_instancia: string | null;
+  evo_key: string | null;
+  telefone: string | null;
+  receptor: string | null;
+  apikeyvoice: string | null;
+  codVoice: string | null;
+  pausa: number | null;
+  temporesposta: number | null;
+  ativo: boolean;
+  ativoolx: boolean;
+  access_token_olx: string | null;
+  webhook_olx: string | null;
 }
 
 interface UserDialogProps {
@@ -51,7 +69,55 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
     password: '',
   });
 
+  const [configData, setConfigData] = useState({
+    empresa: '',
+    evo_instancia: '',
+    evo_key: '',
+    telefone: '',
+    receptor: '',
+    apikeyvoice: '',
+    codVoice: '',
+    pausa: 15,
+    temporesposta: 15,
+    ativo: true,
+    ativoolx: true,
+    access_token_olx: '',
+    webhook_olx: '',
+  });
+
   const queryClient = useQueryClient();
+
+  // Buscar dados da config associada ao usuário
+  const { data: config } = useQuery({
+    queryKey: ['user-config', user?.config],
+    queryFn: async () => {
+      if (!user?.config) return null;
+      const { data, error } = await supabase
+        .from('config')
+        .select('*')
+        .eq('id', user.config)
+        .single();
+      
+      if (error) throw error;
+      return data as Config;
+    },
+    enabled: !!user?.config,
+  });
+
+  // Buscar valores possíveis para o campo receptor (cargos)
+  const { data: cargos } = useQuery({
+    queryKey: ['cargos'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .rpc('get_enum_values', { enum_name: 'cargos' });
+      
+      if (error) {
+        // Fallback para valores padrão se a função não existir
+        return ['Gerente', 'Supervisor', 'Vendedor', 'Avaliador'];
+      }
+      return data;
+    },
+  });
 
   useEffect(() => {
     if (user) {
@@ -83,7 +149,41 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
         password: '',
       });
     }
-  }, [user, open]);
+
+    if (config) {
+      setConfigData({
+        empresa: config.empresa || '',
+        evo_instancia: config.evo_instancia || '',
+        evo_key: config.evo_key || '',
+        telefone: config.telefone || '',
+        receptor: config.receptor || '',
+        apikeyvoice: config.apikeyvoice || '',
+        codVoice: config.codVoice || '',
+        pausa: config.pausa || 15,
+        temporesposta: config.temporesposta || 15,
+        ativo: config.ativo ?? true,
+        ativoolx: config.ativoolx ?? true,
+        access_token_olx: config.access_token_olx || '',
+        webhook_olx: config.webhook_olx || '',
+      });
+    } else {
+      setConfigData({
+        empresa: '',
+        evo_instancia: '',
+        evo_key: '',
+        telefone: '',
+        receptor: '',
+        apikeyvoice: '',
+        codVoice: '',
+        pausa: 15,
+        temporesposta: 15,
+        ativo: true,
+        ativoolx: true,
+        access_token_olx: '',
+        webhook_olx: '',
+      });
+    }
+  }, [user, config, open]);
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof formData) => {
@@ -97,7 +197,7 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
       if (authError) throw authError;
 
       // Criar registro na tabela usuario
-      const { error: userError } = await supabase
+      const { data: newUser, error: userError } = await supabase
         .from('usuario')
         .insert({
           uid: authUser.user.id,
@@ -111,9 +211,31 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
           cargo: userData.cargo as any,
           ativo: userData.ativo,
           superadm: userData.superadm,
-        });
+        })
+        .select()
+        .single();
 
       if (userError) throw userError;
+
+      // Criar config associada ao usuário
+      const { data: newConfig, error: configError } = await supabase
+        .from('config')
+        .insert({
+          idusuario: newUser.id,
+          ...configData,
+        })
+        .select()
+        .single();
+
+      if (configError) throw configError;
+
+      // Atualizar o usuário com o ID da config
+      const { error: updateError } = await supabase
+        .from('usuario')
+        .update({ config: newConfig.id })
+        .eq('id', newUser.id);
+
+      if (updateError) throw updateError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -177,6 +299,37 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
 
       if (userError) throw userError;
 
+      // Atualizar ou criar config
+      if (user.config) {
+        // Atualizar config existente
+        const { error: configError } = await supabase
+          .from('config')
+          .update(configData)
+          .eq('id', user.config);
+
+        if (configError) throw configError;
+      } else {
+        // Criar nova config
+        const { data: newConfig, error: configError } = await supabase
+          .from('config')
+          .insert({
+            idusuario: user.id,
+            ...configData,
+          })
+          .select()
+          .single();
+
+        if (configError) throw configError;
+
+        // Atualizar o usuário com o ID da nova config
+        const { error: updateError } = await supabase
+          .from('usuario')
+          .update({ config: newConfig.id })
+          .eq('id', user.id);
+
+        if (updateError) throw updateError;
+      }
+
       // Se senha foi fornecida, atualizar via Edge Function
       if (userData.password && user.uid) {
         await updatePasswordMutation.mutateAsync({
@@ -234,6 +387,16 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
       return;
     }
 
+    // Validação do temporesposta
+    if (configData.temporesposta < 0 || configData.temporesposta > 60) {
+      toast({
+        title: "Erro",
+        description: "Tempo de resposta deve estar entre 0 e 60 segundos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (user) {
       updateUserMutation.mutate(formData);
     } else {
@@ -245,129 +408,270 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {user ? 'Editar Usuário' : 'Novo Usuário'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="nome">Nome *</Label>
-              <Input
-                id="nome"
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                required
-              />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Seção de Dados do Usuário */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b pb-2">Dados do Usuário</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="nome">Nome *</Label>
+                <Input
+                  id="nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  disabled={!!user} // Email não pode ser alterado após criação
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="telefone">Telefone</Label>
+                <Input
+                  id="telefone"
+                  value={formData.telefone}
+                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="cargo">Cargo</Label>
+                <Select value={formData.cargo} onValueChange={(value) => setFormData({ ...formData, cargo: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o cargo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Gerente">Gerente</SelectItem>
+                    <SelectItem value="Supervisor">Supervisor</SelectItem>
+                    <SelectItem value="Vendedor">Vendedor</SelectItem>
+                    <SelectItem value="Avaliador">Avaliador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="evo_instancia">Instância Evolution</Label>
+                <Input
+                  id="evo_instancia"
+                  value={formData.evo_instancia}
+                  onChange={(e) => setFormData({ ...formData, evo_instancia: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="evo_key">Chave Evolution</Label>
+                <Input
+                  id="evo_key"
+                  value={formData.evo_key}
+                  onChange={(e) => setFormData({ ...formData, evo_key: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="tbEstoque">Tabela Estoque</Label>
+                <Input
+                  id="tbEstoque"
+                  value={formData.tbEstoque}
+                  onChange={(e) => setFormData({ ...formData, tbEstoque: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="tbHistorico">Tabela Histórico</Label>
+                <Input
+                  id="tbHistorico"
+                  value={formData.tbHistorico}
+                  onChange={(e) => setFormData({ ...formData, tbHistorico: e.target.value })}
+                />
+              </div>
+
+              <div className="col-span-2">
+                <Label htmlFor="password">
+                  {user ? 'Nova Senha (deixe em branco para não alterar - mínimo 6 caracteres)' : 'Senha * (mínimo 6 caracteres)'}
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required={!user}
+                  minLength={6}
+                />
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-                disabled={!!user} // Email não pode ser alterado após criação
-              />
-            </div>
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="ativo"
+                  checked={formData.ativo}
+                  onCheckedChange={(checked) => setFormData({ ...formData, ativo: checked })}
+                />
+                <Label htmlFor="ativo">Usuário Ativo</Label>
+              </div>
 
-            <div>
-              <Label htmlFor="telefone">Telefone</Label>
-              <Input
-                id="telefone"
-                value={formData.telefone}
-                onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="cargo">Cargo</Label>
-              <Select value={formData.cargo} onValueChange={(value) => setFormData({ ...formData, cargo: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o cargo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Gerente">Gerente</SelectItem>
-                  <SelectItem value="Supervisor">Supervisor</SelectItem>
-                  <SelectItem value="Vendedor">Vendedor</SelectItem>
-                  <SelectItem value="Avaliador">Avaliador</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="evo_instancia">Instância Evolution</Label>
-              <Input
-                id="evo_instancia"
-                value={formData.evo_instancia}
-                onChange={(e) => setFormData({ ...formData, evo_instancia: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="evo_key">Chave Evolution</Label>
-              <Input
-                id="evo_key"
-                value={formData.evo_key}
-                onChange={(e) => setFormData({ ...formData, evo_key: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="tbEstoque">Tabela Estoque</Label>
-              <Input
-                id="tbEstoque"
-                value={formData.tbEstoque}
-                onChange={(e) => setFormData({ ...formData, tbEstoque: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="tbHistorico">Tabela Histórico</Label>
-              <Input
-                id="tbHistorico"
-                value={formData.tbHistorico}
-                onChange={(e) => setFormData({ ...formData, tbHistorico: e.target.value })}
-              />
-            </div>
-
-            <div className="col-span-2">
-              <Label htmlFor="password">
-                {user ? 'Nova Senha (deixe em branco para não alterar - mínimo 6 caracteres)' : 'Senha * (mínimo 6 caracteres)'}
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required={!user}
-                minLength={6}
-              />
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="superadm"
+                  checked={formData.superadm}
+                  onCheckedChange={(checked) => setFormData({ ...formData, superadm: checked })}
+                />
+                <Label htmlFor="superadm">Super Administrador</Label>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="ativo"
-                checked={formData.ativo}
-                onCheckedChange={(checked) => setFormData({ ...formData, ativo: checked })}
-              />
-              <Label htmlFor="ativo">Usuário Ativo</Label>
+          {/* Seção da Empresa */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b pb-2">Empresa</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="config_empresa">Nome da Empresa</Label>
+                <Input
+                  id="config_empresa"
+                  value={configData.empresa}
+                  onChange={(e) => setConfigData({ ...configData, empresa: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="config_telefone">Telefone da Empresa</Label>
+                <Input
+                  id="config_telefone"
+                  value={configData.telefone}
+                  onChange={(e) => setConfigData({ ...configData, telefone: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="config_evo_instancia">Instância Evolution</Label>
+                <Input
+                  id="config_evo_instancia"
+                  value={configData.evo_instancia}
+                  onChange={(e) => setConfigData({ ...configData, evo_instancia: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="config_evo_key">Chave Evolution</Label>
+                <Input
+                  id="config_evo_key"
+                  value={configData.evo_key}
+                  onChange={(e) => setConfigData({ ...configData, evo_key: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="config_receptor">Receptor</Label>
+                <Select value={configData.receptor} onValueChange={(value) => setConfigData({ ...configData, receptor: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o receptor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cargos?.map((cargo) => (
+                      <SelectItem key={cargo} value={cargo}>
+                        {cargo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="config_apikeyvoice">API Key ElevenLabs</Label>
+                <Input
+                  id="config_apikeyvoice"
+                  value={configData.apikeyvoice}
+                  onChange={(e) => setConfigData({ ...configData, apikeyvoice: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="config_codVoice">Código de Voz</Label>
+                <Input
+                  id="config_codVoice"
+                  value={configData.codVoice}
+                  onChange={(e) => setConfigData({ ...configData, codVoice: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="config_pausa">Pausa (minutos)</Label>
+                <Input
+                  id="config_pausa"
+                  type="number"
+                  min="0"
+                  value={configData.pausa}
+                  onChange={(e) => setConfigData({ ...configData, pausa: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="config_temporesposta">Tempo de Resposta (0-60 segundos)</Label>
+                <Input
+                  id="config_temporesposta"
+                  type="number"
+                  min="0"
+                  max="60"
+                  value={configData.temporesposta}
+                  onChange={(e) => setConfigData({ ...configData, temporesposta: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="config_access_token_olx">Access Token OLX</Label>
+                <Input
+                  id="config_access_token_olx"
+                  value={configData.access_token_olx}
+                  onChange={(e) => setConfigData({ ...configData, access_token_olx: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="config_webhook_olx">Webhook OLX</Label>
+                <Input
+                  id="config_webhook_olx"
+                  value={configData.webhook_olx}
+                  onChange={(e) => setConfigData({ ...configData, webhook_olx: e.target.value })}
+                />
+              </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="superadm"
-                checked={formData.superadm}
-                onCheckedChange={(checked) => setFormData({ ...formData, superadm: checked })}
-              />
-              <Label htmlFor="superadm">Super Administrador</Label>
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="config_ativo"
+                  checked={configData.ativo}
+                  onCheckedChange={(checked) => setConfigData({ ...configData, ativo: checked })}
+                />
+                <Label htmlFor="config_ativo">Atendimento WhatsApp</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="config_ativoolx"
+                  checked={configData.ativoolx}
+                  onCheckedChange={(checked) => setConfigData({ ...configData, ativoolx: checked })}
+                />
+                <Label htmlFor="config_ativoolx">Atendimento OLX</Label>
+              </div>
             </div>
           </div>
 
