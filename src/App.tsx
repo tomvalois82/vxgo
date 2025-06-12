@@ -15,6 +15,7 @@ import Settings from "@/pages/Settings";
 import Atendimentos from "@/pages/Atendimentos";
 import Users from "@/pages/Users";
 import PromptEditor from "@/pages/PromptEditor";
+import PromptEditorOlx from "@/pages/PromptEditorOlx";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
@@ -55,6 +56,11 @@ const App = () => (
                   <Route path="/prompt-editor/:configId" element={
                     <RequireAdmin>
                       <PromptEditor />
+                    </RequireAdmin>
+                  } />
+                  <Route path="/prompt-editor-olx/:configId" element={
+                    <RequireAdmin>
+                      <PromptEditorOlx />
                     </RequireAdmin>
                   } />
                 </Route>

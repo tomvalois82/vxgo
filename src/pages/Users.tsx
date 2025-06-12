@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -117,6 +118,18 @@ const Users = () => {
     }
   };
 
+  const handleEditPromptOlx = (user: User) => {
+    if (user.config) {
+      navigate(`/prompt-editor-olx/${user.config}`);
+    } else {
+      toast({
+        title: "Erro",
+        description: "Este usuário não possui configuração associada.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -207,8 +220,17 @@ const Users = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleEditPrompt(user)}
-                            title="Editar Prompt"
+                            title="Editar Prompt WhatsApp"
                             className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Bot className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditPromptOlx(user)}
+                            title="Editar Prompt da OLX"
+                            className="text-purple-600 hover:text-purple-700"
                           >
                             <Bot className="w-4 h-4" />
                           </Button>
