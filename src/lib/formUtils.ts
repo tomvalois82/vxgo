@@ -14,6 +14,3 @@ export const extractNumericValue = (formattedPrice: string | number): number => 
   if (typeof formattedPrice === 'number') return formattedPrice;
   return parseFloat(formattedPrice.replace(/\D/g, '')) / 100;
 };
-
-// Export the conversion functions
-export { convertToWords, convertFromWords } from './numberToWords';

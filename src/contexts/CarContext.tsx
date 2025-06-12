@@ -1,414 +1,335 @@
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Car, CarFormData } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
-import { CarFormData } from '@/lib/types';
 import { toast } from '@/components/ui/use-toast';
-import { useAuth } from './AuthContext';
-import { convertToWords, convertFromWords } from '@/lib/formUtils';
 import { VehicleType } from '@/hooks/useFipeBrands';
-
-interface Car {
-  id: string;
-  brand: string;
-  model: string;
-  year: number;
-  manufacturingYear: number;
-  price: number;
-  color: string;
-  mileage: number;
-  fuelType: string;
-  transmission: string;
-  inStock: boolean;
-  characteristics: string;
-  fotos: string[];
-  idanuncioolx: string[];
-  video: string;
-  cautionReport: string;
-  technicalSheet: string;
-  warranty: string;
-  category: string;
-  vehicleType: VehicleType;
-  image?: string;
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { formatCurrency } from '@/lib/utils';
+import { useAuth } from './AuthContext';
 
 interface CarContextType {
   cars: Car[];
-  filteredCars: Car[];
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  getCar: (id: string) => Car | undefined;
   addCar: (car: CarFormData & { fotos?: string[] }) => Promise<void>;
-  updateCar: (id: string, car: CarFormData & { fotos?: string[] }) => Promise<void>;
+  updateCar: (id: string, car: Partial<CarFormData & { fotos?: string[] }>) => Promise<void>;
   deleteCar: (id: string) => Promise<void>;
-  isLoading: boolean;
+  getCar: (id: string) => Car | undefined;
+  filteredCars: Car[];
+  setSearchTerm: (term: string) => void;
+  searchTerm: string;
+  refreshCars: () => Promise<void>;
 }
 
 const CarContext = createContext<CarContextType | undefined>(undefined);
 
-export function CarProvider({ children }: { children: React.ReactNode }) {
+function isUrl(string: string): boolean {
+  if (!string) return false;
+  try {
+    new URL(string);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function getFileNameFromPublicUrl(url: string): string | null {
+  if (!isUrl(url)) return null; // Or return url if we expect names sometimes
+  try {
+    const parsedUrl = new URL(url);
+    // Example URL: https://<project_ref>.supabase.co/storage/v1/object/public/car-fotos/filename.jpg
+    const pathSegments = parsedUrl.pathname.split('/');
+    // The filename is the last segment after the bucket name "car-fotos"
+    // Find "car-fotos" and take the rest, or just take the last segment if structure is guaranteed
+    const bucketNameIndex = pathSegments.indexOf('car-fotos');
+    if (bucketNameIndex !== -1 && bucketNameIndex < pathSegments.length -1) {
+      return pathSegments.slice(bucketNameIndex + 1).join('/');
+    }
+    // Fallback for simpler paths or if bucket name isn't in fixed position as expected
+    return pathSegments.pop() || null;
+  } catch (e) {
+    console.error("Error extracting filename from URL:", url, e);
+    return null;
+  }
+}
+
+function mapSupabaseToCar(row: any): Car {
+  let price = 0;
+  if (row.valor) {
+    const numericValue = row.valor.replace(/[^\d,]/g, '').replace(',', '.');
+    price = parseFloat(numericValue);
+  }
+
+  let mileage = 0;
+  if (row.km) {
+    mileage = parseInt(row.km.replace(/\./g, ''));
+  }
+
+  const carFotos: string[] = (row.fotos || []).map((foto: string) => {
+    if (isUrl(foto)) {
+      return foto;
+    }
+    // If it's a name, construct the public URL
+    const { data } = supabase.storage.from("car-fotos").getPublicUrl(foto);
+    return data.publicUrl || foto; // Fallback to name if URL construction fails
+  });
+
+  return {
+    id: String(row.id),
+    vehicleType: (row.tipo_veiculo as VehicleType) || 'carros',
+    brand: row.fabricante || '',
+    model: row.modelo || '',
+    year: Number(row.ano || 0),
+    manufacturingYear: Number(row.ano_fabricacao || 0),
+    price: isNaN(price) ? 0 : price,
+    color: row.cor || '',
+    mileage: isNaN(mileage) ? 0 : mileage,
+    fuelType: row.motor || '',
+    transmission: row.cambio || '',
+    inStock: !row.status || row.status.toLowerCase() === 'em estoque',
+    image: row.foto || '', // This 'image' (singular) might also need URL conversion if it's just a name
+    description: row.observacao || '',
+    characteristics: row.caracteristicas || '',
+    video: row.video || '',
+    cautionReport: row.cautelar || '',
+    technicalSheet: row.ficha_tecnica || '',
+    warranty: row.garantia || '',
+    category: row.categoria || '',
+    fotos: carFotos, // Now guaranteed to be URLs
+    idanuncioolx: row.idanuncioolx || [], // Array field
+    createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+    updatedAt: row.created_at ? new Date(row.created_at) : new Date()
+  };
+}
+
+function mapCarFormDataToSupabase(car: CarFormData & { fotos?: string[] }) {
+  const formattedPrice = car.price ? formatCurrency(car.price).replace('R$', 'R$ ').trim() : 'R$ 0,00';
+  
+  // Ensure 'fotos' are URLs. CarFormData should already provide them as URLs from CarForm.
+  const fotosToSave = car.fotos || [];
+
+  return {
+    tipo_veiculo: car.vehicleType,
+    fabricante: car.brand,
+    modelo: car.model,
+    ano: String(car.year),
+    ano_fabricacao: String(car.manufacturingYear || car.year),
+    valor: formattedPrice,
+    cor: car.color,
+    km: car.mileage ? car.mileage.toLocaleString('pt-BR') : '0',
+    motor: car.fuelType,
+    cambio: car.transmission,
+    categoria: car.category || null,
+    observacao: car.description || null,
+    caracteristicas: car.characteristics || null,
+    video: car.video || null,
+    cautelar: car.cautionReport || null,
+    ficha_tecnica: car.technicalSheet || null,
+    garantia: car.warranty || null,
+    status: car.inStock ? 'Em estoque' : 'Fora de estoque',
+    // 'foto' (singular, cover image) logic: if it's part of 'fotos', pick one. If separate, ensure it's also a URL or handled.
+    // For simplicity, assuming `car.image` (if used for cover) is also a URL or needs similar handling.
+    // The CarForm doesn't explicitly set a single `image` field anymore, it relies on `fotos`.
+    // Let's ensure `foto` (singular) is the first of `fotos` or null.
+    foto: fotosToSave.length > 0 ? fotosToSave[0] : null,
+    idanuncioolx: car.idanuncioolx || null, // Array field
+    fotos: fotosToSave, // Save the array of URLs
+  };
+}
+
+export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cars, setCars] = useState<Car[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const { profile } = useAuth();
-
-  // Filter cars based on search term
-  const filteredCars = cars.filter(car => 
-    car.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    car.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    car.color.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    car.year.toString().includes(searchTerm)
-  );
+  const { user, profile } = useAuth();
+  const [stockTable, setStockTable] = useState<string>('estoque');
 
   useEffect(() => {
-    async function fetchCars() {
-      if (!profile || !profile.tbEstoque) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        // Use rpc call to avoid table name typing issues
-        const { data, error } = await supabase.rpc('get_table_data', {
-          table_name: profile.tbEstoque
-        });
-
-        if (error) {
-          // Fallback to direct query with type assertion
-          const response = await supabase
-            .from(profile.tbEstoque as any)
-            .select('*');
-          
-          if (response.error) {
-            throw response.error;
-          }
-          
-          const rawData = response.data as any[];
-          const typedCars = rawData?.map((car: any) => {
-            let price = 0;
-            if (typeof car.valor === 'string') {
-              price = convertFromWords(car.valor);
-            } else if (typeof car.valor === 'number') {
-              price = car.valor;
-            }
-            
-            // Ensure vehicleType is properly typed
-            let vehicleType: VehicleType = 'carros';
-            if (car.tipo_veiculo === 'motos' || car.tipo_veiculo === 'caminhoes') {
-              vehicleType = car.tipo_veiculo;
-            }
-            
-            return {
-              id: car.id.toString(),
-              brand: car.marca || car.fabricante || '',
-              model: car.modelo || '',
-              year: parseInt(car.ano_modelo || car.ano || '0'),
-              manufacturingYear: parseInt(car.ano_fabricacao || '0'),
-              price: price,
-              color: car.cor || '',
-              mileage: parseInt(car.km || '0'),
-              fuelType: car.combustivel || car.motor || '',
-              transmission: car.cambio || '',
-              inStock: car.disponivel_estoque !== false,
-              characteristics: car.caracteristicas || '',
-              fotos: car.fotos || [],
-              idanuncioolx: car.idanuncioolx || [],
-              video: car.video || '',
-              cautionReport: car.cautelar || '',
-              technicalSheet: car.ficha_tecnica || '',
-              warranty: car.garantia || '',
-              category: car.categoria || '',
-              vehicleType: vehicleType,
-              image: car.foto,
-              description: car.observacao,
-              createdAt: new Date(car.created_at),
-              updatedAt: new Date(car.created_at),
-            } as Car;
-          }) || [];
-          setCars(typedCars);
-        } else {
-          // Process RPC response
-          const typedCars = data?.map((car: any) => {
-            let price = 0;
-            if (typeof car.valor === 'string') {
-              price = convertFromWords(car.valor);
-            } else if (typeof car.valor === 'number') {
-              price = car.valor;
-            }
-            
-            let vehicleType: VehicleType = 'carros';
-            if (car.tipo_veiculo === 'motos' || car.tipo_veiculo === 'caminhoes') {
-              vehicleType = car.tipo_veiculo;
-            }
-            
-            return {
-              id: car.id.toString(),
-              brand: car.marca || car.fabricante || '',
-              model: car.modelo || '',
-              year: parseInt(car.ano_modelo || car.ano || '0'),
-              manufacturingYear: parseInt(car.ano_fabricacao || '0'),
-              price: price,
-              color: car.cor || '',
-              mileage: parseInt(car.km || '0'),
-              fuelType: car.combustivel || car.motor || '',
-              transmission: car.cambio || '',
-              inStock: car.disponivel_estoque !== false,
-              characteristics: car.caracteristicas || '',
-              fotos: car.fotos || [],
-              idanuncioolx: car.idanuncioolx || [],
-              video: car.video || '',
-              cautionReport: car.cautelar || '',
-              technicalSheet: car.ficha_tecnica || '',
-              warranty: car.garantia || '',
-              category: car.categoria || '',
-              vehicleType: vehicleType,
-              image: car.foto,
-              description: car.observacao,
-              createdAt: new Date(car.created_at),
-              updatedAt: new Date(car.created_at),
-            } as Car;
-          }) || [];
-          setCars(typedCars);
-        }
-      } catch (error: any) {
-        console.error('Error fetching cars:', error);
-        toast({
-          title: 'Erro ao carregar carros',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
+    if (profile?.tbEstoque) {
+      setStockTable(profile.tbEstoque);
+      console.log('Using stock table:', profile.tbEstoque);
+    } else {
+      setStockTable('estoque');
+      console.log('No custom stock table found, using default: estoque');
     }
-
-    fetchCars();
   }, [profile]);
 
-  const getCar = (id: string): Car | undefined => {
-    return cars.find((car) => car.id === id);
+  const fetchCars = async () => {
+    if (!stockTable) return;
+    
+    console.log(`Fetching cars from table: ${stockTable}`);
+    
+    const { data, error } = await supabase
+      .from(stockTable as any) // Cast to any for dynamic table name
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao carregar veículos',
+        description: error.message,
+      });
+      return;
+    }
+    setCars(data?.map(mapSupabaseToCar) || []);
   };
 
-  const addCar = async (car: CarFormData & { fotos?: string[] }) => {
-    if (!profile || !profile.tbEstoque) {
+  useEffect(() => {
+    if (user && stockTable) {
+      fetchCars();
+    } else {
+      setCars([]);
+    }
+  }, [user, stockTable]);
+
+  const addCar = async (carData: CarFormData & { fotos?: string[] }) => {
+    if (!user || !stockTable) {
       toast({
-        title: 'Erro',
-        description: 'Tabela de estoque não configurada.',
         variant: 'destructive',
+        title: 'Erro ao adicionar veículo',
+        description: 'Você precisa estar logado para adicionar veículos.',
       });
       return;
     }
 
-    try {
-      const mappedCar = mapCarFormDataToSupabase(car);
+    const insertPayload = {
+      ...mapCarFormDataToSupabase(carData),
+      uid: user.id
+    };
+    
+    insertPayload.foto = carData.fotos && carData.fotos.length > 0 ? carData.fotos[0] : null;
 
-      const { data, error } = await supabase
-        .from(profile.tbEstoque as any)
-        .insert([mappedCar])
-        .select();
+    const { error } = await supabase.from(stockTable as any).insert([insertPayload] as any); // Cast stockTable to any
 
-      if (error) {
-        throw error;
-      }
-
-      if (data && data.length > 0) {
-        const newCar = data[0] as any;
-        let vehicleType: VehicleType = 'carros';
-        if (newCar.tipo_veiculo === 'motos' || newCar.tipo_veiculo === 'caminhoes') {
-          vehicleType = newCar.tipo_veiculo;
-        }
-
-        setCars([...cars, {
-          id: newCar.id.toString(),
-          brand: newCar.marca || newCar.fabricante,
-          model: newCar.modelo,
-          year: parseInt(newCar.ano_modelo || newCar.ano || '0'),
-          manufacturingYear: parseInt(newCar.ano_fabricacao || '0'),
-          price: convertFromWords(newCar.valor),
-          color: newCar.cor,
-          mileage: parseInt(newCar.km || '0'),
-          fuelType: newCar.combustivel || newCar.motor,
-          transmission: newCar.cambio,
-          inStock: newCar.disponivel_estoque !== false,
-          characteristics: newCar.caracteristicas,
-          fotos: newCar.fotos || [],
-          idanuncioolx: newCar.idanuncioolx || [],
-          video: newCar.video,
-          cautionReport: newCar.cautelar,
-          technicalSheet: newCar.ficha_tecnica,
-          warranty: newCar.garantia,
-          category: newCar.categoria,
-          vehicleType: vehicleType,
-          image: newCar.foto,
-          description: newCar.observacao,
-          createdAt: new Date(newCar.created_at),
-          updatedAt: new Date(newCar.created_at),
-        }]);
-        toast({
-          title: 'Carro adicionado',
-          description: 'Carro adicionado com sucesso!',
-        });
-      }
-    } catch (error: any) {
+    if (error) {
       toast({
-        title: 'Erro ao adicionar carro',
-        description: error.message,
         variant: 'destructive',
+        title: 'Erro ao adicionar veículo',
+        description: error.message,
       });
+      return;
     }
+    await fetchCars();
+    toast({ title: 'Veículo adicionado com sucesso!' });
   };
 
-  const updateCar = async (id: string, car: CarFormData & { fotos?: string[] }) => {
-    if (!profile || !profile.tbEstoque) {
+  const updateCar = async (id: string, carData: Partial<CarFormData & { fotos?: string[] }>) => {
+    if (!user || !stockTable) {
       toast({
-        title: 'Erro',
-        description: 'Tabela de estoque não configurada.',
         variant: 'destructive',
+        title: 'Erro ao atualizar veículo',
+        description: 'Você precisa estar logado para atualizar veículos.',
       });
       return;
     }
 
-    try {
-      const mappedCar = mapCarFormDataToSupabase(car);
-
-      const { error } = await supabase
-        .from(profile.tbEstoque as any)
-        .update(mappedCar)
-        .eq('id', id);
-
-      if (error) {
-        throw error;
-      }
-
-      setCars(
-        cars.map((c) =>
-          c.id === id
-            ? {
-              id: id,
-              brand: car.brand,
-              model: car.model,
-              year: car.year,
-              manufacturingYear: car.manufacturingYear || car.year,
-              price: car.price,
-              color: car.color,
-              mileage: car.mileage,
-              fuelType: car.fuelType,
-              transmission: car.transmission,
-              inStock: car.inStock,
-              characteristics: car.characteristics || '',
-              fotos: car.fotos || [],
-              idanuncioolx: car.idanuncioolx || [],
-              video: car.video || '',
-              cautionReport: car.cautionReport || '',
-              technicalSheet: car.technicalSheet || '',
-              warranty: car.warranty || '',
-              category: car.category || '',
-              vehicleType: car.vehicleType,
-              image: car.fotos?.[0],
-              description: car.characteristics,
-              createdAt: c.createdAt,
-              updatedAt: new Date(),
-            }
-            : c
-        )
-      );
-      toast({
-        title: 'Carro atualizado',
-        description: 'Carro atualizado com sucesso!',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Erro ao atualizar carro',
-        description: error.message,
-        variant: 'destructive',
-      });
+    const numericId = parseInt(id, 10);
+    const mappedPayload = mapCarFormDataToSupabase(carData as CarFormData & { fotos?: string[] });
+    
+    if (carData.fotos !== undefined) {
+      mappedPayload.foto = carData.fotos && carData.fotos.length > 0 ? carData.fotos[0] : null;
     }
+    
+    const updatePayload = {
+      ...mappedPayload
+    };
+
+    const { error } = await supabase.from(stockTable as any).update(updatePayload as any).eq('id', numericId); // Cast stockTable to any
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao atualizar veículo',
+        description: error.message,
+      });
+      return;
+    }
+    await fetchCars();
+    toast({ title: 'Veículo atualizado com sucesso!' });
   };
 
   const deleteCar = async (id: string) => {
-    if (!profile || !profile.tbEstoque) {
-      toast({
-        title: 'Erro',
-        description: 'Tabela de estoque não configurada.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from(profile.tbEstoque as any)
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        throw error;
+    if (!stockTable) return;
+    
+    const numericId = parseInt(id, 10);
+    const carToDelete = cars.find(car => String(car.id) === String(id));
+    
+    if (carToDelete?.fotos?.length) {
+      const photoFilesToDelete: string[] = [];
+      for (const photoUrl of carToDelete.fotos) {
+        const fileName = getFileNameFromPublicUrl(photoUrl); // This needs to extract from full URL
+        if (fileName) {
+          photoFilesToDelete.push(fileName);
+        } else {
+          console.warn("Could not extract filename to delete from storage for URL:", photoUrl);
+        }
       }
-
-      setCars(cars.filter((car) => car.id !== id));
-      toast({
-        title: 'Carro removido',
-        description: 'Carro removido com sucesso!',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Erro ao remover carro',
-        description: error.message,
-        variant: 'destructive',
-      });
+      
+      if (photoFilesToDelete.length > 0) {
+        console.log("Attempting to delete from storage:", photoFilesToDelete);
+        const { error: storageError } = await supabase.storage
+          .from('car-fotos')
+          .remove(photoFilesToDelete);
+            
+        if (storageError) {
+          console.error('Error deleting photos from storage:', storageError);
+          toast({
+            title: "Aviso: Erro ao deletar algumas fotos do armazenamento",
+            description: storageError.message,
+            variant: "default"
+          });
+        } else {
+          console.log("Photos deleted from storage successfully:", photoFilesToDelete);
+        }
+      }
     }
+    
+    const { error } = await supabase.from(stockTable as any).delete().eq('id', numericId); // Cast stockTable to any
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao excluir veículo',
+        description: error.message,
+      });
+      throw error;
+    }
+
+    setCars(prevCars => prevCars.filter(car => String(car.id) !== String(id)));
+    toast({ 
+      title: 'Veículo removido com sucesso!' 
+    });
   };
 
-  const mapCarFormDataToSupabase = (formData: CarFormData): any => {
-    return {
-      marca: formData.brand,
-      fabricante: formData.brand,
-      modelo: formData.model,
-      ano_modelo: formData.year,
-      ano: formData.year,
-      ano_fabricacao: formData.manufacturingYear,
-      valor: convertToWords(formData.price),
-      cor: formData.color,
-      km: formData.mileage.toString(),
-      combustivel: formData.fuelType,
-      motor: formData.fuelType,
-      cambio: formData.transmission,
-      disponivel_estoque: formData.inStock,
-      caracteristicas: formData.characteristics,
-      observacao: formData.characteristics,
-      fotos: formData.fotos,
-      foto: formData.fotos?.[0],
-      idanuncioolx: formData.idanuncioolx,
-      video: formData.video,
-      cautelar: formData.cautionReport,
-      ficha_tecnica: formData.technicalSheet,
-      garantia: formData.warranty,
-      categoria: formData.category,
-      tipo_veiculo: formData.vehicleType,
-    };
-  };
+  const getCar = (id: string) => cars.find((car) => String(car.id) === String(id));
 
-  const value: CarContextType = {
-    cars,
-    filteredCars,
-    searchTerm,
-    setSearchTerm,
-    getCar,
-    addCar,
-    updateCar,
-    deleteCar,
-    isLoading,
-  };
+  const filteredCars = cars.filter((car) => {
+    const searchFields = `${car.brand} ${car.model} ${car.year} ${car.color}`.toLowerCase();
+    return searchFields.includes(searchTerm.toLowerCase());
+  });
 
-  return <lov-context-provider value={value}>{children}</lov-context-provider>;
-}
+  const refreshCars = fetchCars;
 
-export function useCars() {
+  return (
+    <CarContext.Provider
+      value={{
+        cars,
+        addCar,
+        updateCar,
+        deleteCar,
+        getCar,
+        filteredCars,
+        setSearchTerm,
+        searchTerm,
+        refreshCars,
+      }}
+    >
+      {children}
+    </CarContext.Provider>
+  );
+};
+
+export const useCars = () => {
   const context = useContext(CarContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useCars must be used within a CarProvider');
   }
   return context;
-}
+};
