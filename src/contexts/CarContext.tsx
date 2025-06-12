@@ -70,16 +70,23 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const { data, error } = await supabase
-          .from(profile.tbEstoque as any)
-          .select('*');
+        // Use rpc call to avoid table name typing issues
+        const { data, error } = await supabase.rpc('get_table_data', {
+          table_name: profile.tbEstoque
+        });
 
         if (error) {
-          throw error;
-        }
-
-        if (data) {
-          const typedCars = data.map((car: any) => {
+          // Fallback to direct query with type assertion
+          const response = await supabase
+            .from(profile.tbEstoque as any)
+            .select('*');
+          
+          if (response.error) {
+            throw response.error;
+          }
+          
+          const rawData = response.data as any[];
+          const typedCars = rawData?.map((car: any) => {
             let price = 0;
             if (typeof car.valor === 'string') {
               price = convertFromWords(car.valor);
@@ -119,10 +126,54 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
               createdAt: new Date(car.created_at),
               updatedAt: new Date(car.created_at),
             } as Car;
-          });
+          }) || [];
+          setCars(typedCars);
+        } else {
+          // Process RPC response
+          const typedCars = data?.map((car: any) => {
+            let price = 0;
+            if (typeof car.valor === 'string') {
+              price = convertFromWords(car.valor);
+            } else if (typeof car.valor === 'number') {
+              price = car.valor;
+            }
+            
+            let vehicleType: VehicleType = 'carros';
+            if (car.tipo_veiculo === 'motos' || car.tipo_veiculo === 'caminhoes') {
+              vehicleType = car.tipo_veiculo;
+            }
+            
+            return {
+              id: car.id.toString(),
+              brand: car.marca || car.fabricante || '',
+              model: car.modelo || '',
+              year: parseInt(car.ano_modelo || car.ano || '0'),
+              manufacturingYear: parseInt(car.ano_fabricacao || '0'),
+              price: price,
+              color: car.cor || '',
+              mileage: parseInt(car.km || '0'),
+              fuelType: car.combustivel || car.motor || '',
+              transmission: car.cambio || '',
+              inStock: car.disponivel_estoque !== false,
+              characteristics: car.caracteristicas || '',
+              fotos: car.fotos || [],
+              idanuncioolx: car.idanuncioolx || [],
+              video: car.video || '',
+              cautionReport: car.cautelar || '',
+              technicalSheet: car.ficha_tecnica || '',
+              warranty: car.garantia || '',
+              category: car.categoria || '',
+              vehicleType: vehicleType,
+              image: car.foto,
+              description: car.observacao,
+              createdAt: new Date(car.created_at),
+              updatedAt: new Date(car.created_at),
+            } as Car;
+          }) || [];
           setCars(typedCars);
         }
       } catch (error: any) {
+        console.error('Error fetching cars:', error);
         toast({
           title: 'Erro ao carregar carros',
           description: error.message,
@@ -163,7 +214,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data && data.length > 0) {
-        const newCar = data[0];
+        const newCar = data[0] as any;
         let vehicleType: VehicleType = 'carros';
         if (newCar.tipo_veiculo === 'motos' || newCar.tipo_veiculo === 'caminhoes') {
           vehicleType = newCar.tipo_veiculo;
@@ -351,7 +402,7 @@ export function CarProvider({ children }: { children: React.ReactNode }) {
     isLoading,
   };
 
-  return <CarContext.Provider value={value}>{children}</CarContext.Provider>;
+  return <lov-context-provider value={value}>{children}</lov-context-provider>;
 }
 
 export function useCars() {
