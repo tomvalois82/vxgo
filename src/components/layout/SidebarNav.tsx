@@ -1,9 +1,20 @@
 
-import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { Car, Link2, Settings, MessageCircle, Users, User, LogOut, Menu, X } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  Car, 
+  Users, 
+  MessageSquare, 
+  Settings, 
+  LogOut, 
+  ChevronLeft, 
+  Menu,
+  X,
+  BarChart3
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarNavProps {
   isCollapsed?: boolean;
@@ -13,48 +24,37 @@ interface SidebarNavProps {
   onClose?: () => void;
 }
 
-const SidebarNav: React.FC<SidebarNavProps> = ({ 
-  isCollapsed = false, 
+const SidebarNav: React.FC<SidebarNavProps> = ({
+  isCollapsed = false,
   onToggleCollapse,
   isMobile = false,
-  isOpen = true,
-  onClose
+  isOpen = false,
+  onClose,
 }) => {
   const location = useLocation();
-  const { profile, signOut } = useAuth();
-  
-  const navLinks = [
-    { to: '/', icon: <Car size={20} />, label: 'Estoque', exact: true },
-    { to: '/atendimentos', icon: <MessageCircle size={20} />, label: 'Atendimentos', exact: false },
-    { to: '/connections', icon: <Link2 size={20} />, label: 'Conexões', exact: false },
-    { to: '/settings', icon: <Settings size={20} />, label: 'Configurações', exact: false },
-  ];
+  const { signOut, profile } = useAuth();
 
-  // Adicionar link de usuários apenas para super administradores
-  if (profile?.superadm) {
-    navLinks.push({
-      to: '/users',
-      icon: <Users size={20} />,
-      label: 'Usuários',
-      exact: false
-    });
-  }
-
-  const handleProfileClick = () => {
-    window.location.href = '/profile';
-    if (isMobile && onClose) onClose();
-  };
+  const isAdmin = profile?.cargo === 'Gerente' || profile?.superadm;
 
   const handleSignOut = () => {
     signOut();
-    if (isMobile && onClose) onClose();
   };
 
-  const handleNavClick = () => {
-    if (isMobile && onClose) onClose();
+  const navItems = [
+    { icon: BarChart3, label: 'Dashboard', href: '/' },
+    { icon: Car, label: 'Estoque', href: '/estoque' },
+    { icon: MessageSquare, label: 'Atendimentos', href: '/atendimentos' },
+    { icon: Settings, label: 'Configurações', href: '/settings' },
+    ...(isAdmin ? [{ icon: Users, label: 'Usuários', href: '/users' }] : []),
+  ];
+
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(href);
   };
 
-  // Mobile overlay
   if (isMobile) {
     return (
       <>
@@ -67,159 +67,128 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
         )}
         
         {/* Mobile Sidebar */}
-        <nav className={`fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}>
-          <div className="flex flex-col h-full">
-            {/* Header com botão de fechar */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <span className="text-lg font-semibold">Menu</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="p-1"
-              >
-                <X size={20} />
-              </Button>
-            </div>
-
-            {/* Navigation Links */}
-            <div className="flex-1 px-4 py-6">
-              <div className="flex flex-col space-y-1">
-                {navLinks.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    end={link.exact}
-                    onClick={handleNavClick}
-                    className={({ isActive }) =>
-                      `flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${
-                        isActive
-                          ? 'bg-carblue text-white'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`
-                    }
-                  >
-                    {link.icon}
-                    <span>{link.label}</span>
-                  </NavLink>
-                ))}
-              </div>
-            </div>
-
-            {/* Fixed Bottom Items - Perfil e Sair */}
-            <div className="border-t px-4 py-4">
-              <div className="flex flex-col space-y-1">
-                <button
-                  onClick={handleProfileClick}
-                  className="flex items-center space-x-3 px-4 py-3 rounded-md transition-colors text-carblue hover:bg-blue-50 w-full text-left"
-                >
-                  <User size={20} />
-                  <span>Perfil</span>
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center space-x-3 px-4 py-3 rounded-md transition-colors text-carblue hover:bg-blue-50 w-full text-left"
-                >
-                  <LogOut size={20} />
-                  <span>Sair</span>
-                </button>
-              </div>
-            </div>
+        <div className={cn(
+          "fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-50 md:hidden",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+          <div className="flex items-center justify-between p-4 border-b">
+            <img 
+              src="/lovable-uploads/34823516-601b-400c-8c83-fcd390078e2a.png" 
+              alt="VGO Logo" 
+              className="w-20 h-10 object-contain"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="p-2"
+            >
+              <X size={20} />
+            </Button>
           </div>
-        </nav>
+          
+          <nav className="flex flex-col p-4 space-y-2">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                onClick={onClose}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  isActive(item.href)
+                    ? "bg-carblue text-white"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+
+          <div className="absolute bottom-4 left-4 right-4">
+            <Button
+              variant="ghost"
+              onClick={handleSignOut}
+              className="w-full justify-start text-gray-700 hover:bg-gray-100"
+            >
+              <LogOut size={20} className="mr-3" />
+              <span>Sair</span>
+            </Button>
+          </div>
+        </div>
       </>
     );
   }
 
-  // Desktop sidebar
   return (
-    <nav className={`bg-white shadow-sm h-full transition-all duration-300 ease-in-out ${
-      isCollapsed ? 'w-16' : 'w-64'
-    }`}>
-      <div className="flex flex-col h-full">
-        {/* Toggle button */}
-        <div className="p-4 border-b">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggleCollapse}
-            className="p-2 hover:bg-gray-100"
-          >
-            <Menu size={20} />
-          </Button>
-        </div>
-
-        {/* Navigation Links */}
-        <div className="flex-1 px-4 py-6">
-          <div className="flex flex-col space-y-1">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                end={link.exact}
-                className={({ isActive }) =>
-                  `flex items-center ${isCollapsed ? 'justify-center px-2' : 'space-x-3 px-4'} py-3 rounded-md transition-colors group relative ${
-                    isActive
-                      ? 'bg-carblue text-white'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`
-                }
-                title={isCollapsed ? link.label : undefined}
-              >
-                {link.icon}
-                {!isCollapsed && <span>{link.label}</span>}
-                
-                {/* Tooltip para modo colapsado */}
-                {isCollapsed && (
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                    {link.label}
-                  </div>
-                )}
-              </NavLink>
-            ))}
-          </div>
-        </div>
-
-        {/* Fixed Bottom Items - Perfil e Sair */}
-        <div className="border-t px-4 py-4">
-          <div className="flex flex-col space-y-1">
-            <button
-              onClick={handleProfileClick}
-              className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'space-x-3 px-4'} py-3 rounded-md transition-colors text-carblue hover:bg-blue-50 w-full text-left group relative`}
-              title={isCollapsed ? 'Perfil' : undefined}
-            >
-              <User size={20} />
-              {!isCollapsed && <span>Perfil</span>}
-              
-              {/* Tooltip para modo colapsado */}
-              {isCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                  Perfil
-                </div>
-              )}
-            </button>
-            
-            <button
-              onClick={handleSignOut}
-              className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'space-x-3 px-4'} py-3 rounded-md transition-colors text-carblue hover:bg-blue-50 w-full text-left group relative`}
-              title={isCollapsed ? 'Sair' : undefined}
-            >
-              <LogOut size={20} />
-              {!isCollapsed && <span>Sair</span>}
-              
-              {/* Tooltip para modo colapsado */}
-              {isCollapsed && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                  Sair
-                </div>
-              )}
-            </button>
-          </div>
-        </div>
+    <div className={cn(
+      "h-full bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        {!isCollapsed && (
+          <img 
+            src="/lovable-uploads/34823516-601b-400c-8c83-fcd390078e2a.png" 
+            alt="VGO Logo" 
+            className="w-20 h-10 object-contain"
+          />
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggleCollapse}
+          className={cn(
+            "p-2 hover:bg-gray-100",
+            isCollapsed && "w-full justify-center"
+          )}
+        >
+          <ChevronLeft 
+            size={20} 
+            className={cn(
+              "transition-transform duration-200",
+              isCollapsed && "rotate-180"
+            )} 
+          />
+        </Button>
       </div>
-    </nav>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-2">
+        {navItems.map((item) => (
+          <Link
+            key={item.href}
+            to={item.href}
+            className={cn(
+              "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+              isCollapsed ? "justify-center" : "space-x-3",
+              isActive(item.href)
+                ? "bg-carblue text-white"
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            <item.icon size={20} />
+            {!isCollapsed && <span>{item.label}</span>}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-200">
+        <Button
+          variant="ghost"
+          onClick={handleSignOut}
+          className={cn(
+            "w-full text-gray-700 hover:bg-gray-100",
+            isCollapsed ? "justify-center p-2" : "justify-start"
+          )}
+        >
+          <LogOut size={20} />
+          {!isCollapsed && <span className="ml-3">Sair</span>}
+        </Button>
+      </div>
+    </div>
   );
 };
 

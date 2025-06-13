@@ -7,6 +7,7 @@ import { CarProvider } from '@/contexts/CarContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import Index from "@/pages/Index";
+import Dashboard from "@/pages/Dashboard";
 import AddCar from "@/pages/AddCar";
 import EditCar from "@/pages/EditCar";
 import CarDetails from "@/pages/CarDetails";
@@ -40,7 +41,8 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route element={<RequireAuth />}>
                 <Route path="/" element={<Layout />}>
-                  <Route index element={<Index />} />
+                  <Route index element={<Dashboard />} />
+                  <Route path="/estoque" element={<Index />} />
                   <Route path="/add-car" element={<AddCar />} />
                   <Route path="/edit-car/:id" element={<EditCar />} />
                   <Route path="/car/:id" element={<CarDetails />} />
