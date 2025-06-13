@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -108,7 +107,7 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
     if (user) {
       setFormData({
         nome: user.nome || '',
-        email: user.email || '',
+        email: user.email || '', // Corrigido: usar user.email diretamente
         telefone: user.telefone || '',
         evo_instancia: user.evo_instancia || '',
         evo_key: user.evo_key || '',
