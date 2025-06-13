@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Car, Users, MessageSquare, Settings, LogOut, ChevronLeft, Menu, X, BarChart3 } from 'lucide-react';
@@ -99,7 +98,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
         {navItems.map(item => <Link key={item.href} to={item.href} className={cn("flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors", isCollapsed ? "justify-center" : "space-x-3", isActive(item.href) ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
-            <item.icon size={20} />
+            <item.icon size={20} className="flex-shrink-0" />
             {!isCollapsed && <span>{item.label}</span>}
           </Link>)}
       </nav>
@@ -107,7 +106,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
       {/* Footer */}
       <div className="p-4 border-t border-gray-200">
         <Button variant="ghost" onClick={handleSignOut} className={cn("w-full text-gray-700 hover:bg-gray-100", isCollapsed ? "justify-center p-2" : "justify-start")}>
-          <LogOut size={20} />
+          <LogOut size={20} className="flex-shrink-0" />
           {!isCollapsed && <span className="ml-3">Sair</span>}
         </Button>
       </div>
