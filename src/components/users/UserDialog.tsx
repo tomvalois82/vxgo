@@ -84,7 +84,21 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
     webhook_olx: '',
   });
 
+  const [userEmail, setUserEmail] = useState('');
+
   const queryClient = useQueryClient();
+
+  // Buscar email do usuário na auth.users
+  const { data: authUserData } = useQuery({
+    queryKey: ['auth-user', user?.uid],
+    queryFn: async () => {
+      if (!user?.uid) return null;
+      const { data, error } = await supabase.auth.admin.getUserById(user.uid);
+      if (error) throw error;
+      return data.user;
+    },
+    enabled: !!user?.uid,
+  });
 
   // Buscar dados da config associada ao usuário
   const { data: config } = useQuery({
@@ -104,10 +118,17 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
   });
 
   useEffect(() => {
+    // Definir o email do usuário da auth.users
+    if (authUserData?.email) {
+      setUserEmail(authUserData.email);
+    }
+  }, [authUserData]);
+
+  useEffect(() => {
     if (user) {
       setFormData({
         nome: user.nome || '',
-        email: user.email || '', // Corrigido: usar user.email diretamente
+        email: userEmail || user.email || '', // Usar email da auth.users primeiro
         telefone: user.telefone || '',
         evo_instancia: user.evo_instancia || '',
         evo_key: user.evo_key || '',
@@ -167,7 +188,7 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
         webhook_olx: '',
       });
     }
-  }, [user, config, open]);
+  }, [user, config, open, userEmail]);
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof formData) => {
