@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -205,8 +206,19 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
       const { data: newConfig, error: configError } = await supabase
         .from('config')
         .insert({
-          idusuario: newUser.id,
-          ...configData,
+          empresa: configData.empresa,
+          evo_instancia: configData.evo_instancia,
+          evo_key: configData.evo_key,
+          telefone: configData.telefone,
+          receptor: configData.receptor as any,
+          apikeyvoice: configData.apikeyvoice,
+          codVoice: configData.codVoice,
+          pausa: configData.pausa,
+          temporesposta: configData.temporesposta,
+          ativo: configData.ativo,
+          ativoolx: configData.ativoolx,
+          access_token_olx: configData.access_token_olx,
+          webhook_olx: configData.webhook_olx,
         })
         .select()
         .single();
@@ -311,8 +323,19 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
         const { data: newConfig, error: configError } = await supabase
           .from('config')
           .insert({
-            idusuario: user.id,
-            ...configData,
+            empresa: configData.empresa,
+            evo_instancia: configData.evo_instancia,
+            evo_key: configData.evo_key,
+            telefone: configData.telefone,
+            receptor: configData.receptor as any,
+            apikeyvoice: configData.apikeyvoice,
+            codVoice: configData.codVoice,
+            pausa: configData.pausa,
+            temporesposta: configData.temporesposta,
+            ativo: configData.ativo,
+            ativoolx: configData.ativoolx,
+            access_token_olx: configData.access_token_olx,
+            webhook_olx: configData.webhook_olx,
           })
           .select()
           .single();
