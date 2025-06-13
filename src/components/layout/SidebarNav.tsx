@@ -4,7 +4,6 @@ import { Car, Users, MessageSquare, Settings, LogOut, ChevronLeft, Menu, X, BarC
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-
 interface SidebarNavProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -12,7 +11,6 @@ interface SidebarNavProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
-
 const SidebarNav: React.FC<SidebarNavProps> = ({
   isCollapsed = false,
   onToggleCollapse,
@@ -89,7 +87,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
   return <div className={cn("h-full bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out", isCollapsed ? "w-16" : "w-64")}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        {!isCollapsed && <img src="/lovable-uploads/34823516-601b-400c-8c83-fcd390078e2a.png" alt="VGO Logo" className="w-20 h-10 object-contain" />}
+        {!isCollapsed && <img alt="VGO Logo" className="w-20 h-10 object-contain" src="/lovable-uploads/90ec18c4-c6ef-487a-b294-948d4398f496.png" />}
         <Button variant="ghost" size="sm" onClick={onToggleCollapse} className={cn("p-2 hover:bg-gray-100", isCollapsed && "w-full justify-center")}>
           <ChevronLeft size={20} className={cn("transition-transform duration-200", isCollapsed && "rotate-180")} />
         </Button>
@@ -112,5 +110,4 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
       </div>
     </div>;
 };
-
 export default SidebarNav;
