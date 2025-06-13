@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useDashboardMessagesData } from '@/hooks/dashboard/useDashboardMessagesData';
 
 interface MessagesCardProps {
@@ -23,6 +23,19 @@ const MessagesCard: React.FC<MessagesCardProps> = ({ startDate, endDate }) => {
       color: "#f59e0b",
     },
   };
+
+  const pieData = [
+    {
+      name: "IA",
+      value: messagesData?.totalAi || 0,
+      fill: "#3b82f6"
+    },
+    {
+      name: "Humano",
+      value: messagesData?.totalHuman || 0,
+      fill: "#f59e0b"
+    }
+  ];
 
   return (
     <Card>
@@ -54,34 +67,21 @@ const MessagesCard: React.FC<MessagesCardProps> = ({ startDate, endDate }) => {
             <div className="h-[200px]">
               <ChartContainer config={chartConfig}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={messagesData?.dailyData || []}>
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fontSize: 12 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 12 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={80}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="ai" 
-                      stroke="var(--color-ai)"
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="human" 
-                      stroke="var(--color-human)"
-                      strokeWidth={2}
-                      dot={{ r: 4 }}
-                    />
-                  </LineChart>
+                  </PieChart>
                 </ResponsiveContainer>
               </ChartContainer>
             </div>
