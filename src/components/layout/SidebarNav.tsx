@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Car, Users, MessageSquare, Settings, LogOut, ChevronLeft, Menu, X, BarChart3, Link as LinkIcon } from 'lucide-react';
@@ -25,6 +26,10 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
     signOut,
     profile
   } = useAuth();
+
+  const handleSignOut = () => {
+    signOut();
+  };
 
   const navItems = [{
     icon: BarChart3,
@@ -75,14 +80,14 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
           
           <nav className="flex flex-col p-4 space-y-2">
             {navItems.map(item => <Link key={item.href} to={item.href} onClick={onClose} className={cn("flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors", isActive(item.href) ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
-                <item.icon size={20} />
+                <item.icon size={20} className="flex-shrink-0" />
                 <span>{item.label}</span>
               </Link>)}
           </nav>
 
           <div className="absolute bottom-4 left-4 right-4">
             <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start text-gray-700 hover:bg-gray-100">
-              <LogOut size={20} className="mr-3" />
+              <LogOut size={20} className="mr-3 flex-shrink-0" />
               <span>Sair</span>
             </Button>
           </div>
@@ -90,16 +95,12 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
       </>;
   }
 
-  const handleSignOut = () => {
-    signOut();
-  };
-
   return <div className={cn("h-full bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out", isCollapsed ? "w-16" : "w-64")}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         {!isCollapsed && <img alt="VGO Logo" className="w-20 h-10 object-contain" src="/lovable-uploads/90ec18c4-c6ef-487a-b294-948d4398f496.png" />}
         <Button variant="ghost" size="sm" onClick={onToggleCollapse} className={cn("p-2 hover:bg-gray-100", isCollapsed && "w-full justify-center")}>
-          <ChevronLeft size={20} className={cn("transition-transform duration-200", isCollapsed && "rotate-180")} />
+          <ChevronLeft size={20} className={cn("transition-transform duration-200 flex-shrink-0", isCollapsed && "rotate-180")} />
         </Button>
       </div>
 
