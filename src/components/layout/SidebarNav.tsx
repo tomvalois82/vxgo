@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Car, Users, MessageSquare, Settings, LogOut, ChevronLeft, Menu, X, BarChart3 } from 'lucide-react';
+import { Car, Users, MessageSquare, Settings, LogOut, ChevronLeft, Menu, X, BarChart3, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+
 interface SidebarNavProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -11,6 +12,7 @@ interface SidebarNavProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
+
 const SidebarNav: React.FC<SidebarNavProps> = ({
   isCollapsed = false,
   onToggleCollapse,
@@ -23,10 +25,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
     signOut,
     profile
   } = useAuth();
-  const isAdmin = profile?.cargo === 'Gerente' || profile?.superadm;
-  const handleSignOut = () => {
-    signOut();
-  };
+
   const navItems = [{
     icon: BarChart3,
     label: 'Dashboard',
@@ -40,20 +39,26 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
     label: 'Atendimentos',
     href: '/atendimentos'
   }, {
+    icon: LinkIcon,
+    label: 'Conexões',
+    href: '/connections'
+  }, {
     icon: Settings,
     label: 'Configurações',
     href: '/settings'
-  }, ...(isAdmin ? [{
+  }, ...(profile?.superadm ? [{
     icon: Users,
     label: 'Usuários',
     href: '/users'
   }] : [])];
+
   const isActive = (href: string) => {
     if (href === '/') {
       return location.pathname === '/';
     }
     return location.pathname.startsWith(href);
   };
+
   if (isMobile) {
     return <>
         {/* Overlay */}
@@ -84,6 +89,11 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
         </div>
       </>;
   }
+
+  const handleSignOut = () => {
+    signOut();
+  };
+
   return <div className={cn("h-full bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out", isCollapsed ? "w-16" : "w-64")}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -110,4 +120,5 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
       </div>
     </div>;
 };
+
 export default SidebarNav;

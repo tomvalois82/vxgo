@@ -563,6 +563,114 @@ export type Database = {
           },
         ]
       }
+      estoque_vxgo: {
+        Row: {
+          ano: string | null
+          ano_fabricacao: string | null
+          cambio: string | null
+          caracteristicas: string | null
+          categoria: string | null
+          cautelar: string | null
+          config: number | null
+          cor: string | null
+          created_at: string
+          fabricante: string | null
+          ficha_tecnica: string | null
+          foto: string | null
+          fotos: string[] | null
+          garantia: string | null
+          id: number
+          idanuncioolx: string[] | null
+          idEstoqueBubble: string | null
+          idOlx: string | null
+          km: string | null
+          modelo: string | null
+          motor: string | null
+          observacao: string | null
+          status: string | null
+          tipo_veiculo: string | null
+          uid: string | null
+          usuario: number | null
+          valor: string | null
+          video: string | null
+        }
+        Insert: {
+          ano?: string | null
+          ano_fabricacao?: string | null
+          cambio?: string | null
+          caracteristicas?: string | null
+          categoria?: string | null
+          cautelar?: string | null
+          config?: number | null
+          cor?: string | null
+          created_at?: string
+          fabricante?: string | null
+          ficha_tecnica?: string | null
+          foto?: string | null
+          fotos?: string[] | null
+          garantia?: string | null
+          id?: number
+          idanuncioolx?: string[] | null
+          idEstoqueBubble?: string | null
+          idOlx?: string | null
+          km?: string | null
+          modelo?: string | null
+          motor?: string | null
+          observacao?: string | null
+          status?: string | null
+          tipo_veiculo?: string | null
+          uid?: string | null
+          usuario?: number | null
+          valor?: string | null
+          video?: string | null
+        }
+        Update: {
+          ano?: string | null
+          ano_fabricacao?: string | null
+          cambio?: string | null
+          caracteristicas?: string | null
+          categoria?: string | null
+          cautelar?: string | null
+          config?: number | null
+          cor?: string | null
+          created_at?: string
+          fabricante?: string | null
+          ficha_tecnica?: string | null
+          foto?: string | null
+          fotos?: string[] | null
+          garantia?: string | null
+          id?: number
+          idanuncioolx?: string[] | null
+          idEstoqueBubble?: string | null
+          idOlx?: string | null
+          km?: string | null
+          modelo?: string | null
+          motor?: string | null
+          observacao?: string | null
+          status?: string | null
+          tipo_veiculo?: string | null
+          uid?: string | null
+          usuario?: number | null
+          valor?: string | null
+          video?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_vxgo_config_fkey"
+            columns: ["config"]
+            isOneToOne: false
+            referencedRelation: "config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_vxgo_usuario_fkey"
+            columns: ["usuario"]
+            isOneToOne: false
+            referencedRelation: "usuario"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exemplos_vx: {
         Row: {
           created_at: string
