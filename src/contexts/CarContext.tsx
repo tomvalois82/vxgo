@@ -35,25 +35,34 @@ function getFileNameFromPublicUrl(url: string): string | null {
   
   try {
     const parsedUrl = new URL(url);
+    console.log('Extracting filename from URL:', url);
+    console.log('Parsed URL pathname:', parsedUrl.pathname);
     
     // For Supabase public URLs: https://project.supabase.co/storage/v1/object/public/bucket-name/filename
     const pathSegments = parsedUrl.pathname.split('/');
+    console.log('Path segments:', pathSegments);
     
     // Find the index of 'public' in the path
     const publicIndex = pathSegments.indexOf('public');
     if (publicIndex !== -1 && publicIndex < pathSegments.length - 2) {
       // Skip 'public' and bucket name, get the rest as filename
-      return pathSegments.slice(publicIndex + 2).join('/');
+      const filename = pathSegments.slice(publicIndex + 2).join('/');
+      console.log('Extracted filename (method 1):', filename);
+      return filename;
     }
     
     // Alternative approach: look for car-fotos specifically
     const bucketIndex = pathSegments.indexOf('car-fotos');
     if (bucketIndex !== -1 && bucketIndex < pathSegments.length - 1) {
-      return pathSegments.slice(bucketIndex + 1).join('/');
+      const filename = pathSegments.slice(bucketIndex + 1).join('/');
+      console.log('Extracted filename (method 2):', filename);
+      return filename;
     }
     
     // Fallback: return the last segment
-    return pathSegments[pathSegments.length - 1] || null;
+    const fallbackFilename = pathSegments[pathSegments.length - 1] || null;
+    console.log('Extracted filename (fallback):', fallbackFilename);
+    return fallbackFilename;
   } catch (e) {
     console.error("Error extracting filename from URL:", url, e);
     return null;
@@ -299,11 +308,17 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const numericId = parseInt(id, 10);
     const carToDelete = cars.find(car => String(car.id) === String(id));
     
+    console.log('Car to delete:', carToDelete);
+    console.log('Car fotos:', carToDelete?.fotos);
+    
     // Delete photos from storage first
     if (carToDelete?.fotos?.length) {
       const photoFilesToDelete: string[] = [];
       for (const photoUrl of carToDelete.fotos) {
+        console.log('Processing photo URL:', photoUrl);
         const fileName = getFileNameFromPublicUrl(photoUrl);
+        console.log('Extracted filename:', fileName);
+        
         if (fileName) {
           photoFilesToDelete.push(fileName);
         } else {
@@ -313,19 +328,35 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       if (photoFilesToDelete.length > 0) {
         console.log("Attempting to delete from storage:", photoFilesToDelete);
-        const { error: storageError } = await supabase.storage
+        
+        // Delete files one by one to get better error reporting
+        for (const fileName of photoFilesToDelete) {
+          console.log(`Deleting file: ${fileName}`);
+          const { error: storageError } = await supabase.storage
+            .from('car-fotos')
+            .remove([fileName]);
+            
+          if (storageError) {
+            console.error(`Error deleting file ${fileName}:`, storageError);
+          } else {
+            console.log(`Successfully deleted file: ${fileName}`);
+          }
+        }
+        
+        // Also try bulk delete as fallback
+        const { error: bulkStorageError } = await supabase.storage
           .from('car-fotos')
           .remove(photoFilesToDelete);
             
-        if (storageError) {
-          console.error('Error deleting photos from storage:', storageError);
+        if (bulkStorageError) {
+          console.error('Error in bulk delete:', bulkStorageError);
           toast({
             title: "Aviso: Erro ao deletar algumas fotos do armazenamento",
-            description: storageError.message,
+            description: bulkStorageError.message,
             variant: "default"
           });
         } else {
-          console.log("Photos deleted from storage successfully:", photoFilesToDelete);
+          console.log("Bulk delete successful for files:", photoFilesToDelete);
         }
       }
     }
