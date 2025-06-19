@@ -142,15 +142,21 @@ export type Database = {
           empresa: string | null
           evo_instancia: string | null
           evo_key: string | null
+          folowupativo: boolean | null
           fotoloja: string | null
           grupoReceptor: string | null
           id: number
           idusuario: number | null
+          m1folowup: string | null
+          m2folowup: string | null
+          m3folowup: string | null
+          m4folowup: string | null
           pausa: number | null
           promptolx: string | null
           promptwtz: string | null
           receptor: Database["public"]["Enums"]["cargos"] | null
           telefone: string | null
+          tempofolowup: number | null
           temporesposta: number | null
           webhook_olx: string | null
         }
@@ -165,15 +171,21 @@ export type Database = {
           empresa?: string | null
           evo_instancia?: string | null
           evo_key?: string | null
+          folowupativo?: boolean | null
           fotoloja?: string | null
           grupoReceptor?: string | null
           id?: number
           idusuario?: number | null
+          m1folowup?: string | null
+          m2folowup?: string | null
+          m3folowup?: string | null
+          m4folowup?: string | null
           pausa?: number | null
           promptolx?: string | null
           promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
+          tempofolowup?: number | null
           temporesposta?: number | null
           webhook_olx?: string | null
         }
@@ -188,15 +200,21 @@ export type Database = {
           empresa?: string | null
           evo_instancia?: string | null
           evo_key?: string | null
+          folowupativo?: boolean | null
           fotoloja?: string | null
           grupoReceptor?: string | null
           id?: number
           idusuario?: number | null
+          m1folowup?: string | null
+          m2folowup?: string | null
+          m3folowup?: string | null
+          m4folowup?: string | null
           pausa?: number | null
           promptolx?: string | null
           promptwtz?: string | null
           receptor?: Database["public"]["Enums"]["cargos"] | null
           telefone?: string | null
+          tempofolowup?: number | null
           temporesposta?: number | null
           webhook_olx?: string | null
         }
@@ -724,12 +742,14 @@ export type Database = {
           config: number | null
           created_at: string
           email: string | null
+          folowup: number | null
           id: number
           idUsuario: number | null
           interesse: string | null
           intervencao: string | null
           nome: string | null
           Origem: string | null
+          proximofolowup: string | null
           session_id_olx: string | null
           session_id_whatsaap: string | null
           stop: boolean | null
@@ -739,12 +759,14 @@ export type Database = {
           config?: number | null
           created_at?: string
           email?: string | null
+          folowup?: number | null
           id?: number
           idUsuario?: number | null
           interesse?: string | null
           intervencao?: string | null
           nome?: string | null
           Origem?: string | null
+          proximofolowup?: string | null
           session_id_olx?: string | null
           session_id_whatsaap?: string | null
           stop?: boolean | null
@@ -754,12 +776,14 @@ export type Database = {
           config?: number | null
           created_at?: string
           email?: string | null
+          folowup?: number | null
           id?: number
           idUsuario?: number | null
           interesse?: string | null
           intervencao?: string | null
           nome?: string | null
           Origem?: string | null
+          proximofolowup?: string | null
           session_id_olx?: string | null
           session_id_whatsaap?: string | null
           stop?: boolean | null
@@ -876,6 +900,24 @@ export type Database = {
         Relationships: []
       }
       n8n_megan_historico: {
+        Row: {
+          id: number
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          id?: number
+          message: Json
+          session_id: string
+        }
+        Update: {
+          id?: number
+          message?: Json
+          session_id?: string
+        }
+        Relationships: []
+      }
+      n8n_megan_vxgo: {
         Row: {
           id: number
           message: Json

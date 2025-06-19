@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { useCars } from '@/contexts/CarContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Car as CarType } from '@/lib/types';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -10,6 +12,12 @@ import { toast } from '@/components/ui/use-toast';
 
 const CarList = () => {
   const { filteredCars, deleteCar } = useCars();
+  const { profile } = useAuth();
+
+  // Don't render anything if no valid stock table
+  if (!profile?.tbEstoque || profile.tbEstoque.trim() === '') {
+    return null;
+  }
 
   if (filteredCars.length === 0) {
     return (

@@ -137,54 +137,90 @@ function mapCarFormDataToSupabase(car: CarFormData & { fotos?: string[] }) {
 export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cars, setCars] = useState<Car[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const { user, profile } = useAuth();
-  const [stockTable, setStockTable] = useState<string>('estoque');
+  const { user, profile, isLoading: authLoading } = useAuth();
+  const [stockTable, setStockTable] = useState<string>('');
+  const [isLoadingCars, setIsLoadingCars] = useState(false);
 
+  // Only set stock table when profile is loaded and has valid tbEstoque
   useEffect(() => {
-    if (profile?.tbEstoque) {
-      setStockTable(profile.tbEstoque);
-      console.log('Using stock table:', profile.tbEstoque);
-    } else {
-      setStockTable('estoque');
-      console.log('No custom stock table found, using default: estoque');
+    console.log('Profile changed:', profile);
+    
+    if (!authLoading && profile) {
+      if (profile.tbEstoque && profile.tbEstoque.trim() !== '') {
+        console.log('Setting stock table to:', profile.tbEstoque);
+        setStockTable(profile.tbEstoque);
+      } else {
+        console.log('Invalid stock table, clearing cars');
+        setStockTable('');
+        setCars([]);
+      }
+    } else if (!authLoading && !profile) {
+      console.log('No profile found, clearing data');
+      setStockTable('');
+      setCars([]);
     }
-  }, [profile]);
+  }, [profile, authLoading]);
 
   const fetchCars = async () => {
-    if (!stockTable) return;
+    // Don't fetch if no valid stock table
+    if (!stockTable || stockTable.trim() === '') {
+      console.log('No valid stock table, skipping fetch');
+      setCars([]);
+      return;
+    }
     
     console.log(`Fetching cars from table: ${stockTable}`);
+    setIsLoadingCars(true);
     
-    const { data, error } = await supabase
-      .from(stockTable as any) // Cast to any for dynamic table name
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from(stockTable as any) // Cast to any for dynamic table name
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao carregar veículos',
+          description: error.message,
+        });
+        setCars([]);
+        return;
+      }
+      
+      setCars(data?.map(mapSupabaseToCar) || []);
+    } catch (error: any) {
+      console.error('Error fetching cars:', error);
       toast({
         variant: 'destructive',
         title: 'Erro ao carregar veículos',
-        description: error.message,
+        description: 'Não foi possível carregar os dados do estoque.',
       });
-      return;
+      setCars([]);
+    } finally {
+      setIsLoadingCars(false);
     }
-    setCars(data?.map(mapSupabaseToCar) || []);
   };
 
+  // Only fetch cars when we have a valid stock table and user
   useEffect(() => {
-    if (user && stockTable) {
+    if (user && stockTable && stockTable.trim() !== '' && !authLoading) {
+      console.log('Conditions met for fetching cars - user:', !!user, 'stockTable:', stockTable, 'authLoading:', authLoading);
       fetchCars();
     } else {
-      setCars([]);
+      console.log('Conditions not met for fetching cars - user:', !!user, 'stockTable:', stockTable, 'authLoading:', authLoading);
+      if (!authLoading) {
+        setCars([]);
+      }
     }
-  }, [user, stockTable]);
+  }, [user, stockTable, authLoading]);
 
   const addCar = async (carData: CarFormData & { fotos?: string[] }) => {
-    if (!user || !stockTable) {
+    if (!user || !stockTable || stockTable.trim() === '') {
       toast({
         variant: 'destructive',
         title: 'Erro ao adicionar veículo',
-        description: 'Você precisa estar logado para adicionar veículos.',
+        description: 'Tabela de estoque não encontrada. Entre em contato com o suporte.',
       });
       return;
     }
@@ -211,11 +247,11 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCar = async (id: string, carData: Partial<CarFormData & { fotos?: string[] }>) => {
-    if (!user || !stockTable) {
+    if (!user || !stockTable || stockTable.trim() === '') {
       toast({
         variant: 'destructive',
         title: 'Erro ao atualizar veículo',
-        description: 'Você precisa estar logado para atualizar veículos.',
+        description: 'Tabela de estoque não encontrada. Entre em contato com o suporte.',
       });
       return;
     }
@@ -246,7 +282,14 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCar = async (id: string) => {
-    if (!stockTable) return;
+    if (!stockTable || stockTable.trim() === '') {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao excluir veículo',
+        description: 'Tabela de estoque não encontrada. Entre em contato com o suporte.',
+      });
+      return;
+    }
     
     const numericId = parseInt(id, 10);
     const carToDelete = cars.find(car => String(car.id) === String(id));
