@@ -31,18 +31,17 @@ function isUrl(string: string): boolean {
 }
 
 function getFileNameFromPublicUrl(url: string): string | null {
-  if (!isUrl(url)) return null; // Or return url if we expect names sometimes
+  if (!isUrl(url)) return null;
   try {
     const parsedUrl = new URL(url);
     // Example URL: https://<project_ref>.supabase.co/storage/v1/object/public/car-fotos/filename.jpg
     const pathSegments = parsedUrl.pathname.split('/');
     // The filename is the last segment after the bucket name "car-fotos"
-    // Find "car-fotos" and take the rest, or just take the last segment if structure is guaranteed
     const bucketNameIndex = pathSegments.indexOf('car-fotos');
-    if (bucketNameIndex !== -1 && bucketNameIndex < pathSegments.length -1) {
+    if (bucketNameIndex !== -1 && bucketNameIndex < pathSegments.length - 1) {
       return pathSegments.slice(bucketNameIndex + 1).join('/');
     }
-    // Fallback for simpler paths or if bucket name isn't in fixed position as expected
+    // Fallback for simpler paths
     return pathSegments.pop() || null;
   } catch (e) {
     console.error("Error extracting filename from URL:", url, e);
@@ -84,7 +83,7 @@ function mapSupabaseToCar(row: any): Car {
     fuelType: row.motor || '',
     transmission: row.cambio || '',
     inStock: !row.status || row.status.toLowerCase() === 'em estoque',
-    image: row.foto || '', // This 'image' (singular) might also need URL conversion if it's just a name
+    image: row.foto || '',
     description: row.observacao || '',
     characteristics: row.caracteristicas || '',
     video: row.video || '',
@@ -92,8 +91,8 @@ function mapSupabaseToCar(row: any): Car {
     technicalSheet: row.ficha_tecnica || '',
     warranty: row.garantia || '',
     category: row.categoria || '',
-    fotos: carFotos, // Now guaranteed to be URLs
-    idanuncioolx: row.idanuncioolx || [], // Array field
+    fotos: carFotos,
+    idanuncioolx: row.idanuncioolx || [],
     createdAt: row.created_at ? new Date(row.created_at) : new Date(),
     updatedAt: row.created_at ? new Date(row.created_at) : new Date()
   };
@@ -102,7 +101,6 @@ function mapSupabaseToCar(row: any): Car {
 function mapCarFormDataToSupabase(car: CarFormData & { fotos?: string[] }) {
   const formattedPrice = car.price ? formatCurrency(car.price).replace('R$', 'R$ ').trim() : 'R$ 0,00';
   
-  // Ensure 'fotos' are URLs. CarFormData should already provide them as URLs from CarForm.
   const fotosToSave = car.fotos || [];
 
   return {
@@ -124,13 +122,9 @@ function mapCarFormDataToSupabase(car: CarFormData & { fotos?: string[] }) {
     ficha_tecnica: car.technicalSheet || null,
     garantia: car.warranty || null,
     status: car.inStock ? 'Em estoque' : 'Fora de estoque',
-    // 'foto' (singular, cover image) logic: if it's part of 'fotos', pick one. If separate, ensure it's also a URL or handled.
-    // For simplicity, assuming `car.image` (if used for cover) is also a URL or needs similar handling.
-    // The CarForm doesn't explicitly set a single `image` field anymore, it relies on `fotos`.
-    // Let's ensure `foto` (singular) is the first of `fotos` or null.
     foto: fotosToSave.length > 0 ? fotosToSave[0] : null,
-    idanuncioolx: car.idanuncioolx || null, // Array field
-    fotos: fotosToSave, // Save the array of URLs
+    idanuncioolx: car.idanuncioolx || null,
+    fotos: fotosToSave,
   };
 }
 
@@ -294,10 +288,11 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const numericId = parseInt(id, 10);
     const carToDelete = cars.find(car => String(car.id) === String(id));
     
+    // Delete photos from storage first
     if (carToDelete?.fotos?.length) {
       const photoFilesToDelete: string[] = [];
       for (const photoUrl of carToDelete.fotos) {
-        const fileName = getFileNameFromPublicUrl(photoUrl); // This needs to extract from full URL
+        const fileName = getFileNameFromPublicUrl(photoUrl);
         if (fileName) {
           photoFilesToDelete.push(fileName);
         } else {
@@ -324,6 +319,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
     
+    // Now delete the car record from database
     const { error } = await supabase.from(stockTable as any).delete().eq('id', numericId); // Cast stockTable to any
 
     if (error) {
@@ -335,6 +331,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       throw error;
     }
 
+    // Update local state optimistically
     setCars(prevCars => prevCars.filter(car => String(car.id) !== String(id)));
     toast({ 
       title: 'Veículo removido com sucesso!' 
