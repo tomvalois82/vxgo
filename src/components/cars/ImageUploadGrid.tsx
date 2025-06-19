@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Image, MoveHorizontal, Trash2 } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 interface ImageUploadGridProps {
   previewUrls: string[];
@@ -12,6 +13,8 @@ interface ImageUploadGridProps {
   uploading: boolean;
 }
 
+const MAX_PHOTOS = 20;
+
 const ImageUploadGrid: React.FC<ImageUploadGridProps> = ({
   previewUrls,
   onImageFilesChange,
@@ -21,6 +24,24 @@ const ImageUploadGrid: React.FC<ImageUploadGridProps> = ({
   onDrop,
   uploading,
 }) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    // Verificar limite de fotos
+    const totalPhotos = previewUrls.length + files.length;
+    if (totalPhotos > MAX_PHOTOS) {
+      toast({
+        variant: 'destructive',
+        title: 'Limite excedido',
+        description: 'Limite de 20 fotos por veículo atingido.',
+      });
+      return;
+    }
+    
+    onImageFilesChange(e);
+  };
+
   return (
     <div>
       <label className="block font-medium mb-1 flex gap-2 items-center">
@@ -30,13 +51,16 @@ const ImageUploadGrid: React.FC<ImageUploadGridProps> = ({
         type="file"
         multiple
         accept="image/*"
-        onChange={onImageFilesChange}
+        onChange={handleFileChange}
         className="file-input file-input-bordered w-full"
-        disabled={uploading}
+        disabled={uploading || previewUrls.length >= MAX_PHOTOS}
       />
       <div className="mt-2 text-sm text-gray-500 flex items-center">
         <MoveHorizontal size={16} className="mr-1" /> Arraste para reordenar | 
         <Trash2 size={16} className="ml-2 mr-1" /> Clique para excluir
+        <span className="ml-4 text-blue-600">
+          {previewUrls.length}/{MAX_PHOTOS} fotos
+        </span>
       </div>
       {previewUrls.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-3">
