@@ -31,18 +31,29 @@ function isUrl(string: string): boolean {
 }
 
 function getFileNameFromPublicUrl(url: string): string | null {
-  if (!isUrl(url)) return null;
+  if (!isUrl(url)) return url; // If it's not a URL, assume it's already a filename
+  
   try {
     const parsedUrl = new URL(url);
-    // Example URL: https://<project_ref>.supabase.co/storage/v1/object/public/car-fotos/filename.jpg
+    
+    // For Supabase public URLs: https://project.supabase.co/storage/v1/object/public/bucket-name/filename
     const pathSegments = parsedUrl.pathname.split('/');
-    // The filename is the last segment after the bucket name "car-fotos"
-    const bucketNameIndex = pathSegments.indexOf('car-fotos');
-    if (bucketNameIndex !== -1 && bucketNameIndex < pathSegments.length - 1) {
-      return pathSegments.slice(bucketNameIndex + 1).join('/');
+    
+    // Find the index of 'public' in the path
+    const publicIndex = pathSegments.indexOf('public');
+    if (publicIndex !== -1 && publicIndex < pathSegments.length - 2) {
+      // Skip 'public' and bucket name, get the rest as filename
+      return pathSegments.slice(publicIndex + 2).join('/');
     }
-    // Fallback for simpler paths
-    return pathSegments.pop() || null;
+    
+    // Alternative approach: look for car-fotos specifically
+    const bucketIndex = pathSegments.indexOf('car-fotos');
+    if (bucketIndex !== -1 && bucketIndex < pathSegments.length - 1) {
+      return pathSegments.slice(bucketIndex + 1).join('/');
+    }
+    
+    // Fallback: return the last segment
+    return pathSegments[pathSegments.length - 1] || null;
   } catch (e) {
     console.error("Error extracting filename from URL:", url, e);
     return null;
