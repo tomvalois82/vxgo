@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
@@ -16,6 +15,7 @@ import { uploadCarImages } from '@/lib/uploadCarImages';
 interface ConfigData {
   ativo: boolean;
   ativoolx: boolean;
+  audioativo: boolean;
   pausa: number; // em minutos
   temporesposta: number; // em segundos
   fotoloja?: string;
@@ -31,6 +31,7 @@ const Settings = () => {
   const { register, handleSubmit, setValue, watch, reset } = useForm<{
     ativo: boolean;
     ativoolx: boolean;
+    audioativo: boolean;
     pausaHours: string;
     pausaMinutes: string;
     temporesposta: string;
@@ -63,6 +64,7 @@ const Settings = () => {
         reset({
           ativo: data.ativo,
           ativoolx: data.ativoolx || false,
+          audioativo: data.audioativo !== false, // Default to true if undefined
           pausaHours: hours.toString().padStart(2, '0'),
           pausaMinutes: minutes.toString().padStart(2, '0'),
           temporesposta: (data.temporesposta || 15).toString(),
@@ -77,6 +79,7 @@ const Settings = () => {
           idusuario: profile?.id,
           ativo: true,
           ativoolx: false,
+          audioativo: true,
           pausa: 15,
           temporesposta: 15,
           alertaNovo: true
@@ -94,6 +97,7 @@ const Settings = () => {
         reset({
           ativo: true,
           ativoolx: false,
+          audioativo: true,
           pausaHours: '00',
           pausaMinutes: '15',
           temporesposta: '15',
@@ -176,6 +180,7 @@ const Settings = () => {
       const configData = {
         ativo: data.ativo,
         ativoolx: data.ativoolx,
+        audioativo: data.audioativo,
         pausa: pausaInMinutes,
         temporesposta: temporesposta,
         fotoloja,
@@ -209,6 +214,7 @@ const Settings = () => {
 
   const watchedAtivo = watch('ativo');
   const watchedAtivoOlx = watch('ativoolx');
+  const watchedAudioAtivo = watch('audioativo');
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -281,6 +287,39 @@ const Settings = () => {
               />
               <Label htmlFor="ativoolx">
                 {watchedAtivoOlx ? 'Ativado' : 'Desativado'}
+              </Label>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Resposta em Áudio */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Resposta em Áudio
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info size={16} className="text-gray-500 hover:text-gray-700" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Função disponível apenas para WhatsApp.</p>
+                </TooltipContent>
+              </Tooltip>
+            </CardTitle>
+            <CardDescription>
+              Se ativado, quando o interlocutor enviar áudio a IA irá responder em áudio. Se desativado, responderá em texto.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="audioativo"
+                {...register('audioativo')}
+                checked={watchedAudioAtivo}
+                onCheckedChange={(checked) => setValue('audioativo', checked)}
+              />
+              <Label htmlFor="audioativo">
+                {watchedAudioAtivo ? 'Ativado' : 'Desativado'}
               </Label>
             </div>
           </CardContent>

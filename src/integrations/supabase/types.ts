@@ -137,6 +137,7 @@ export type Database = {
           apikeyvoice: string | null
           ativo: boolean | null
           ativoolx: boolean | null
+          audioativo: boolean | null
           codVoice: string | null
           created_at: string
           empresa: string | null
@@ -166,6 +167,7 @@ export type Database = {
           apikeyvoice?: string | null
           ativo?: boolean | null
           ativoolx?: boolean | null
+          audioativo?: boolean | null
           codVoice?: string | null
           created_at?: string
           empresa?: string | null
@@ -195,6 +197,7 @@ export type Database = {
           apikeyvoice?: string | null
           ativo?: boolean | null
           ativoolx?: boolean | null
+          audioativo?: boolean | null
           codVoice?: string | null
           created_at?: string
           empresa?: string | null
