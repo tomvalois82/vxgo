@@ -19,7 +19,7 @@ export interface Lead {
   stop: boolean | null;
 }
 
-export const useLeads = () => {
+export const useLeads = (searchTerm?: string) => {
   const { profile, isLoading: authLoading } = useAuth();
 
   const fetchLeads = async () => {
@@ -27,11 +27,18 @@ export const useLeads = () => {
       return [];
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('lead')
       .select('*')
-      .eq('config', profile.config)
-      .order('created_at', { ascending: false });
+      .eq('config', profile.config);
+
+    // Apply search filter if searchTerm is provided
+    if (searchTerm && searchTerm.trim()) {
+      const term = `%${searchTerm.trim()}%`;
+      query = query.or(`nome.ilike.${term},telefone.ilike.${term},session_id_whatsaap.ilike.${term}`);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching leads:', error);
@@ -42,7 +49,7 @@ export const useLeads = () => {
   };
 
   return useQuery<Lead[], Error>({
-    queryKey: ['leads', profile?.config],
+    queryKey: ['leads', profile?.config, searchTerm],
     queryFn: fetchLeads,
     enabled: !authLoading && !!profile && !!profile.config,
   });

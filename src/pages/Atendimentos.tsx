@@ -5,15 +5,17 @@ import { useMessages } from '@/hooks/crm/useMessages';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { MessageCircle, User, RefreshCw } from 'lucide-react';
+import { MessageCircle, User, RefreshCw, Search } from 'lucide-react';
 import ReleaseInterventionButton from '@/components/crm/ReleaseInterventionButton';
 import LeadAutomationToggle from '@/components/crm/LeadAutomationToggle';
 
 const Atendimentos = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const { data: leads, isLoading: leadsLoading, refetch: refetchLeads } = useLeads();
+  const [searchTerm, setSearchTerm] = useState('');
+  const { data: leads, isLoading: leadsLoading, refetch: refetchLeads } = useLeads(searchTerm);
   
   // Get session ID for the selected lead (prioritize WhatsApp over OLX)
   const sessionId = selectedLead?.session_id_whatsaap || selectedLead?.session_id_olx || null;
@@ -134,10 +136,22 @@ const Atendimentos = () => {
       {/* Left Column - Leads List */}
       <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200 bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-3">
             <MessageCircle size={20} />
             Conversas
           </h2>
+          
+          {/* Search Field */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+            <Input
+              type="text"
+              placeholder="Buscar por nome, telefone ou session_id"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
         </div>
         
         <ScrollArea className="flex-1">
@@ -147,7 +161,7 @@ const Atendimentos = () => {
             </div>
           ) : !leads || leads.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
-              Nenhuma conversa encontrada
+              {searchTerm ? 'Nenhum lead encontrado com esse termo.' : 'Nenhuma conversa encontrada'}
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
