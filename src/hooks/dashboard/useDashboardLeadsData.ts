@@ -29,6 +29,7 @@ export const useDashboardLeadsData = (startDate: Date, endDate: Date) => {
       .eq('config', profile.config)
       .gte('created_at', startDateString)
       .lte('created_at', endDateString + 'T23:59:59.999Z')
+      .not('nome', 'is', null)
       .order('created_at', { ascending: true });
 
     if (error) {
