@@ -198,7 +198,7 @@ const Followup = () => {
                             <FollowupInput
                               leadId={lead.id}
                               currentValue={lead.folowup}
-                              maxValue={maxFollowupMessages > 0 ? maxFollowupMessages - 1 : 0}
+                              maxValue={maxFollowupMessages + 1}
                             />
                           </TableCell>
                           <TableCell>
