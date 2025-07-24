@@ -53,9 +53,9 @@ export const useFollowup = (options: UseFollowupOptions = {}) => {
 
     // Calculate max followup messages from the mensagens_folowup field
     let maxFollowupMessages = 0;
-    if (configData && configData.mensagens_folowup) {
-      if (Array.isArray(configData.mensagens_folowup)) {
-        maxFollowupMessages = configData.mensagens_folowup.length;
+    if (configData && (configData as any).mensagens_folowup) {
+      if (Array.isArray((configData as any).mensagens_folowup)) {
+        maxFollowupMessages = (configData as any).mensagens_folowup.length;
       }
     }
 
