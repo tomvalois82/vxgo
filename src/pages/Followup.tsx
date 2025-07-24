@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const Followup = () => {
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showActiveOnly, setShowActiveOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,9 +53,15 @@ const Followup = () => {
     setCurrentPage(page);
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
+  const handleSearchSubmit = () => {
+    setSearchTerm(searchInput);
     setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearchSubmit();
+    }
   };
 
   const handleActiveFilterChange = (checked: boolean) => {
@@ -103,13 +110,22 @@ const Followup = () => {
           <CardTitle>Followup</CardTitle>
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Buscar por nome, telefone ou sessão..."
-                value={searchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-10"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="pl-10 pr-10"
               />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Button
+                onClick={handleSearchSubmit}
+                size="sm"
+                variant="ghost"
+                className="absolute right-1 top-1 h-8 w-8 p-0"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
