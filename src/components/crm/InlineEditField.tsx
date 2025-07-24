@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -24,6 +24,11 @@ const InlineEditField: React.FC<InlineEditFieldProps> = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editValue, setEditValue] = useState(currentValue || '');
   const { updateLead, isLoading } = useUpdateLead();
+
+  // Update editValue when currentValue changes
+  useEffect(() => {
+    setEditValue(currentValue || '');
+  }, [currentValue]);
 
   const handleSave = async () => {
     const success = await updateLead(leadId, fieldName, editValue);
