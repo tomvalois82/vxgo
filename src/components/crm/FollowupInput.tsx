@@ -33,7 +33,7 @@ const FollowupInput: React.FC<FollowupInputProps> = ({
 
     const numValue = parseInt(inputValue) || 0;
     
-    // Check max value constraint
+    // Check max value constraint - should be maxValue (not maxValue - 1)
     if (numValue > maxValue) {
       return;
     }

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useFollowup } from '@/hooks/crm/useFollowup';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -199,7 +198,7 @@ const Followup = () => {
                             <FollowupInput
                               leadId={lead.id}
                               currentValue={lead.folowup}
-                              maxValue={maxFollowupMessages - 1}
+                              maxValue={maxFollowupMessages > 0 ? maxFollowupMessages - 1 : 0}
                             />
                           </TableCell>
                           <TableCell>
