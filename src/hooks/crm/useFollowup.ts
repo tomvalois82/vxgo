@@ -42,7 +42,7 @@ export const useFollowup = (options: UseFollowupOptions = {}) => {
     // First, get the config data to know the max number of followup messages
     const { data: configData, error: configError } = await supabase
       .from('config')
-      .select('mensagens_folowup')
+      .select('*')
       .eq('id', profile.config)
       .single();
 
@@ -51,9 +51,13 @@ export const useFollowup = (options: UseFollowupOptions = {}) => {
       throw new Error(configError.message);
     }
 
-    const maxFollowupMessages = configData?.mensagens_folowup 
-      ? (Array.isArray(configData.mensagens_folowup) ? configData.mensagens_folowup.length : 0)
-      : 0;
+    // Calculate max followup messages from the mensagens_folowup field
+    let maxFollowupMessages = 0;
+    if (configData && configData.mensagens_folowup) {
+      if (Array.isArray(configData.mensagens_folowup)) {
+        maxFollowupMessages = configData.mensagens_folowup.length;
+      }
+    }
 
     // Then get the leads data
     let query = supabase

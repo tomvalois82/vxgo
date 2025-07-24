@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { useUpdateFollowup } from '@/hooks/crm/useUpdateFollowup';
 
 interface FollowupInputProps {
@@ -47,24 +49,66 @@ const FollowupInput: React.FC<FollowupInputProps> = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      e.currentTarget.blur();
+      (e.target as HTMLInputElement).blur();
+    }
+  };
+
+  const incrementValue = async () => {
+    const numValue = parseInt(value) || 0;
+    if (numValue < maxValue) {
+      const newValue = numValue + 1;
+      setValue(newValue.toString());
+      await updateFollowup(leadId, newValue);
+    }
+  };
+
+  const decrementValue = async () => {
+    const numValue = parseInt(value) || 0;
+    if (numValue > 0) {
+      const newValue = numValue - 1;
+      setValue(newValue.toString());
+      await updateFollowup(leadId, newValue);
     }
   };
 
   return (
-    <Input
-      type="text"
-      value={value}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      disabled={isLoading}
-      className="w-20 h-8 text-center"
-      min={0}
-      max={maxValue}
-    />
+    <div className="flex items-center">
+      <Input
+        type="text"
+        value={value}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        disabled={isLoading}
+        className="w-16 h-8 text-center border-r-0 rounded-r-none"
+        min={0}
+        max={maxValue}
+      />
+      <div className="flex flex-col border border-l-0 rounded-r-md">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={incrementValue}
+          disabled={isLoading || parseInt(value) >= maxValue}
+          className="h-4 w-6 p-0 rounded-none border-b border-gray-200 hover:bg-gray-50"
+        >
+          <ChevronUp className="h-3 w-3" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={decrementValue}
+          disabled={isLoading || parseInt(value) <= 0}
+          className="h-4 w-6 p-0 rounded-none hover:bg-gray-50"
+        >
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
   );
 };
 
