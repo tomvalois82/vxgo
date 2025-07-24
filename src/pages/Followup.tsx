@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useFollowup } from '@/hooks/crm/useFollowup';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +12,7 @@ import CountdownTimer from '@/components/crm/CountdownTimer';
 import CopyButton from '@/components/crm/CopyButton';
 import FollowupAutomationToggle from '@/components/crm/FollowupAutomationToggle';
 import FollowupInput from '@/components/crm/FollowupInput';
-import { Search } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -20,6 +21,7 @@ const Followup = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showActiveOnly, setShowActiveOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const pageSize = 50;
 
   const { data: result, isLoading, error } = useFollowup({
@@ -27,6 +29,7 @@ const Followup = () => {
     showActiveOnly,
     page: currentPage,
     pageSize,
+    sortOrder,
   });
 
   const leads = result?.data || [];
@@ -68,6 +71,19 @@ const Followup = () => {
   const handleActiveFilterChange = (checked: boolean) => {
     setShowActiveOnly(checked);
     setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  const handleSortToggle = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  const getSortIcon = () => {
+    if (sortOrder === 'asc') {
+      return <ArrowUp className="h-4 w-4" />;
+    } else {
+      return <ArrowDown className="h-4 w-4" />;
+    }
   };
 
   if (isLoading) {
@@ -163,7 +179,20 @@ const Followup = () => {
                       <TableHead>Intervenção</TableHead>
                       <TableHead className="text-center">IA</TableHead>
                       <TableHead>Mensagem</TableHead>
-                      <TableHead>Próximo Followup</TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-2">
+                          Próximo Followup
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleSortToggle}
+                            className="h-6 w-6 p-0"
+                            title={`Ordenar ${sortOrder === 'asc' ? 'decrescente' : 'crescente'}`}
+                          >
+                            {getSortIcon()}
+                          </Button>
+                        </div>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -202,7 +231,10 @@ const Followup = () => {
                             />
                           </TableCell>
                           <TableCell>
-                            <CountdownTimer targetDate={lead.proximofolowup} />
+                            <CountdownTimer 
+                              targetDate={lead.proximofolowup} 
+                              leadId={lead.id}
+                            />
                           </TableCell>
                         </TableRow>
                       );

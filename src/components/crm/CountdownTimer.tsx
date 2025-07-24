@@ -2,12 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import FollowupActions from './FollowupActions';
 
 interface CountdownTimerProps {
   targetDate: string | null;
+  leadId: number;
 }
 
-const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate }) => {
+const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate, leadId }) => {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [isExpired, setIsExpired] = useState(false);
 
@@ -49,7 +51,14 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate }) => {
     return () => clearInterval(interval);
   }, [targetDate]);
 
-  return <span className={isExpired ? 'text-red-500 font-medium' : 'text-gray-700'}>{timeLeft}</span>;
+  return (
+    <div className="flex items-center">
+      <span className={isExpired ? 'text-red-500 font-medium' : 'text-gray-700'}>
+        {timeLeft}
+      </span>
+      <FollowupActions leadId={leadId} currentDate={targetDate} />
+    </div>
+  );
 };
 
 export default CountdownTimer;

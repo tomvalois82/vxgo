@@ -22,6 +22,7 @@ interface UseFollowupOptions {
   showActiveOnly?: boolean;
   page?: number;
   pageSize?: number;
+  sortOrder?: 'asc' | 'desc';
 }
 
 interface FollowupResult {
@@ -32,7 +33,7 @@ interface FollowupResult {
 
 export const useFollowup = (options: UseFollowupOptions = {}) => {
   const { profile, isLoading: authLoading } = useAuth();
-  const { searchTerm, showActiveOnly = false, page = 1, pageSize = 50 } = options;
+  const { searchTerm, showActiveOnly = false, page = 1, pageSize = 50, sortOrder = 'asc' } = options;
 
   const fetchFollowupData = async (): Promise<FollowupResult> => {
     if (!profile || !profile.config) {
@@ -82,7 +83,7 @@ export const useFollowup = (options: UseFollowupOptions = {}) => {
     query = query.range(from, to);
 
     // Order by proximofolowup
-    query = query.order('proximofolowup', { ascending: true });
+    query = query.order('proximofolowup', { ascending: sortOrder === 'asc' });
 
     const { data, error, count } = await query;
 
@@ -99,7 +100,7 @@ export const useFollowup = (options: UseFollowupOptions = {}) => {
   };
 
   return useQuery<FollowupResult, Error>({
-    queryKey: ['followup', profile?.config, searchTerm, showActiveOnly, page, pageSize],
+    queryKey: ['followup', profile?.config, searchTerm, showActiveOnly, page, pageSize, sortOrder],
     queryFn: fetchFollowupData,
     enabled: !authLoading && !!profile && !!profile.config,
   });
