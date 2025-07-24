@@ -24,15 +24,38 @@ interface UseFollowupOptions {
   pageSize?: number;
 }
 
+interface FollowupResult {
+  data: FollowupLead[];
+  count: number;
+  maxFollowupMessages: number;
+}
+
 export const useFollowup = (options: UseFollowupOptions = {}) => {
   const { profile, isLoading: authLoading } = useAuth();
   const { searchTerm, showActiveOnly = false, page = 1, pageSize = 50 } = options;
 
-  const fetchFollowupData = async () => {
+  const fetchFollowupData = async (): Promise<FollowupResult> => {
     if (!profile || !profile.config) {
-      return { data: [], count: 0 };
+      return { data: [], count: 0, maxFollowupMessages: 0 };
     }
 
+    // First, get the config data to know the max number of followup messages
+    const { data: configData, error: configError } = await supabase
+      .from('config')
+      .select('mensagens_folowup')
+      .eq('id', profile.config)
+      .single();
+
+    if (configError) {
+      console.error('Error fetching config data:', configError);
+      throw new Error(configError.message);
+    }
+
+    const maxFollowupMessages = configData?.mensagens_folowup 
+      ? (Array.isArray(configData.mensagens_folowup) ? configData.mensagens_folowup.length : 0)
+      : 0;
+
+    // Then get the leads data
     let query = supabase
       .from('lead')
       .select('id, nome, telefone, Origem, session_id_whatsaap, session_id_olx, intervencao, stop, folowup, proximofolowup, config', { count: 'exact' })
@@ -64,10 +87,14 @@ export const useFollowup = (options: UseFollowupOptions = {}) => {
       throw new Error(error.message);
     }
 
-    return { data: data as FollowupLead[], count: count || 0 };
+    return { 
+      data: data as FollowupLead[], 
+      count: count || 0, 
+      maxFollowupMessages 
+    };
   };
 
-  return useQuery<{ data: FollowupLead[]; count: number }, Error>({
+  return useQuery<FollowupResult, Error>({
     queryKey: ['followup', profile?.config, searchTerm, showActiveOnly, page, pageSize],
     queryFn: fetchFollowupData,
     enabled: !authLoading && !!profile && !!profile.config,

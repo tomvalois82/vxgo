@@ -11,6 +11,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import CountdownTimer from '@/components/crm/CountdownTimer';
 import CopyButton from '@/components/crm/CopyButton';
 import FollowupAutomationToggle from '@/components/crm/FollowupAutomationToggle';
+import FollowupInput from '@/components/crm/FollowupInput';
 import { Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -31,6 +32,7 @@ const Followup = () => {
 
   const leads = result?.data || [];
   const totalCount = result?.count || 0;
+  const maxFollowupMessages = result?.maxFollowupMessages || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
   const formatIntervencao = (intervencao: string | null) => {
@@ -194,7 +196,11 @@ const Followup = () => {
                             />
                           </TableCell>
                           <TableCell>
-                            {lead.folowup || '-'}
+                            <FollowupInput
+                              leadId={lead.id}
+                              currentValue={lead.folowup}
+                              maxValue={maxFollowupMessages - 1}
+                            />
                           </TableCell>
                           <TableCell>
                             <CountdownTimer targetDate={lead.proximofolowup} />
