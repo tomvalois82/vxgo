@@ -1,5 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface CountdownTimerProps {
   targetDate: string | null;
@@ -7,10 +9,12 @@ interface CountdownTimerProps {
 
 const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate }) => {
   const [timeLeft, setTimeLeft] = useState<string>('');
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     if (!targetDate) {
       setTimeLeft('-');
+      setIsExpired(false);
       return;
     }
 
@@ -26,8 +30,16 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate }) => {
         const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
         setTimeLeft(`${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+        setIsExpired(false);
       } else {
-        setTimeLeft('Vencido');
+        try {
+          const formattedDate = format(new Date(targetDate), 'dd/MM/yyyy HH:mm', { locale: ptBR });
+          setTimeLeft(formattedDate);
+          setIsExpired(true);
+        } catch {
+          setTimeLeft('Vencido');
+          setIsExpired(true);
+        }
       }
     };
 
@@ -37,7 +49,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ targetDate }) => {
     return () => clearInterval(interval);
   }, [targetDate]);
 
-  return <span className={timeLeft === 'Vencido' ? 'text-red-500' : 'text-gray-700'}>{timeLeft}</span>;
+  return <span className={isExpired ? 'text-red-500 font-medium' : 'text-gray-700'}>{timeLeft}</span>;
 };
 
 export default CountdownTimer;
