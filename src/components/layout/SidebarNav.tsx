@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Car, Users, MessageSquare, Settings, LogOut, ChevronLeft, Menu, X, BarChart3, Link as LinkIcon } from 'lucide-react';
+import { Car, Users, MessageSquare, Settings, LogOut, ChevronLeft, Menu, X, BarChart3, Link as LinkIcon, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +43,10 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
     icon: MessageSquare,
     label: 'Atendimentos',
     href: '/atendimentos'
+  }, {
+    icon: Clock,
+    label: 'Followup',
+    href: '/followup'
   }, {
     icon: LinkIcon,
     label: 'Conexões',

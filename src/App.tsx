@@ -14,6 +14,7 @@ import CarDetails from "@/pages/CarDetails";
 import Connections from "@/pages/Connections";
 import Settings from "@/pages/Settings";
 import Atendimentos from "@/pages/Atendimentos";
+import Followup from "@/pages/Followup";
 import Users from "@/pages/Users";
 import PromptEditor from "@/pages/PromptEditor";
 import PromptEditorOlx from "@/pages/PromptEditorOlx";
@@ -47,6 +48,7 @@ const App = () => (
                   <Route path="/edit-car/:id" element={<EditCar />} />
                   <Route path="/car/:id" element={<CarDetails />} />
                   <Route path="/atendimentos" element={<Atendimentos />} />
+                  <Route path="/followup" element={<Followup />} />
                   <Route path="/connections" element={<Connections />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/profile" element={<Profile />} />
