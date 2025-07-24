@@ -45,10 +45,13 @@ const InlineEditField: React.FC<InlineEditFieldProps> = ({
     }
   };
 
+  // Truncate display value to 25 characters
+  const displayValue = currentValue ? (currentValue.length > 25 ? currentValue.substring(0, 25) + '...' : currentValue) : '-';
+
   return (
     <div className="flex items-center gap-2">
       <span className="truncate" title={currentValue || '-'}>
-        {currentValue || '-'}
+        {displayValue}
       </span>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
