@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useFollowup } from '@/hooks/crm/useFollowup';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +11,7 @@ import CountdownTimer from '@/components/crm/CountdownTimer';
 import CopyButton from '@/components/crm/CopyButton';
 import FollowupAutomationToggle from '@/components/crm/FollowupAutomationToggle';
 import FollowupInput from '@/components/crm/FollowupInput';
+import InlineEditField from '@/components/crm/InlineEditField';
 import { Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -177,6 +177,7 @@ const Followup = () => {
                       <TableHead>Origem</TableHead>
                       <TableHead>Sessão</TableHead>
                       <TableHead>Intervenção</TableHead>
+                      <TableHead>Interesse</TableHead>
                       <TableHead className="text-center">IA</TableHead>
                       <TableHead>Mensagem</TableHead>
                       <TableHead>
@@ -201,7 +202,13 @@ const Followup = () => {
                       return (
                         <TableRow key={lead.id}>
                           <TableCell className="font-medium">
-                            {lead.nome || '-'}
+                            <InlineEditField
+                              leadId={lead.id}
+                              currentValue={lead.nome}
+                              fieldName="nome"
+                              displayName="Nome"
+                              placeholder="Digite o nome do lead"
+                            />
                           </TableCell>
                           <TableCell>
                             {lead.Origem || '-'}
@@ -216,6 +223,15 @@ const Followup = () => {
                           </TableCell>
                           <TableCell>
                             {formatIntervencao(lead.intervencao)}
+                          </TableCell>
+                          <TableCell>
+                            <InlineEditField
+                              leadId={lead.id}
+                              currentValue={lead.interesse}
+                              fieldName="interesse"
+                              displayName="Interesse"
+                              placeholder="Digite o interesse do lead"
+                            />
                           </TableCell>
                           <TableCell>
                             <FollowupAutomationToggle 

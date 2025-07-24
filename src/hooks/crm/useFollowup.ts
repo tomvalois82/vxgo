@@ -15,6 +15,7 @@ export interface FollowupLead {
   folowup: number | null;
   proximofolowup: string | null;
   config: number | null;
+  interesse: string | null;
 }
 
 interface UseFollowupOptions {
@@ -63,7 +64,7 @@ export const useFollowup = (options: UseFollowupOptions = {}) => {
     // Then get the leads data
     let query = supabase
       .from('lead')
-      .select('id, nome, telefone, Origem, session_id_whatsaap, session_id_olx, intervencao, stop, folowup, proximofolowup, config', { count: 'exact' })
+      .select('id, nome, telefone, Origem, session_id_whatsaap, session_id_olx, intervencao, stop, folowup, proximofolowup, config, interesse', { count: 'exact' })
       .eq('config', profile.config);
 
     // Apply search filter
