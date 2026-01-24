@@ -19,6 +19,8 @@ export function WhatsAppCloudCard() {
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [savingToken, setSavingToken] = useState(false);
   const [savingVersao, setSavingVersao] = useState(false);
+  const [executingWaba, setExecutingWaba] = useState(false);
+  const [wabaError, setWabaError] = useState<string | null>(null);
 
   // Carregar dados da config ao montar o componente
   useEffect(() => {
@@ -32,7 +34,7 @@ export function WhatsAppCloudCard() {
     try {
       const { data, error } = await supabase
         .from('config')
-        .select('evo_key, versao_waba')
+        .select('evo_key, versao_waba, waba_id')
         .eq('idusuario', profile?.id)
         .single();
 
@@ -45,6 +47,9 @@ export function WhatsAppCloudCard() {
       }
       if (data?.versao_waba) {
         setVersaoApi(data.versao_waba);
+      }
+      if (data?.waba_id) {
+        setWabaId(data.waba_id);
       }
     } catch (error) {
       console.error('Erro ao carregar configuração:', error);
@@ -101,8 +106,67 @@ export function WhatsAppCloudCard() {
     }
   };
 
-  const handleSalvarExecutar = () => {
-    // Funcionalidade será implementada posteriormente
+  const handleSalvarExecutar = async () => {
+    if (!profile?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    if (!versaoApi) {
+      toast.error('Versão da API é obrigatória');
+      return;
+    }
+
+    if (!wabaId) {
+      toast.error('WABA ID é obrigatório');
+      return;
+    }
+
+    if (!tokenTemporario) {
+      toast.error('Token Temporário é obrigatório');
+      return;
+    }
+
+    setExecutingWaba(true);
+    setWabaError(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('subscribe-waba', {
+        body: {
+          version: versaoApi,
+          wabaId: wabaId,
+          token: tokenTemporario,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Check if response has success: true
+      if (data?.success === true) {
+        // Save waba_id to database
+        const { error: updateError } = await supabase
+          .from('config')
+          .update({ waba_id: wabaId })
+          .eq('idusuario', profile.id);
+
+        if (updateError) throw updateError;
+
+        toast.success('Inscrição realizada com sucesso!');
+        setWabaError(null);
+      } else if (data?.error) {
+        // Display the full error below the form
+        setWabaError(JSON.stringify(data.error, null, 2));
+      } else {
+        setWabaError(JSON.stringify(data, null, 2));
+      }
+    } catch (error: any) {
+      console.error('Erro ao executar inscrição WABA:', error);
+      setWabaError(error.message || 'Erro ao executar inscrição');
+    } finally {
+      setExecutingWaba(false);
+    }
   };
 
   const handleEnviarTeste = () => {
@@ -183,9 +247,19 @@ export function WhatsAppCloudCard() {
               placeholder="Digite o WABA ID"
             />
           </div>
-          <Button onClick={handleSalvarExecutar}>
+          <Button onClick={handleSalvarExecutar} disabled={executingWaba || loadingConfig}>
+            {executingWaba && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar e Executar
           </Button>
+          
+          {wabaError && (
+            <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm font-medium text-destructive mb-2">Erro na inscrição:</p>
+              <pre className="text-xs text-destructive whitespace-pre-wrap font-mono overflow-auto max-h-40">
+                {wabaError}
+              </pre>
+            </div>
+          )}
         </div>
 
         <Separator />
