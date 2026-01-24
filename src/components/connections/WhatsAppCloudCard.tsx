@@ -1,18 +1,74 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Cloud } from 'lucide-react';
+import { Cloud, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export function WhatsAppCloudCard() {
+  const { profile } = useAuth();
   const [versaoApi, setVersaoApi] = useState('');
   const [wabaId, setWabaId] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [loadingVersao, setLoadingVersao] = useState(false);
+  const [savingVersao, setSavingVersao] = useState(false);
 
-  const handleSalvarVersao = () => {
-    // Funcionalidade será implementada posteriormente
+  // Carregar dados da config ao montar o componente
+  useEffect(() => {
+    if (profile?.id) {
+      loadConfig();
+    }
+  }, [profile?.id]);
+
+  const loadConfig = async () => {
+    setLoadingVersao(true);
+    try {
+      const { data, error } = await supabase
+        .from('config')
+        .select('versao_waba')
+        .eq('idusuario', profile?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data?.versao_waba) {
+        setVersaoApi(data.versao_waba);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configuração:', error);
+    } finally {
+      setLoadingVersao(false);
+    }
+  };
+
+  const handleSalvarVersao = async () => {
+    if (!profile?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    setSavingVersao(true);
+    try {
+      const { error } = await supabase
+        .from('config')
+        .update({ versao_waba: versaoApi })
+        .eq('idusuario', profile.id);
+
+      if (error) throw error;
+
+      toast.success('Versão da API salva com sucesso');
+    } catch (error) {
+      console.error('Erro ao salvar versão:', error);
+      toast.error('Erro ao salvar versão da API');
+    } finally {
+      setSavingVersao(false);
+    }
   };
 
   const handleSalvarExecutar = () => {
@@ -41,9 +97,11 @@ export function WhatsAppCloudCard() {
               onChange={(e) => setVersaoApi(e.target.value)}
               maxLength={10}
               placeholder="Ex: v18.0"
+              disabled={loadingVersao}
             />
           </div>
-          <Button onClick={handleSalvarVersao}>
+          <Button onClick={handleSalvarVersao} disabled={savingVersao || loadingVersao}>
+            {savingVersao && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar
           </Button>
         </div>
