@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 export function WhatsAppCloudCard() {
   const { profile } = useAuth();
   const [tokenPermanente, setTokenPermanente] = useState('');
+  const [tokenTemporario, setTokenTemporario] = useState('');
   const [versaoApi, setVersaoApi] = useState('');
   const [wabaId, setWabaId] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -162,6 +163,16 @@ export function WhatsAppCloudCard() {
         {/* Etapa 2: Inscrever-se para WABA */}
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">2. Inscrever-se para WABA</h3>
+          <div className="space-y-2">
+            <Label htmlFor="token-temporario">Token Temporário</Label>
+            <Input
+              id="token-temporario"
+              value={tokenTemporario}
+              onChange={(e) => setTokenTemporario(e.target.value)}
+              placeholder="Cole aqui seu token temporário"
+              className="font-mono text-sm"
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="waba-id">WABA ID</Label>
             <Input
