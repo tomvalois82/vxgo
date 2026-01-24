@@ -448,6 +448,21 @@ const Institucional = () => {
               className="h-10 w-auto object-contain"
             />
           </button>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <Link 
+              to="/termos-condicoes" 
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Termos e Condições
+            </Link>
+            <span className="text-muted-foreground">|</span>
+            <Link 
+              to="/politica-privacidade" 
+              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Política de Privacidade
+            </Link>
+          </div>
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()} VX GO. Todos os direitos reservados.
           </p>
