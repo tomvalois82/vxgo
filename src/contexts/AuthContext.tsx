@@ -90,9 +90,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setProfile(processedProfile);
 
             const needsCompletion = !processedProfile.nome || !processedProfile.cargo || !processedProfile.telefone;
-            if (needsCompletion && location.pathname !== '/profile' && location.pathname !== '/auth') {
-              console.log('User profile needs completion, redirecting to /profile');
-              navigate('/profile');
+            if (needsCompletion && location.pathname !== '/dashboard/profile' && location.pathname !== '/auth') {
+              console.log('User profile needs completion, redirecting to /dashboard/profile');
+              navigate('/dashboard/profile');
             }
           } else {
             console.log('No user profile found for uid:', user.id);
@@ -152,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log('Signin successful');
-      navigate('/');
+      navigate('/dashboard');
       return {};
     } catch (error) {
       console.error('Signin exception:', error);
