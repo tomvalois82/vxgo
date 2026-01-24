@@ -131,7 +131,7 @@ export function WhatsAppCloudCard() {
     setWabaError(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('subscribe-waba', {
+      const response = await supabase.functions.invoke('subscribe-waba', {
         body: {
           version: versaoApi,
           wabaId: wabaId,
@@ -139,7 +139,20 @@ export function WhatsAppCloudCard() {
         },
       });
 
-      if (error) {
+      // supabase.functions.invoke can return error in different ways
+      // Check for data first since it may contain the Facebook response
+      const data = response.data;
+      const error = response.error;
+
+      // If there's an invoke error but also data with Facebook error, use the data
+      if (data?.error) {
+        // Display the full Facebook error below the form
+        setWabaError(JSON.stringify(data.error, null, 2));
+        return;
+      }
+
+      // If there's only an invoke error (network issue, etc.)
+      if (error && !data) {
         throw error;
       }
 
@@ -155,15 +168,17 @@ export function WhatsAppCloudCard() {
 
         toast.success('Inscrição realizada com sucesso!');
         setWabaError(null);
-      } else if (data?.error) {
-        // Display the full error below the form
-        setWabaError(JSON.stringify(data.error, null, 2));
       } else {
-        setWabaError(JSON.stringify(data, null, 2));
+        // Unknown response format
+        setWabaError(JSON.stringify(data || error, null, 2));
       }
     } catch (error: any) {
       console.error('Erro ao executar inscrição WABA:', error);
-      setWabaError(error.message || 'Erro ao executar inscrição');
+      // Try to extract meaningful error message
+      const errorMessage = error?.context?.body 
+        ? JSON.stringify(JSON.parse(error.context.body), null, 2)
+        : (error.message || 'Erro ao executar inscrição');
+      setWabaError(errorMessage);
     } finally {
       setExecutingWaba(false);
     }
