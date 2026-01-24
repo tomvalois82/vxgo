@@ -4,10 +4,25 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Cloud, Loader2 } from 'lucide-react';
+import { Cloud, Loader2, Phone, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface PhoneNumberInfo {
+  verified_name: string;
+  code_verification_status: string;
+  display_phone_number: string;
+  quality_rating: string;
+  platform_type: string;
+  throughput?: {
+    level: string;
+  };
+  webhook_configuration?: {
+    application: string;
+  };
+  id: string;
+}
 
 export function WhatsAppCloudCard() {
   const { profile } = useAuth();
@@ -21,6 +36,7 @@ export function WhatsAppCloudCard() {
   const [savingVersao, setSavingVersao] = useState(false);
   const [executingWaba, setExecutingWaba] = useState(false);
   const [wabaError, setWabaError] = useState<string | null>(null);
+  const [phoneInfo, setPhoneInfo] = useState<PhoneNumberInfo | null>(null);
 
   // Carregar dados da config ao montar o componente
   useEffect(() => {
@@ -34,7 +50,7 @@ export function WhatsAppCloudCard() {
     try {
       const { data, error } = await supabase
         .from('config')
-        .select('evo_key, versao_waba, waba_id')
+        .select('evo_key, versao_waba, waba_id, id_phone_wtz_api')
         .eq('idusuario', profile?.id)
         .single();
 
@@ -129,6 +145,7 @@ export function WhatsAppCloudCard() {
 
     setExecutingWaba(true);
     setWabaError(null);
+    setPhoneInfo(null);
 
     try {
       const response = await supabase.functions.invoke('subscribe-waba', {
@@ -141,14 +158,12 @@ export function WhatsAppCloudCard() {
 
       console.log('Subscribe WABA response:', response);
 
-      // supabase.functions.invoke can return error in different ways
       const data = response.data;
       const error = response.error;
 
       // Handle the case where we have an error object from the invoke
       if (error) {
         console.log('Invoke error:', error);
-        // Try to parse the error context body if available
         if (error.context?.body) {
           try {
             const errorBody = JSON.parse(error.context.body);
@@ -180,7 +195,26 @@ export function WhatsAppCloudCard() {
 
         if (updateError) throw updateError;
 
-        toast.success('Inscrição realizada com sucesso!');
+        // Check if we have phone numbers data
+        if (data.phoneNumbers?.data && data.phoneNumbers.data.length > 0) {
+          const firstPhone = data.phoneNumbers.data[0] as PhoneNumberInfo;
+          
+          // Save the phone ID to database
+          const { error: phoneUpdateError } = await supabase
+            .from('config')
+            .update({ id_phone_wtz_api: firstPhone.id })
+            .eq('idusuario', profile.id);
+
+          if (phoneUpdateError) {
+            console.error('Erro ao salvar ID do telefone:', phoneUpdateError);
+          }
+
+          setPhoneInfo(firstPhone);
+          toast.success('Inscrição realizada com sucesso! Número encontrado.');
+        } else {
+          toast.success('Inscrição realizada com sucesso!');
+        }
+        
         setWabaError(null);
       } else {
         // Unknown response format
@@ -194,8 +228,26 @@ export function WhatsAppCloudCard() {
     }
   };
 
+  const handleRegistrarNumero = () => {
+    // Funcionalidade será implementada posteriormente
+    toast.info('Funcionalidade de registro será implementada em breve');
+  };
+
   const handleEnviarTeste = () => {
     // Funcionalidade será implementada posteriormente
+  };
+
+  const getQualityRatingColor = (rating: string) => {
+    switch (rating?.toUpperCase()) {
+      case 'GREEN':
+        return 'text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/30';
+      case 'YELLOW':
+        return 'text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/30';
+      case 'RED':
+        return 'text-destructive bg-destructive/10';
+      default:
+        return 'text-muted-foreground bg-muted';
+    }
   };
 
   return (
@@ -283,6 +335,68 @@ export function WhatsAppCloudCard() {
               <pre className="text-xs text-destructive whitespace-pre-wrap font-mono overflow-auto max-h-40">
                 {wabaError}
               </pre>
+            </div>
+          )}
+
+          {/* Phone Info Success Box */}
+          {phoneInfo && (
+            <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <h4 className="font-semibold text-emerald-800 dark:text-emerald-200">Número Encontrado</h4>
+              </div>
+              
+              <div className="grid gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{phoneInfo.display_phone_number}</span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                  <div>
+                    <span className="text-xs">Nome Verificado:</span>
+                    <p className="font-medium text-foreground">{phoneInfo.verified_name}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs">ID:</span>
+                    <p className="font-mono text-foreground">{phoneInfo.id}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs">Status Verificação:</span>
+                    <p className="font-medium text-foreground">{phoneInfo.code_verification_status}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs">Qualidade:</span>
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getQualityRatingColor(phoneInfo.quality_rating)}`}>
+                      {phoneInfo.quality_rating}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-xs">Plataforma:</span>
+                    <p className="font-medium text-foreground">{phoneInfo.platform_type}</p>
+                  </div>
+                  {phoneInfo.throughput?.level && (
+                    <div>
+                      <span className="text-xs">Throughput:</span>
+                      <p className="font-medium text-foreground">{phoneInfo.throughput.level}</p>
+                    </div>
+                  )}
+                </div>
+
+                {phoneInfo.webhook_configuration?.application && (
+                  <div className="mt-2">
+                    <span className="text-xs text-muted-foreground">Webhook:</span>
+                    <p className="font-mono text-xs text-foreground break-all">{phoneInfo.webhook_configuration.application}</p>
+                  </div>
+                )}
+              </div>
+
+              <Button 
+                onClick={handleRegistrarNumero} 
+                className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white"
+              >
+                Registrar Número
+              </Button>
             </div>
           )}
         </div>

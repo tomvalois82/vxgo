@@ -23,25 +23,58 @@ serve(async (req) => {
       );
     }
 
-    const url = `https://graph.facebook.com/${version}/${wabaId}/subscribed_apps`;
+    // Step 1: Subscribe to WABA
+    const subscribeUrl = `https://graph.facebook.com/${version}/${wabaId}/subscribed_apps`;
     
-    console.log('Calling Facebook API:', url);
+    console.log('Calling Facebook Subscribe API:', subscribeUrl);
 
-    const response = await fetch(url, {
+    const subscribeResponse = await fetch(subscribeUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
 
-    const data = await response.json();
+    const subscribeData = await subscribeResponse.json();
     
-    console.log('Facebook API response:', { status: response.status, data });
+    console.log('Facebook Subscribe API response:', { status: subscribeResponse.status, data: subscribeData });
 
+    // If subscription failed, return error
+    if (!subscribeResponse.ok || subscribeData.error) {
+      return new Response(
+        JSON.stringify(subscribeData),
+        { 
+          status: subscribeResponse.status, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Step 2: If subscription successful, get phone numbers
+    const phoneNumbersUrl = `https://graph.facebook.com/${version}/${wabaId}/phone_numbers`;
+    
+    console.log('Calling Facebook Phone Numbers API:', phoneNumbersUrl);
+
+    const phoneResponse = await fetch(phoneNumbersUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const phoneData = await phoneResponse.json();
+    
+    console.log('Facebook Phone Numbers API response:', { status: phoneResponse.status, data: phoneData });
+
+    // Return combined response with subscription success and phone data
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify({
+        success: true,
+        subscription: subscribeData,
+        phoneNumbers: phoneData
+      }),
       { 
-        status: response.status, 
+        status: 200, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
