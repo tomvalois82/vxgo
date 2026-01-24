@@ -139,21 +139,35 @@ export function WhatsAppCloudCard() {
         },
       });
 
+      console.log('Subscribe WABA response:', response);
+
       // supabase.functions.invoke can return error in different ways
-      // Check for data first since it may contain the Facebook response
       const data = response.data;
       const error = response.error;
 
-      // If there's an invoke error but also data with Facebook error, use the data
-      if (data?.error) {
-        // Display the full Facebook error below the form
-        setWabaError(JSON.stringify(data.error, null, 2));
+      // Handle the case where we have an error object from the invoke
+      if (error) {
+        console.log('Invoke error:', error);
+        // Try to parse the error context body if available
+        if (error.context?.body) {
+          try {
+            const errorBody = JSON.parse(error.context.body);
+            if (errorBody?.error) {
+              setWabaError(JSON.stringify(errorBody.error, null, 2));
+              return;
+            }
+          } catch (e) {
+            // If parsing fails, continue to show error message
+          }
+        }
+        setWabaError(error.message || 'Erro na chamada da API');
         return;
       }
 
-      // If there's only an invoke error (network issue, etc.)
-      if (error && !data) {
-        throw error;
+      // If there's data with Facebook error, display it
+      if (data?.error) {
+        setWabaError(JSON.stringify(data.error, null, 2));
+        return;
       }
 
       // Check if response has success: true
@@ -170,15 +184,11 @@ export function WhatsAppCloudCard() {
         setWabaError(null);
       } else {
         // Unknown response format
-        setWabaError(JSON.stringify(data || error, null, 2));
+        setWabaError(JSON.stringify(data, null, 2));
       }
     } catch (error: any) {
       console.error('Erro ao executar inscrição WABA:', error);
-      // Try to extract meaningful error message
-      const errorMessage = error?.context?.body 
-        ? JSON.stringify(JSON.parse(error.context.body), null, 2)
-        : (error.message || 'Erro ao executar inscrição');
-      setWabaError(errorMessage);
+      setWabaError(error?.message || 'Erro ao executar inscrição');
     } finally {
       setExecutingWaba(false);
     }
