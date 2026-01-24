@@ -11,10 +11,12 @@ import { toast } from 'sonner';
 
 export function WhatsAppCloudCard() {
   const { profile } = useAuth();
+  const [tokenPermanente, setTokenPermanente] = useState('');
   const [versaoApi, setVersaoApi] = useState('');
   const [wabaId, setWabaId] = useState('');
   const [telefone, setTelefone] = useState('');
-  const [loadingVersao, setLoadingVersao] = useState(false);
+  const [loadingConfig, setLoadingConfig] = useState(false);
+  const [savingToken, setSavingToken] = useState(false);
   const [savingVersao, setSavingVersao] = useState(false);
 
   // Carregar dados da config ao montar o componente
@@ -25,11 +27,11 @@ export function WhatsAppCloudCard() {
   }, [profile?.id]);
 
   const loadConfig = async () => {
-    setLoadingVersao(true);
+    setLoadingConfig(true);
     try {
       const { data, error } = await supabase
         .from('config')
-        .select('versao_waba')
+        .select('evo_key, versao_waba')
         .eq('idusuario', profile?.id)
         .single();
 
@@ -37,13 +39,40 @@ export function WhatsAppCloudCard() {
         throw error;
       }
 
+      if (data?.evo_key) {
+        setTokenPermanente(data.evo_key);
+      }
       if (data?.versao_waba) {
         setVersaoApi(data.versao_waba);
       }
     } catch (error) {
       console.error('Erro ao carregar configuração:', error);
     } finally {
-      setLoadingVersao(false);
+      setLoadingConfig(false);
+    }
+  };
+
+  const handleSalvarToken = async () => {
+    if (!profile?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    setSavingToken(true);
+    try {
+      const { error } = await supabase
+        .from('config')
+        .update({ evo_key: tokenPermanente })
+        .eq('idusuario', profile.id);
+
+      if (error) throw error;
+
+      toast.success('Token salvo com sucesso');
+    } catch (error) {
+      console.error('Erro ao salvar token:', error);
+      toast.error('Erro ao salvar token');
+    } finally {
+      setSavingToken(false);
     }
   };
 
@@ -86,6 +115,28 @@ export function WhatsAppCloudCard() {
         <CardTitle>WhatsApp Cloud (API Oficial)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Token Permanente */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">Token Permanente</h3>
+          <div className="space-y-2">
+            <Label htmlFor="token-permanente">Token</Label>
+            <Input
+              id="token-permanente"
+              value={tokenPermanente}
+              onChange={(e) => setTokenPermanente(e.target.value)}
+              placeholder="Cole aqui seu token permanente"
+              disabled={loadingConfig}
+              className="font-mono text-sm"
+            />
+          </div>
+          <Button onClick={handleSalvarToken} disabled={savingToken || loadingConfig}>
+            {savingToken && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Salvar
+          </Button>
+        </div>
+
+        <Separator />
+
         {/* Etapa 1: Versão API */}
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">1. Versão API</h3>
@@ -97,10 +148,10 @@ export function WhatsAppCloudCard() {
               onChange={(e) => setVersaoApi(e.target.value)}
               maxLength={10}
               placeholder="Ex: v18.0"
-              disabled={loadingVersao}
+              disabled={loadingConfig}
             />
           </div>
-          <Button onClick={handleSalvarVersao} disabled={savingVersao || loadingVersao}>
+          <Button onClick={handleSalvarVersao} disabled={savingVersao || loadingConfig}>
             {savingVersao && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar
           </Button>
