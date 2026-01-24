@@ -23,6 +23,7 @@ import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
 import Institucional from "@/pages/Institucional";
 import PoliticaPrivacidade from "@/pages/PoliticaPrivacidade";
+import TermosCondicoes from "@/pages/TermosCondicoes";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireAdmin from "@/components/auth/RequireAdmin";
 
@@ -43,6 +44,7 @@ const App = () => (
             <Routes>
               <Route path="/institucional" element={<Institucional />} />
               <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+              <Route path="/termos-condicoes" element={<TermosCondicoes />} />
               <Route path="/auth" element={<Auth />} />
               <Route element={<RequireAuth />}>
                 <Route path="/" element={<Layout />}>
