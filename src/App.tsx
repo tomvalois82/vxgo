@@ -48,28 +48,28 @@ const App = () => (
               <Route path="/termos-condicoes" element={<TermosCondicoes />} />
               <Route path="/auth" element={<Auth />} />
               <Route element={<RequireAuth />}>
-                <Route path="/" element={<Layout />}>
+                <Route path="/dashboard" element={<Layout />}>
                   <Route index element={<Dashboard />} />
-                  <Route path="/estoque" element={<Index />} />
-                  <Route path="/add-car" element={<AddCar />} />
-                  <Route path="/edit-car/:id" element={<EditCar />} />
-                  <Route path="/car/:id" element={<CarDetails />} />
-                  <Route path="/atendimentos" element={<Atendimentos />} />
-                  <Route path="/followup" element={<Followup />} />
-                  <Route path="/connections" element={<Connections />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/users" element={
+                  <Route path="estoque" element={<Index />} />
+                  <Route path="add-car" element={<AddCar />} />
+                  <Route path="edit-car/:id" element={<EditCar />} />
+                  <Route path="car/:id" element={<CarDetails />} />
+                  <Route path="atendimentos" element={<Atendimentos />} />
+                  <Route path="followup" element={<Followup />} />
+                  <Route path="connections" element={<Connections />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="users" element={
                     <RequireAdmin>
                       <Users />
                     </RequireAdmin>
                   } />
-                  <Route path="/prompt-editor/:configId" element={
+                  <Route path="prompt-editor/:configId" element={
                     <RequireAdmin>
                       <PromptEditor />
                     </RequireAdmin>
                   } />
-                  <Route path="/prompt-editor-olx/:configId" element={
+                  <Route path="prompt-editor-olx/:configId" element={
                     <RequireAdmin>
                       <PromptEditorOlx />
                     </RequireAdmin>

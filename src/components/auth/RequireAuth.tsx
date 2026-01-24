@@ -14,8 +14,8 @@ const RequireAuth = () => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  if (needsProfileCompletion && location.pathname !== '/profile') {
-    return <Navigate to="/profile" replace />;
+  if (needsProfileCompletion && location.pathname !== '/dashboard/profile') {
+    return <Navigate to="/dashboard/profile" replace />;
   }
 
   return <Outlet />;
