@@ -34,31 +34,31 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
   const navItems = [{
     icon: BarChart3,
     label: 'Dashboard',
-    href: '/'
+    href: '/dashboard'
   }, {
     icon: Car,
     label: 'Estoque',
-    href: '/estoque'
+    href: '/dashboard/estoque'
   }, {
     icon: MessageSquare,
     label: 'Atendimentos',
-    href: '/atendimentos'
+    href: '/dashboard/atendimentos'
   }, {
     icon: Clock,
     label: 'Followup',
-    href: '/followup'
+    href: '/dashboard/followup'
   }, {
     icon: LinkIcon,
     label: 'Conexões',
-    href: '/connections'
+    href: '/dashboard/connections'
   }, {
     icon: Settings,
     label: 'Configurações',
-    href: '/settings'
+    href: '/dashboard/settings'
   }, ...(profile?.superadm ? [{
     icon: Users,
     label: 'Usuários',
-    href: '/users'
+    href: '/dashboard/users'
   }] : [])];
 
   const isActive = (href: string) => {
