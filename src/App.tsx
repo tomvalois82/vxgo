@@ -22,6 +22,7 @@ import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
 import Institucional from "@/pages/Institucional";
+import PoliticaPrivacidade from "@/pages/PoliticaPrivacidade";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireAdmin from "@/components/auth/RequireAdmin";
 
@@ -41,6 +42,7 @@ const App = () => (
             <Sonner />
             <Routes>
               <Route path="/institucional" element={<Institucional />} />
+              <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
               <Route path="/auth" element={<Auth />} />
               <Route element={<RequireAuth />}>
                 <Route path="/" element={<Layout />}>
