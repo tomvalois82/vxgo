@@ -21,6 +21,7 @@ import PromptEditorOlx from "@/pages/PromptEditorOlx";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
+import Institucional from "@/pages/Institucional";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireAdmin from "@/components/auth/RequireAdmin";
 
@@ -39,6 +40,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
+              <Route path="/institucional" element={<Institucional />} />
               <Route path="/auth" element={<Auth />} />
               <Route element={<RequireAuth />}>
                 <Route path="/" element={<Layout />}>
