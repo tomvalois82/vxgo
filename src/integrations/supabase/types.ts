@@ -171,6 +171,8 @@ export type Database = {
           telefone: string | null
           tempofolowup: number | null
           temporesposta: number | null
+          versao_waba: string | null
+          waba_id: string | null
           webhook_olx: string | null
         }
         Insert: {
@@ -208,6 +210,8 @@ export type Database = {
           telefone?: string | null
           tempofolowup?: number | null
           temporesposta?: number | null
+          versao_waba?: string | null
+          waba_id?: string | null
           webhook_olx?: string | null
         }
         Update: {
@@ -245,6 +249,8 @@ export type Database = {
           telefone?: string | null
           tempofolowup?: number | null
           temporesposta?: number | null
+          versao_waba?: string | null
+          waba_id?: string | null
           webhook_olx?: string | null
         }
         Relationships: [

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { WhatsAppConnection } from '@/components/connections/WhatsAppConnection';
+import { WhatsAppCloudCard } from '@/components/connections/WhatsAppCloudCard';
 import { OlxConnectionPlaceholder } from '@/components/connections/OlxConnectionPlaceholder';
 import { useAuth } from '@/contexts/AuthContext';
 import { olxService } from '@/services/olxService';
@@ -127,6 +128,7 @@ const Connections = () => {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Conexões</h1>
       <WhatsAppConnection />
+      <WhatsAppCloudCard />
       <OlxConnectionPlaceholder />
     </div>
   );
