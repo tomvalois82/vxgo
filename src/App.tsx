@@ -42,7 +42,8 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
-              <Route path="/institucional" element={<Institucional />} />
+              <Route path="/" element={<Institucional />} />
+              <Route path="/institucional" element={<Navigate to="/" replace />} />
               <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
               <Route path="/termos-condicoes" element={<TermosCondicoes />} />
               <Route path="/auth" element={<Auth />} />
