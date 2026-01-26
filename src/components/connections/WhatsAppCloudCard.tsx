@@ -37,6 +37,9 @@ export function WhatsAppCloudCard() {
   const [executingWaba, setExecutingWaba] = useState(false);
   const [wabaError, setWabaError] = useState<string | null>(null);
   const [phoneInfo, setPhoneInfo] = useState<PhoneNumberInfo | null>(null);
+  const [registeringPhone, setRegisteringPhone] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
+  const [registerPin, setRegisterPin] = useState('');
 
   // Carregar dados da config ao montar o componente
   useEffect(() => {
@@ -228,9 +231,85 @@ export function WhatsAppCloudCard() {
     }
   };
 
-  const handleRegistrarNumero = () => {
-    // Funcionalidade será implementada posteriormente
-    toast.info('Funcionalidade de registro será implementada em breve');
+  const handleRegistrarNumero = async () => {
+    if (!profile?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    if (!versaoApi) {
+      toast.error('Versão da API é obrigatória');
+      return;
+    }
+
+    if (!phoneInfo?.id) {
+      toast.error('ID do telefone não encontrado');
+      return;
+    }
+
+    if (!tokenTemporario) {
+      toast.error('Token Temporário é obrigatório');
+      return;
+    }
+
+    if (!registerPin || registerPin.length !== 6) {
+      toast.error('PIN de 6 dígitos é obrigatório');
+      return;
+    }
+
+    setRegisteringPhone(true);
+    setRegisterError(null);
+
+    try {
+      const response = await supabase.functions.invoke('register-phone-waba', {
+        body: {
+          version: versaoApi,
+          phoneNumberId: phoneInfo.id,
+          token: tokenTemporario,
+          pin: registerPin,
+        },
+      });
+
+      console.log('Register Phone response:', response);
+
+      const data = response.data;
+      const error = response.error;
+
+      if (error) {
+        console.log('Invoke error:', error);
+        if (error.context?.body) {
+          try {
+            const errorBody = JSON.parse(error.context.body);
+            if (errorBody?.error) {
+              setRegisterError(JSON.stringify(errorBody.error, null, 2));
+              return;
+            }
+          } catch (e) {
+            // If parsing fails, continue to show error message
+          }
+        }
+        setRegisterError(error.message || 'Erro na chamada da API');
+        return;
+      }
+
+      if (data?.error) {
+        setRegisterError(JSON.stringify(data.error, null, 2));
+        return;
+      }
+
+      if (data?.success === true) {
+        toast.success('Número registrado com sucesso!');
+        setRegisterError(null);
+        setRegisterPin('');
+      } else {
+        setRegisterError(JSON.stringify(data, null, 2));
+      }
+    } catch (error: any) {
+      console.error('Erro ao registrar número:', error);
+      setRegisterError(error?.message || 'Erro ao registrar número');
+    } finally {
+      setRegisteringPhone(false);
+    }
   };
 
   const handleEnviarTeste = () => {
@@ -391,12 +470,36 @@ export function WhatsAppCloudCard() {
                 )}
               </div>
 
-              <Button 
-                onClick={handleRegistrarNumero} 
-                className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white"
-              >
-                Registrar Número
-              </Button>
+              <div className="mt-4 space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="register-pin">PIN de Registro (6 dígitos)</Label>
+                  <Input
+                    id="register-pin"
+                    value={registerPin}
+                    onChange={(e) => setRegisterPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Ex: 258456"
+                    maxLength={6}
+                    className="font-mono"
+                  />
+                </div>
+                <Button 
+                  onClick={handleRegistrarNumero} 
+                  disabled={registeringPhone || registerPin.length !== 6}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white"
+                >
+                  {registeringPhone && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Registrar Número
+                </Button>
+              </div>
+
+              {registerError && (
+                <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                  <p className="text-sm font-medium text-destructive mb-2">Erro no registro:</p>
+                  <pre className="text-xs text-destructive whitespace-pre-wrap font-mono overflow-auto max-h-40">
+                    {registerError}
+                  </pre>
+                </div>
+              )}
             </div>
           )}
         </div>
