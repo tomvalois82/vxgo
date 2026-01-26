@@ -40,6 +40,10 @@ export function WhatsAppCloudCard() {
   const [registeringPhone, setRegisteringPhone] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [registerPin, setRegisterPin] = useState('');
+  const [mensagemTeste, setMensagemTeste] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageError, setMessageError] = useState<string | null>(null);
+  const [messageSuccess, setMessageSuccess] = useState(false);
 
   // Carregar dados da config ao montar o componente
   useEffect(() => {
@@ -312,8 +316,99 @@ export function WhatsAppCloudCard() {
     }
   };
 
-  const handleEnviarTeste = () => {
-    // Funcionalidade será implementada posteriormente
+  const handleEnviarTeste = async () => {
+    if (!profile?.id) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    if (!versaoApi) {
+      toast.error('Versão da API é obrigatória');
+      return;
+    }
+
+    if (!telefone) {
+      toast.error('Telefone é obrigatório');
+      return;
+    }
+
+    if (!mensagemTeste) {
+      toast.error('Mensagem é obrigatória');
+      return;
+    }
+
+    if (!tokenTemporario) {
+      toast.error('Token Temporário é obrigatório');
+      return;
+    }
+
+    // Fetch the phone ID from the database
+    const { data: configData, error: configError } = await supabase
+      .from('config')
+      .select('id_phone_wtz_api')
+      .eq('idusuario', profile.id)
+      .single();
+
+    if (configError || !configData?.id_phone_wtz_api) {
+      toast.error('ID do telefone não configurado. Execute a inscrição WABA primeiro.');
+      return;
+    }
+
+    setSendingMessage(true);
+    setMessageError(null);
+    setMessageSuccess(false);
+
+    try {
+      const response = await supabase.functions.invoke('send-whatsapp-message', {
+        body: {
+          version: versaoApi,
+          phoneNumberId: configData.id_phone_wtz_api,
+          token: tokenTemporario,
+          recipientPhone: telefone,
+          messageBody: mensagemTeste,
+        },
+      });
+
+      console.log('Send Message response:', response);
+
+      const data = response.data;
+      const error = response.error;
+
+      if (error) {
+        console.log('Invoke error:', error);
+        if (error.context?.body) {
+          try {
+            const errorBody = JSON.parse(error.context.body);
+            if (errorBody?.error) {
+              setMessageError(JSON.stringify(errorBody.error, null, 2));
+              return;
+            }
+          } catch (e) {
+            // If parsing fails, continue to show error message
+          }
+        }
+        setMessageError(error.message || 'Erro na chamada da API');
+        return;
+      }
+
+      if (data?.error) {
+        setMessageError(JSON.stringify(data.error, null, 2));
+        return;
+      }
+
+      if (data?.success === true) {
+        toast.success('Mensagem enviada com sucesso!');
+        setMessageSuccess(true);
+        setMessageError(null);
+      } else {
+        setMessageError(JSON.stringify(data, null, 2));
+      }
+    } catch (error: any) {
+      console.error('Erro ao enviar mensagem:', error);
+      setMessageError(error?.message || 'Erro ao enviar mensagem');
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   const getQualityRatingColor = (rating: string) => {
@@ -518,9 +613,40 @@ export function WhatsAppCloudCard() {
               placeholder="Ex: 5511999999999"
             />
           </div>
-          <Button onClick={handleEnviarTeste}>
+          <div className="space-y-2">
+            <Label htmlFor="mensagem-teste">Mensagem</Label>
+            <Input
+              id="mensagem-teste"
+              value={mensagemTeste}
+              onChange={(e) => setMensagemTeste(e.target.value)}
+              placeholder="Digite sua mensagem de teste"
+            />
+          </div>
+          <Button 
+            onClick={handleEnviarTeste} 
+            disabled={sendingMessage || !telefone || !mensagemTeste}
+          >
+            {sendingMessage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Enviar
           </Button>
+          
+          {messageError && (
+            <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm font-medium text-destructive mb-2">Erro ao enviar mensagem:</p>
+              <pre className="text-xs text-destructive whitespace-pre-wrap font-mono overflow-auto max-h-40">
+                {messageError}
+              </pre>
+            </div>
+          )}
+
+          {messageSuccess && (
+            <div className="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-md">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Mensagem enviada com sucesso!</p>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
