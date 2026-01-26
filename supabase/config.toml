@@ -2,3 +2,6 @@ project_id = "jivkniqvqfxrqqoekwbu"
 
 [functions.subscribe-waba]
 verify_jwt = false
+
+[functions.register-phone-waba]
+verify_jwt = false
