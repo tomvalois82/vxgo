@@ -26,6 +26,7 @@ import PoliticaPrivacidade from "@/pages/PoliticaPrivacidade";
 import TermosCondicoes from "@/pages/TermosCondicoes";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireAdmin from "@/components/auth/RequireAdmin";
+import Canva from "@/pages/Canva";
 
 // Import React Query components
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -56,6 +57,7 @@ const App = () => (
                   <Route path="car/:id" element={<CarDetails />} />
                   <Route path="atendimentos" element={<Atendimentos />} />
                   <Route path="followup" element={<Followup />} />
+                  <Route path="canva" element={<Canva />} />
                   <Route path="connections" element={<Connections />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="profile" element={<Profile />} />
