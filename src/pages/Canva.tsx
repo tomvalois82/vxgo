@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Upload, Download, ZoomIn, ZoomOut, RotateCcw, Car,
-  Check, ChevronLeft, ChevronRight, X, PackageOpen,
+  Upload, Download, RotateCcw, Car,
+  Check, ChevronLeft, ChevronRight, X, PackageOpen, RotateCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ type PageState = {
   photoUrl: string;
   imgScale: number;
   imgPos: { x: number; y: number };
+  imgRotation: number; // degrees
   photoImg: HTMLImageElement | null;
 };
 
@@ -38,6 +39,13 @@ type StockVehicle = {
   valor: string | null;
 };
 
+type HandleType =
+  | 'move'
+  | 'resize-nw' | 'resize-n' | 'resize-ne'
+  | 'resize-e'  | 'resize-se' | 'resize-s'
+  | 'resize-sw' | 'resize-w'
+  | 'rotate';
+
 // ── Constants ──────────────────────────────────────────────────────────────────
 const CANVAS_SIZES: CanvasSize[] = [
   { label: 'Feed Retrato', subtitle: 'Posts no Feed', width: 1080, height: 1440, ratio: '3:4', icon: '📸' },
@@ -49,6 +57,9 @@ const STEPS = ['Tamanho', 'Moldura', 'Fotos', 'Editor'];
 
 const PREVIEW_MAX_W = 380;
 const PREVIEW_MAX_H = 520;
+
+// Handle size in px (screen)
+const H = 10;
 
 function getPreviewDimensions(width: number, height: number) {
   const scaleW = PREVIEW_MAX_W / width;
@@ -71,6 +82,31 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+function degToRad(deg: number) { return (deg * Math.PI) / 180; }
+
+// Get bounding box corners of a rotated rect (in canvas/preview space)
+function getRotatedCorners(
+  cx: number, cy: number, // center in preview px
+  w: number, h: number,   // dimensions in preview px
+  angleDeg: number
+) {
+  const r = degToRad(angleDeg);
+  const cos = Math.cos(r);
+  const sin = Math.sin(r);
+  const hw = w / 2;
+  const hh = h / 2;
+  const corners = [
+    [-hw, -hh],
+    [ hw, -hh],
+    [ hw,  hh],
+    [-hw,  hh],
+  ];
+  return corners.map(([lx, ly]) => ({
+    x: cx + lx * cos - ly * sin,
+    y: cy + lx * sin + ly * cos,
+  }));
+}
+
 // ── Page Canvas Component ──────────────────────────────────────────────────────
 type PageCanvasProps = {
   page: PageState;
@@ -84,76 +120,241 @@ type PageCanvasProps = {
 
 const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange, onRemove, index, total }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dragRef = useRef({ isDragging: false, startX: 0, startY: 0, imgX: 0, imgY: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [selected, setSelected] = useState(false);
 
-  const { w, h, scale } = getPreviewDimensions(size.width, size.height);
+  const { w: previewW, h: previewH, scale } = getPreviewDimensions(size.width, size.height);
 
+  // Derived preview-space values
+  const imgW = page.photoImg ? page.photoImg.naturalWidth * page.imgScale * scale : 0;
+  const imgH = page.photoImg ? page.photoImg.naturalHeight * page.imgScale * scale : 0;
+  const imgX = page.imgPos.x * scale; // top-left in preview px
+  const imgY = page.imgPos.y * scale;
+  const cx = imgX + imgW / 2; // center in preview px
+  const cy = imgY + imgH / 2;
+
+  // ── Draw canvas ─────────────────────────────────────────────────────────────
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.width = w;
-    canvas.height = h;
+    canvas.width = previewW;
+    canvas.height = previewH;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, previewW, previewH);
     ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(0, 0, previewW, previewH);
 
     if (page.photoImg) {
-      const img = page.photoImg;
-      ctx.drawImage(
-        img,
-        page.imgPos.x * scale,
-        page.imgPos.y * scale,
-        img.naturalWidth * page.imgScale * scale,
-        img.naturalHeight * page.imgScale * scale,
-      );
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(degToRad(page.imgRotation));
+      ctx.drawImage(page.photoImg, -imgW / 2, -imgH / 2, imgW, imgH);
+      ctx.restore();
     }
 
     if (frameImg) {
-      ctx.drawImage(frameImg, 0, 0, w, h);
+      ctx.drawImage(frameImg, 0, 0, previewW, previewH);
     }
-  }, [page.photoImg, page.imgPos, page.imgScale, frameImg, w, h, scale]);
+  }, [page.photoImg, page.imgPos, page.imgScale, page.imgRotation, frameImg, previewW, previewH, cx, cy, imgW, imgH]);
 
   useEffect(() => { draw(); }, [draw]);
 
-  const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.setPointerCapture(e.pointerId);
-    const rect = canvas.getBoundingClientRect();
-    dragRef.current = {
-      isDragging: true,
-      startX: e.clientX - rect.left,
-      startY: e.clientY - rect.top,
-      imgX: page.imgPos.x,
-      imgY: page.imgPos.y,
+  // ── Interaction state ────────────────────────────────────────────────────────
+  const interactRef = useRef<{
+    active: boolean;
+    handle: HandleType;
+    startX: number;
+    startY: number;
+    origPos: { x: number; y: number };
+    origScale: number;
+    origRot: number;
+    origW: number;
+    origH: number;
+  } | null>(null);
+
+  const getCursor = (handle: HandleType): string => {
+    const cursors: Record<HandleType, string> = {
+      'move': 'move',
+      'resize-nw': 'nwse-resize',
+      'resize-n': 'ns-resize',
+      'resize-ne': 'nesw-resize',
+      'resize-e': 'ew-resize',
+      'resize-se': 'nwse-resize',
+      'resize-s': 'ns-resize',
+      'resize-sw': 'nesw-resize',
+      'resize-w': 'ew-resize',
+      'rotate': 'crosshair',
+    };
+    return cursors[handle] || 'default';
+  };
+
+  const onHandlePointerDown = (e: React.PointerEvent, handle: HandleType) => {
+    e.stopPropagation();
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    setSelected(true);
+    interactRef.current = {
+      active: true,
+      handle,
+      startX: e.clientX,
+      startY: e.clientY,
+      origPos: { ...page.imgPos },
+      origScale: page.imgScale,
+      origRot: page.imgRotation,
+      origW: imgW,
+      origH: imgH,
     };
   };
 
-  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!dragRef.current.isDragging) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const dx = (e.clientX - rect.left - dragRef.current.startX) / scale;
-    const dy = (e.clientY - rect.top - dragRef.current.startY) / scale;
-    onChange({ imgPos: { x: dragRef.current.imgX + dx, y: dragRef.current.imgY + dy } });
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    const ref = interactRef.current;
+    if (!ref || !ref.active || !page.photoImg) return;
+
+    const dx = e.clientX - ref.startX; // screen px delta
+    const dy = e.clientY - ref.startY;
+
+    if (ref.handle === 'move') {
+      onChange({
+        imgPos: {
+          x: ref.origPos.x + dx / scale,
+          y: ref.origPos.y + dy / scale,
+        },
+      });
+      return;
+    }
+
+    if (ref.handle === 'rotate') {
+      // Angle from center to current pointer vs start pointer
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const originX = rect.left + cx;
+      const originY = rect.top + cy;
+      const startAngle = Math.atan2(ref.startY - originY, ref.startX - originX);
+      const currentAngle = Math.atan2(e.clientY - originY, e.clientX - originX);
+      const deltaDeg = ((currentAngle - startAngle) * 180) / Math.PI;
+      onChange({ imgRotation: ref.origRot + deltaDeg });
+      return;
+    }
+
+    // Resize handles — work in the image's local (rotated) coordinate system
+    const r = degToRad(ref.origRot);
+    const cos = Math.cos(r);
+    const sin = Math.sin(r);
+    // Project delta onto image's local axes
+    const localDx = dx * cos + dy * sin;
+    const localDy = -dx * sin + dy * cos;
+
+    const origNatW = page.photoImg.naturalWidth;
+    const origNatH = page.photoImg.naturalHeight;
+    const origS = ref.origScale;
+
+    let newScale = origS;
+    let newPosX = ref.origPos.x;
+    let newPosY = ref.origPos.y;
+
+    const MIN_SCALE = 0.01;
+
+    switch (ref.handle) {
+      // ── Corner handles (proportional) ───────────────────────────────────────
+      case 'resize-se': {
+        // SE: drag right/down enlarges; proportional by avg
+        const ds = (localDx / ref.origW + localDy / ref.origH) / 2;
+        newScale = Math.max(MIN_SCALE, origS + ds * origS);
+        // top-left corner stays fixed → adjust pos so center shifts correctly
+        const dW = (newScale - origS) * origNatW;
+        const dH = (newScale - origS) * origNatH;
+        newPosX = ref.origPos.x - dW / 2 * (1 / scale);
+        newPosY = ref.origPos.y - dH / 2 * (1 / scale);
+        // Actually SE: top-left fixed, so pos unchanged
+        newPosX = ref.origPos.x;
+        newPosY = ref.origPos.y;
+        break;
+      }
+      case 'resize-nw': {
+        const ds = (-localDx / ref.origW + -localDy / ref.origH) / 2;
+        newScale = Math.max(MIN_SCALE, origS + ds * origS);
+        // NW: bottom-right corner fixed
+        const dW = (newScale - origS) * origNatW * scale;
+        const dH = (newScale - origS) * origNatH * scale;
+        // SE corner in local = (+origW/2, +origH/2) from center
+        // After scale change, new center shifts to keep SE fixed
+        newPosX = ref.origPos.x - dW / scale;
+        newPosY = ref.origPos.y - dH / scale;
+        break;
+      }
+      case 'resize-ne': {
+        const ds = (localDx / ref.origW + -localDy / ref.origH) / 2;
+        newScale = Math.max(MIN_SCALE, origS + ds * origS);
+        const dH = (newScale - origS) * origNatH * scale;
+        newPosX = ref.origPos.x;
+        newPosY = ref.origPos.y - dH / scale;
+        break;
+      }
+      case 'resize-sw': {
+        const ds = (-localDx / ref.origW + localDy / ref.origH) / 2;
+        newScale = Math.max(MIN_SCALE, origS + ds * origS);
+        const dW = (newScale - origS) * origNatW * scale;
+        newPosX = ref.origPos.x - dW / scale;
+        newPosY = ref.origPos.y;
+        break;
+      }
+      // ── Edge handles (non-proportional width/height) ─────────────────────────
+      case 'resize-e': {
+        // Change width only → scale to maintain height, adjust width independently
+        // We treat this as uniform scale based on width change
+        const ds = localDx / ref.origW;
+        newScale = Math.max(MIN_SCALE, origS + ds * origS);
+        newPosX = ref.origPos.x;
+        newPosY = ref.origPos.y + ((origS - newScale) * origNatH * scale) / (2 * scale);
+        break;
+      }
+      case 'resize-w': {
+        const ds = -localDx / ref.origW;
+        newScale = Math.max(MIN_SCALE, origS + ds * origS);
+        const dW = (newScale - origS) * origNatW * scale;
+        newPosX = ref.origPos.x - dW / scale;
+        newPosY = ref.origPos.y + ((origS - newScale) * origNatH * scale) / (2 * scale);
+        break;
+      }
+      case 'resize-s': {
+        const ds = localDy / ref.origH;
+        newScale = Math.max(MIN_SCALE, origS + ds * origS);
+        newPosX = ref.origPos.x + ((origS - newScale) * origNatW * scale) / (2 * scale);
+        newPosY = ref.origPos.y;
+        break;
+      }
+      case 'resize-n': {
+        const ds = -localDy / ref.origH;
+        newScale = Math.max(MIN_SCALE, origS + ds * origS);
+        const dH = (newScale - origS) * origNatH * scale;
+        newPosX = ref.origPos.x + ((origS - newScale) * origNatW * scale) / (2 * scale);
+        newPosY = ref.origPos.y - dH / scale;
+        break;
+      }
+    }
+
+    onChange({ imgScale: newScale, imgPos: { x: newPosX, y: newPosY } });
+  }, [page, scale, cx, cy, onChange]);
+
+  const onPointerUp = () => {
+    if (interactRef.current) interactRef.current.active = false;
   };
 
-  const onPointerUp = () => { dragRef.current.isDragging = false; };
-
+  // ── Center photo ─────────────────────────────────────────────────────────────
   const centerPhoto = () => {
     if (!page.photoImg) return;
     const img = page.photoImg;
     const s = Math.max(size.width / img.naturalWidth, size.height / img.naturalHeight);
     onChange({
       imgScale: s,
+      imgRotation: 0,
       imgPos: { x: (size.width - img.naturalWidth * s) / 2, y: (size.height - img.naturalHeight * s) / 2 },
     });
   };
 
+  // ── Download ─────────────────────────────────────────────────────────────────
   const downloadPage = (format: 'png' | 'jpg') => {
     if (!page.photoImg) return;
     const offscreen = document.createElement('canvas');
@@ -164,7 +365,15 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, size.width, size.height);
     const img = page.photoImg;
-    ctx.drawImage(img, page.imgPos.x, page.imgPos.y, img.naturalWidth * page.imgScale, img.naturalHeight * page.imgScale);
+    const fullW = img.naturalWidth * page.imgScale;
+    const fullH = img.naturalHeight * page.imgScale;
+    const fcx = page.imgPos.x + fullW / 2;
+    const fcy = page.imgPos.y + fullH / 2;
+    ctx.save();
+    ctx.translate(fcx, fcy);
+    ctx.rotate(degToRad(page.imgRotation));
+    ctx.drawImage(img, -fullW / 2, -fullH / 2, fullW, fullH);
+    ctx.restore();
     if (frameImg) ctx.drawImage(frameImg, 0, 0, size.width, size.height);
     const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
     const dataUrl = offscreen.toDataURL(mimeType, 0.92);
@@ -173,6 +382,41 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
     a.download = `pagina_${index + 1}_${size.label.replace(/\s/g, '_')}.${format}`;
     a.click();
   };
+
+  // ── Handle positions (in preview px, relative to container) ──────────────────
+  // We place handles on corners and edges of the (rotated) bounding box
+  const corners = page.photoImg
+    ? getRotatedCorners(cx, cy, imgW, imgH, page.imgRotation)
+    : [];
+
+  // Midpoints of edges
+  const midpoints = corners.length === 4 ? [
+    { x: (corners[0].x + corners[1].x) / 2, y: (corners[0].y + corners[1].y) / 2, handle: 'resize-n' as HandleType },
+    { x: (corners[1].x + corners[2].x) / 2, y: (corners[1].y + corners[2].y) / 2, handle: 'resize-e' as HandleType },
+    { x: (corners[2].x + corners[3].x) / 2, y: (corners[2].y + corners[3].y) / 2, handle: 'resize-s' as HandleType },
+    { x: (corners[3].x + corners[0].x) / 2, y: (corners[3].y + corners[0].y) / 2, handle: 'resize-w' as HandleType },
+  ] : [];
+
+  const cornerHandles: { x: number; y: number; handle: HandleType }[] = corners.length === 4 ? [
+    { ...corners[0], handle: 'resize-nw' as HandleType },
+    { ...corners[1], handle: 'resize-ne' as HandleType },
+    { ...corners[2], handle: 'resize-se' as HandleType },
+    { ...corners[3], handle: 'resize-sw' as HandleType },
+  ] : [];
+
+  // Rotate handle: above the top-center midpoint
+  const ROTATE_OFFSET = 28;
+  const rotateHandle = corners.length === 4 ? (() => {
+    const topMid = { x: (corners[0].x + corners[1].x) / 2, y: (corners[0].y + corners[1].y) / 2 };
+    const r = degToRad(page.imgRotation);
+    return {
+      x: topMid.x - Math.sin(r) * ROTATE_OFFSET,
+      y: topMid.y - Math.cos(r) * ROTATE_OFFSET,
+    };
+  })() : null;
+
+  // Outline box using corners as SVG polygon
+  const polygonPoints = corners.map(c => `${c.x},${c.y}`).join(' ');
 
   return (
     <div className="border border-border rounded-2xl bg-card overflow-hidden">
@@ -194,37 +438,156 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
       </div>
 
       <div className="flex flex-col lg:flex-row gap-0">
-        {/* Canvas area */}
+        {/* Canvas + overlay area */}
         <div className="flex-1 flex flex-col items-center gap-3 p-4">
-          <div className="relative select-none">
+          <div
+            ref={containerRef}
+            className="relative select-none"
+            style={{ width: previewW, height: previewH }}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerLeave={onPointerUp}
+          >
+            {/* Base canvas */}
             <canvas
               ref={canvasRef}
-              style={{ width: w, height: h, cursor: 'grab', borderRadius: 8, border: '1px solid hsl(var(--border))', display: 'block' }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerLeave={onPointerUp}
+              style={{ width: previewW, height: previewH, display: 'block', borderRadius: 8, border: '1px solid hsl(var(--border))' }}
+              onClick={() => setSelected(true)}
             />
+
+            {/* Deselect overlay (click outside image) */}
+            {selected && (
+              <div
+                className="absolute inset-0"
+                style={{ zIndex: 1 }}
+                onClick={() => setSelected(false)}
+              />
+            )}
+
+            {/* Move/drag layer over the rotated image bounding box */}
+            {page.photoImg && corners.length === 4 && (
+              <svg
+                className="absolute inset-0 overflow-visible"
+                style={{ zIndex: 2, width: previewW, height: previewH, pointerEvents: selected ? 'none' : 'auto' }}
+                onClick={() => setSelected(true)}
+              >
+                {/* Invisible hit area for move */}
+                <polygon
+                  points={polygonPoints}
+                  fill="transparent"
+                  stroke="transparent"
+                  style={{ cursor: 'move', pointerEvents: 'all' }}
+                  onPointerDown={(e) => { setSelected(true); onHandlePointerDown(e as any, 'move'); }}
+                />
+              </svg>
+            )}
+
+            {/* SVG handles overlay — only when selected */}
+            {selected && page.photoImg && corners.length === 4 && (
+              <svg
+                className="absolute inset-0 overflow-visible"
+                style={{ zIndex: 3, width: previewW, height: previewH, pointerEvents: 'none' }}
+              >
+                {/* Dashed outline */}
+                <polygon
+                  points={polygonPoints}
+                  fill="none"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="1.5"
+                  strokeDasharray="5 3"
+                  style={{ pointerEvents: 'none' }}
+                />
+
+                {/* Rotate stem line */}
+                {rotateHandle && (
+                  <line
+                    x1={(corners[0].x + corners[1].x) / 2}
+                    y1={(corners[0].y + corners[1].y) / 2}
+                    x2={rotateHandle.x}
+                    y2={rotateHandle.y}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="1.5"
+                    style={{ pointerEvents: 'none' }}
+                  />
+                )}
+
+                {/* Rotate handle */}
+                {rotateHandle && (
+                  <circle
+                    cx={rotateHandle.x}
+                    cy={rotateHandle.y}
+                    r={H}
+                    fill="hsl(var(--primary))"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    style={{ cursor: 'crosshair', pointerEvents: 'all' }}
+                    onPointerDown={(e) => onHandlePointerDown(e as any, 'rotate')}
+                  />
+                )}
+
+                {/* Edge midpoint handles (square, white fill) */}
+                {midpoints.map(({ x, y, handle }) => (
+                  <rect
+                    key={handle}
+                    x={x - H / 2}
+                    y={y - H / 2}
+                    width={H}
+                    height={H}
+                    rx={2}
+                    fill="white"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="1.5"
+                    style={{ cursor: getCursor(handle), pointerEvents: 'all' }}
+                    onPointerDown={(e) => onHandlePointerDown(e as any, handle)}
+                  />
+                ))}
+
+                {/* Corner handles (larger squares) */}
+                {cornerHandles.map(({ x, y, handle }) => (
+                  <rect
+                    key={handle}
+                    x={x - (H + 2) / 2}
+                    y={y - (H + 2) / 2}
+                    width={H + 2}
+                    height={H + 2}
+                    rx={2}
+                    fill="hsl(var(--primary))"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    style={{ cursor: getCursor(handle), pointerEvents: 'all' }}
+                    onPointerDown={(e) => onHandlePointerDown(e as any, handle)}
+                  />
+                ))}
+              </svg>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground">Arraste para reposicionar • Moldura na frente</p>
+          <p className="text-xs text-muted-foreground">
+            {selected ? 'Arraste • Redimensione pelas bordas • Rotacione pelo círculo' : 'Clique na imagem para selecionar'}
+          </p>
         </div>
 
         {/* Controls sidebar */}
         <div className="flex flex-col gap-4 p-4 lg:w-52 border-t lg:border-t-0 lg:border-l border-border">
-          {/* Zoom */}
+          {/* Scale display */}
           <div>
-            <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">Zoom</p>
+            <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Escala</p>
+            <p className="text-sm text-muted-foreground tabular-nums">{Math.round(page.imgScale * 100)}%</p>
+          </div>
+
+          {/* Rotation */}
+          <div>
+            <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">Rotação</p>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" className="h-8 w-8"
-                onClick={() => onChange({ imgScale: Math.max(0.05, page.imgScale - 0.05) })}>
-                <ZoomOut size={13} />
+                onClick={() => onChange({ imgRotation: page.imgRotation - 15 })}>
+                <RotateCcw size={13} />
               </Button>
               <span className="text-sm text-foreground flex-1 text-center tabular-nums">
-                {Math.round(page.imgScale * 100)}%
+                {Math.round(page.imgRotation)}°
               </span>
               <Button variant="outline" size="icon" className="h-8 w-8"
-                onClick={() => onChange({ imgScale: Math.min(8, page.imgScale + 0.05) })}>
-                <ZoomIn size={13} />
+                onClick={() => onChange({ imgRotation: page.imgRotation + 15 })}>
+                <RotateCw size={13} />
               </Button>
             </div>
           </div>
@@ -271,7 +634,15 @@ async function renderPageToBlob(
     ctx.fillRect(0, 0, size.width, size.height);
     if (page.photoImg) {
       const img = page.photoImg;
-      ctx.drawImage(img, page.imgPos.x, page.imgPos.y, img.naturalWidth * page.imgScale, img.naturalHeight * page.imgScale);
+      const fullW = img.naturalWidth * page.imgScale;
+      const fullH = img.naturalHeight * page.imgScale;
+      const fcx = page.imgPos.x + fullW / 2;
+      const fcy = page.imgPos.y + fullH / 2;
+      ctx.save();
+      ctx.translate(fcx, fcy);
+      ctx.rotate(degToRad(page.imgRotation));
+      ctx.drawImage(img, -fullW / 2, -fullH / 2, fullW, fullH);
+      ctx.restore();
     }
     if (frameImg) ctx.drawImage(frameImg, 0, 0, size.width, size.height);
     const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
@@ -349,6 +720,7 @@ const Canva: React.FC = () => {
           photoUrl: url,
           photoImg: img,
           imgScale: s,
+          imgRotation: 0,
           imgPos: selectedSize
             ? { x: (selectedSize.width - img.naturalWidth * s) / 2, y: (selectedSize.height - img.naturalHeight * s) / 2 }
             : { x: 0, y: 0 },
@@ -367,7 +739,6 @@ const Canva: React.FC = () => {
     const urls = Array.from(files).map(f => URL.createObjectURL(f));
     await addPhotoUrls(urls);
     setShowStock(false);
-    // Reset input so same files can be re-selected
     e.target.value = '';
   };
 
@@ -409,7 +780,7 @@ const Canva: React.FC = () => {
       a.href = URL.createObjectURL(zipBlob);
       a.download = `criativos_${selectedSize.label.replace(/\s/g, '_')}.zip`;
       a.click();
-    } catch (err) {
+    } catch {
       toast({ title: 'Erro ao gerar ZIP', variant: 'destructive' });
     } finally {
       setDownloadingZip(false);
@@ -643,11 +1014,11 @@ const Canva: React.FC = () => {
                 <p className="text-xs text-muted-foreground">{pages.length} imagens compactadas em .zip</p>
               </div>
               <div className="flex gap-2 flex-shrink-0">
-                <Button size="sm" loading={downloadingZip} onClick={() => downloadAllZip('png')} className="gap-2">
+                <Button size="sm" onClick={() => downloadAllZip('png')} className="gap-2" disabled={downloadingZip}>
                   <Download size={12} />
                   ZIP PNG
                 </Button>
-                <Button size="sm" variant="outline" loading={downloadingZip} onClick={() => downloadAllZip('jpg')} className="gap-2">
+                <Button size="sm" variant="outline" onClick={() => downloadAllZip('jpg')} className="gap-2" disabled={downloadingZip}>
                   <Download size={12} />
                   ZIP JPG
                 </Button>
