@@ -1417,28 +1417,37 @@ export type Database = {
           ativo: boolean
           categoria: string
           classificacao: string | null
+          codigo_estruturado: string | null
           dre: boolean
           id: string
           id_categoria_pai: string | null
+          id_plano_contas: string | null
           operacao: string
+          tipo_conta: string | null
         }
         Insert: {
           ativo?: boolean
           categoria: string
           classificacao?: string | null
+          codigo_estruturado?: string | null
           dre?: boolean
           id?: string
           id_categoria_pai?: string | null
+          id_plano_contas?: string | null
           operacao: string
+          tipo_conta?: string | null
         }
         Update: {
           ativo?: boolean
           categoria?: string
           classificacao?: string | null
+          codigo_estruturado?: string | null
           dre?: boolean
           id?: string
           id_categoria_pai?: string | null
+          id_plano_contas?: string | null
           operacao?: string
+          tipo_conta?: string | null
         }
         Relationships: [
           {
@@ -1446,6 +1455,13 @@ export type Database = {
             columns: ["id_categoria_pai"]
             isOneToOne: false
             referencedRelation: "vx_fin_categoria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vx_fin_categoria_id_plano_contas_fkey"
+            columns: ["id_plano_contas"]
+            isOneToOne: false
+            referencedRelation: "vx_fin_plano_contas"
             referencedColumns: ["id"]
           },
         ]
@@ -1656,6 +1672,54 @@ export type Database = {
           },
         ]
       }
+      vx_fin_plano_contas: {
+        Row: {
+          codigo_estruturado: string
+          created_at: string | null
+          id: string
+          id_empresa: string | null
+          id_pai: string | null
+          natureza: string | null
+          nome_conta: string
+          tipo_conta: string | null
+        }
+        Insert: {
+          codigo_estruturado: string
+          created_at?: string | null
+          id?: string
+          id_empresa?: string | null
+          id_pai?: string | null
+          natureza?: string | null
+          nome_conta: string
+          tipo_conta?: string | null
+        }
+        Update: {
+          codigo_estruturado?: string
+          created_at?: string | null
+          id?: string
+          id_empresa?: string | null
+          id_pai?: string | null
+          natureza?: string | null
+          nome_conta?: string
+          tipo_conta?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vx_fin_plano_contas_id_empresa_fkey"
+            columns: ["id_empresa"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vx_fin_plano_contas_id_pai_fkey"
+            columns: ["id_pai"]
+            isOneToOne: false
+            referencedRelation: "vx_fin_plano_contas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vx_financeiras: {
         Row: {
           ativa: boolean
@@ -1861,9 +1925,11 @@ export type Database = {
           complemento: string | null
           cpf_cnpj: string | null
           criado_em: string
+          data_nascimento: string | null
           descricao: string | null
           eh_cliente: boolean
           eh_colaborador: boolean
+          eh_despachante: boolean | null
           eh_fornecedor: boolean
           eh_investidor: boolean
           email: string | null
@@ -1876,6 +1942,7 @@ export type Database = {
           numero: string | null
           padrao: boolean
           ponto_referencia: string | null
+          rg: string | null
           telefone: string | null
           tipo_cadastro: string | null
         }
@@ -1886,9 +1953,11 @@ export type Database = {
           complemento?: string | null
           cpf_cnpj?: string | null
           criado_em?: string
+          data_nascimento?: string | null
           descricao?: string | null
           eh_cliente?: boolean
           eh_colaborador?: boolean
+          eh_despachante?: boolean | null
           eh_fornecedor?: boolean
           eh_investidor?: boolean
           email?: string | null
@@ -1901,6 +1970,7 @@ export type Database = {
           numero?: string | null
           padrao?: boolean
           ponto_referencia?: string | null
+          rg?: string | null
           telefone?: string | null
           tipo_cadastro?: string | null
         }
@@ -1911,9 +1981,11 @@ export type Database = {
           complemento?: string | null
           cpf_cnpj?: string | null
           criado_em?: string
+          data_nascimento?: string | null
           descricao?: string | null
           eh_cliente?: boolean
           eh_colaborador?: boolean
+          eh_despachante?: boolean | null
           eh_fornecedor?: boolean
           eh_investidor?: boolean
           email?: string | null
@@ -1926,6 +1998,7 @@ export type Database = {
           numero?: string | null
           padrao?: boolean
           ponto_referencia?: string | null
+          rg?: string | null
           telefone?: string | null
           tipo_cadastro?: string | null
         }
