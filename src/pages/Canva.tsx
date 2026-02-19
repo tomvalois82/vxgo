@@ -1,11 +1,14 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Upload, Download, Car,
-  Check, ChevronLeft, ChevronRight, X, PackageOpen,
+  Check, ChevronLeft, ChevronRight, X,
   Type, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Plus, Trash2,
-  ChevronDown, ChevronUp, Image, Link, Unlink,
+  ChevronDown, ChevronUp, Image, Link, Unlink, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -61,7 +64,8 @@ type PageState = {
   imageLayers: ImageLayer[];
 };
 
-type StockVehicle = { id: number; fabricante: string | null; modelo: string | null; ano: string | null; fotos: string[] | null; foto: string | null; valor: string | null };
+type StockVehicle  = { id: number; fabricante: string | null; modelo: string | null; ano: string | null; fotos: string[] | null; foto: string | null; valor: string | null };
+type FrameRecord   = { id: number; titulo: string | null; url_moldura: string | null; medida: string | null };
 
 type HandleType =
   | 'move'
@@ -106,6 +110,17 @@ function getPreviewDimensions(width: number, height: number) {
 }
 
 function uid() { return Math.random().toString(36).slice(2); }
+
+// Maps canvas ratio to the medida stored in canva_moldura
+function ratioToMedida(ratio: string): string {
+  const map: Record<string, string> = {
+    '3:4':  '1080x1440',
+    '1:1':  '1080x1080',
+    '9:16': '1080x1920',
+    '4:3':  '864x648',
+  };
+  return map[ratio] ?? ratio;
+}
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -1287,6 +1302,16 @@ const Canva: React.FC = () => {
   const [frameImg,  setFrameImg]  = useState<HTMLImageElement | null>(null);
   const frameInputRef = useRef<HTMLInputElement>(null);
 
+  // Supabase frame gallery state
+  const [frames,        setFrames]        = useState<FrameRecord[]>([]);
+  const [loadingFrames, setLoadingFrames] = useState(false);
+  const [uploadingFrame, setUploadingFrame] = useState(false);
+
+  // Dialog for new frame title
+  const [frameTitleDialog, setFrameTitleDialog] = useState<{
+    open: boolean; titulo: string; pendingFile: File | null; pendingUrl: string | null; medida: string;
+  }>({ open: false, titulo: '', pendingFile: null, pendingUrl: null, medida: '' });
+
   const [pages,          setPages]          = useState<PageState[]>([]);
   const photoInputRef  = useRef<HTMLInputElement>(null);
 
@@ -1294,6 +1319,92 @@ const Canva: React.FC = () => {
   const [loadingStock,  setLoadingStock]  = useState(false);
   const [showStock,     setShowStock]     = useState(false);
   const [downloadingZip, setDownloadingZip] = useState(false);
+
+  // ── Fetch frames from Supabase filtered by current size ──────────────────────
+  const fetchFrames = useCallback(async (size: CanvasSize) => {
+    setLoadingFrames(true);
+    try {
+      const medida = ratioToMedida(size.ratio);
+      const { data, error } = await supabase
+        .from('canva_moldura')
+        .select('id, titulo, url_moldura, medida')
+        .eq('medida', medida)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setFrames((data as FrameRecord[]) || []);
+    } catch {
+      toast({ title: 'Erro ao carregar molduras', variant: 'destructive' });
+    } finally {
+      setLoadingFrames(false);
+    }
+  }, []);
+
+  // Load frames when entering step 1
+  useEffect(() => {
+    if (step === 1 && selectedSize) fetchFrames(selectedSize);
+  }, [step, selectedSize, fetchFrames]);
+
+  // ── Frame file input → detect size, open title dialog ─────────────────────
+  const handleFrameFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedSize) return;
+    const localUrl = URL.createObjectURL(file);
+    const medida   = ratioToMedida(selectedSize.ratio);
+    setFrameTitleDialog({ open: true, titulo: '', pendingFile: file, pendingUrl: localUrl, medida });
+    e.target.value = '';
+  };
+
+  // ── Confirm dialog → upload to storage → insert row ────────────────────────
+  const handleFrameTitleConfirm = async () => {
+    const { pendingFile, pendingUrl, titulo, medida } = frameTitleDialog;
+    if (!pendingFile || !pendingUrl) return;
+    setUploadingFrame(true);
+    try {
+      const fileName = `molduras/${Date.now()}_${pendingFile.name.replace(/\s+/g, '_')}`;
+      const { error: storageError } = await supabase.storage
+        .from('canva-molduras')
+        .upload(fileName, pendingFile, { upsert: false });
+
+      let publicUrl = pendingUrl; // fallback to local preview
+      if (!storageError) {
+        const { data } = supabase.storage.from('canva-molduras').getPublicUrl(fileName);
+        publicUrl = data.publicUrl;
+      }
+
+      const { error: dbError } = await supabase
+        .from('canva_moldura')
+        .insert({ titulo: titulo || null, url_moldura: publicUrl, medida });
+
+      if (dbError) throw dbError;
+
+      toast({ title: 'Moldura salva com sucesso!' });
+
+      // Use the frame immediately
+      setFrameUrl(pendingUrl);
+      setFrameFile(pendingFile);
+
+      // Close dialog and reload gallery
+      setFrameTitleDialog({ open: false, titulo: '', pendingFile: null, pendingUrl: null, medida: '' });
+      if (selectedSize) fetchFrames(selectedSize);
+    } catch (err: any) {
+      toast({ title: 'Erro ao salvar moldura', description: err?.message, variant: 'destructive' });
+    } finally {
+      setUploadingFrame(false);
+    }
+  };
+
+  const handleFrameTitleCancel = () => {
+    const { pendingUrl } = frameTitleDialog;
+    if (pendingUrl) URL.revokeObjectURL(pendingUrl);
+    setFrameTitleDialog({ open: false, titulo: '', pendingFile: null, pendingUrl: null, medida: '' });
+  };
+
+  // ── Select an existing frame from gallery ────────────────────────────────────
+  const handleSelectSavedFrame = async (frame: FrameRecord) => {
+    if (!frame.url_moldura) return;
+    setFrameUrl(frame.url_moldura);
+    setFrameFile(null);
+  };
 
   const fetchStockVehicles = useCallback(async () => {
     if (!profile?.tbEstoque) return;
@@ -1359,13 +1470,6 @@ const Canva: React.FC = () => {
   };
 
   const removePage = (id: string) => { setPages(prev => prev.filter(p => p.id !== id)); };
-
-  const handleFrameUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setFrameFile(file);
-    setFrameUrl(URL.createObjectURL(file));
-  };
 
   const downloadAllZip = async (format: 'png' | 'jpg') => {
     if (!selectedSize || pages.length === 0) return;
@@ -1445,39 +1549,128 @@ const Canva: React.FC = () => {
         </div>
       )}
 
+      {/* Dialog: frame title */}
+      <Dialog open={frameTitleDialog.open} onOpenChange={open => { if (!open) handleFrameTitleCancel(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nomear Moldura</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {frameTitleDialog.pendingUrl && (
+              <div className="flex justify-center">
+                <div className="w-32 h-32 rounded-lg overflow-hidden border border-border"
+                  style={{ background: 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 12px 12px' }}>
+                  <img src={frameTitleDialog.pendingUrl} alt="preview" className="w-full h-full object-contain" />
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label htmlFor="frame-title">Título da moldura</Label>
+              <Input
+                id="frame-title"
+                placeholder="Ex: Moldura Vermelha Feed"
+                value={frameTitleDialog.titulo}
+                onChange={e => setFrameTitleDialog(d => ({ ...d, titulo: e.target.value }))}
+                onKeyDown={e => { if (e.key === 'Enter') handleFrameTitleConfirm(); }}
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">Medida: {frameTitleDialog.medida}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleFrameTitleCancel} disabled={uploadingFrame}>Cancelar</Button>
+            <Button onClick={handleFrameTitleConfirm} disabled={uploadingFrame} className="gap-2">
+              {uploadingFrame && <Loader2 size={14} className="animate-spin" />}
+              Salvar Moldura
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Step 1: Moldura */}
       {step === 1 && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <h2 className="text-lg font-semibold text-foreground">Escolha a Moldura</h2>
-          <p className="text-sm text-muted-foreground">Faça upload de um arquivo PNG com transparência. A moldura será usada em todas as páginas.</p>
-          <div className="flex flex-col sm:flex-row gap-6 items-start">
+
+          {/* Currently selected frame */}
+          {frameUrl && (
+            <div className="flex items-center gap-4 p-3 rounded-xl border border-primary bg-primary/5">
+              <div className="w-16 h-16 rounded-lg overflow-hidden border border-primary/40 flex-shrink-0"
+                style={{ background: 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 12px 12px' }}>
+                <img src={frameUrl} alt="Moldura selecionada" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">Moldura selecionada</p>
+                <p className="text-xs text-muted-foreground truncate">{frameFile?.name || frameUrl.split('/').pop()}</p>
+              </div>
+              <button onClick={() => { setFrameUrl(null); setFrameFile(null); setFrameImg(null); }}
+                className="text-destructive hover:text-destructive/80 transition-colors p-1">
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
+          {/* Upload new */}
+          <div>
             <button onClick={() => frameInputRef.current?.click()}
-              className={cn('flex flex-col items-center justify-center gap-3 w-full sm:w-56 h-44 border-2 border-dashed rounded-xl transition-colors',
-                frameUrl ? 'border-primary/60 bg-primary/5' : 'border-border bg-card hover:border-primary/40 hover:bg-primary/5')}>
-              {frameUrl ? (
-                <>
-                  <img src={frameUrl} alt="Moldura" className="max-h-28 max-w-full object-contain"
-                    style={{ background: 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 12px 12px' }} />
-                  <span className="text-xs text-primary font-medium">{frameFile?.name || 'Moldura carregada'}</span>
-                </>
-              ) : (
-                <>
-                  <Upload size={28} className="text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Clique para enviar moldura</span>
-                  <span className="text-xs text-muted-foreground">PNG com transparência</span>
-                </>
-              )}
+              className="flex items-center gap-3 px-4 py-3 border-2 border-dashed rounded-xl border-border bg-card hover:border-primary/50 hover:bg-primary/5 transition-colors">
+              {uploadingFrame
+                ? <Loader2 size={18} className="animate-spin text-primary" />
+                : <Upload size={18} className="text-muted-foreground" />
+              }
+              <span className="text-sm text-foreground">Enviar nova moldura</span>
+              <span className="text-xs text-muted-foreground">(PNG com transparência)</span>
             </button>
-            <input ref={frameInputRef} type="file" accept="image/png,image/webp" className="hidden" onChange={handleFrameUpload} />
-            {frameUrl && previewDims && (
-              <div className="space-y-2">
-                <p className="text-sm text-foreground font-medium">Pré-visualização</p>
-                <div className="relative rounded-lg overflow-hidden border border-border"
-                  style={{ width: Math.min(previewDims.w, 160), height: Math.min(previewDims.h, 160),
-                    background: 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 12px 12px' }}>
-                  <img src={frameUrl} alt="Preview moldura" className="absolute inset-0 w-full h-full object-contain" />
-                </div>
-                <button onClick={() => { setFrameUrl(null); setFrameFile(null); setFrameImg(null); }} className="text-xs text-destructive hover:underline">Remover</button>
+            <input ref={frameInputRef} type="file" accept="image/png,image/webp" className="hidden" onChange={handleFrameFileSelected} />
+          </div>
+
+          {/* Saved frames gallery */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-foreground">
+                Molduras salvas
+                {selectedSize && <span className="ml-2 text-xs font-normal text-muted-foreground">({selectedSize.label} · {ratioToMedida(selectedSize.ratio)})</span>}
+              </p>
+              {selectedSize && (
+                <button onClick={() => fetchFrames(selectedSize)} className="text-xs text-primary hover:underline">
+                  Atualizar
+                </button>
+              )}
+            </div>
+
+            {loadingFrames ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                <Loader2 size={16} className="animate-spin" />Carregando molduras...
+              </div>
+            ) : frames.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">Nenhuma moldura salva para este tamanho. Envie uma nova acima.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {frames.map(frame => (
+                  <button key={frame.id}
+                    onClick={() => handleSelectSavedFrame(frame)}
+                    className={cn(
+                      'relative group flex flex-col rounded-xl border-2 overflow-hidden transition-all text-left',
+                      frameUrl === frame.url_moldura
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-card hover:border-primary/50'
+                    )}>
+                    <div className="aspect-square w-full overflow-hidden"
+                      style={{ background: 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 10px 10px' }}>
+                      {frame.url_moldura && (
+                        <img src={frame.url_moldura} alt={frame.titulo ?? ''} className="w-full h-full object-contain" />
+                      )}
+                    </div>
+                    <div className="px-2 py-1.5">
+                      <p className="text-xs font-medium text-foreground truncate">{frame.titulo || 'Sem título'}</p>
+                    </div>
+                    {frameUrl === frame.url_moldura && (
+                      <div className="absolute top-1.5 right-1.5 bg-primary rounded-full p-0.5">
+                        <Check size={10} className="text-primary-foreground" />
+                      </div>
+                    )}
+                  </button>
+                ))}
               </div>
             )}
           </div>
