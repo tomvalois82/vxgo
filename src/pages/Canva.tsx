@@ -3,6 +3,7 @@ import {
   Upload, Download, Car,
   Check, ChevronLeft, ChevronRight, X, PackageOpen,
   Type, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Plus, Trash2,
+  ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -21,18 +22,49 @@ type CanvasSize = {
   icon: string;
 };
 
+type StrokeDash = 'solid' | 'dotted' | 'dashed' | 'dash-dot';
+
+type TextShadow = {
+  enabled: boolean;
+  color: string;
+  opacity: number;   // 0–100
+  angle: number;     // degrees
+  distance: number;  // canvas px
+  spread: number;    // blur expansion px
+  size: number;      // shadow blur px
+};
+
+type TextGlow = {
+  enabled: boolean;
+  color: string;
+  opacity: number;  // 0–100
+  spread: number;   // extra blur px
+  size: number;     // base blur size px
+};
+
+type TextStroke = {
+  enabled: boolean;
+  color: string;
+  width: number;    // canvas px
+  dash: StrokeDash;
+};
+
 type TextLayer = {
   id: string;
   text: string;
-  x: number; // in canvas px (full resolution)
+  x: number;
   y: number;
-  fontSize: number; // in canvas px
+  fontSize: number;
   fontFamily: string;
   color: string;
   bold: boolean;
   italic: boolean;
   underline: boolean;
   align: 'left' | 'center' | 'right';
+  opacity: number;     // 0–100
+  shadow: TextShadow;
+  glow: TextGlow;
+  stroke: TextStroke;
 };
 
 type PageState = {
@@ -40,7 +72,7 @@ type PageState = {
   photoUrl: string;
   imgScale: number;
   imgPos: { x: number; y: number };
-  imgRotation: number; // degrees
+  imgRotation: number;
   photoImg: HTMLImageElement | null;
   textLayers: TextLayer[];
 };
@@ -81,6 +113,13 @@ const FONT_FAMILIES = [
   'Impact', 'Courier New', 'Comic Sans MS', 'Palatino', 'Tahoma',
 ];
 
+const STROKE_DASHES: { value: StrokeDash; label: string }[] = [
+  { value: 'solid', label: 'Contínuo' },
+  { value: 'dotted', label: 'Pontilhado' },
+  { value: 'dashed', label: 'Traço' },
+  { value: 'dash-dot', label: 'Traço-Ponto' },
+];
+
 function getPreviewDimensions(width: number, height: number) {
   const scaleW = PREVIEW_MAX_W / width;
   const scaleH = PREVIEW_MAX_H / height;
@@ -117,6 +156,33 @@ function getRotatedCorners(cx: number, cy: number, w: number, h: number, angleDe
   }));
 }
 
+function hexWithOpacity(hex: string, opacity: number): string {
+  // opacity: 0–100 → 0–255
+  const alpha = Math.round((opacity / 100) * 255).toString(16).padStart(2, '0');
+  return `${hex}${alpha}`;
+}
+
+function getDashArray(dash: StrokeDash, lineWidth: number): number[] {
+  switch (dash) {
+    case 'dotted': return [lineWidth, lineWidth * 2];
+    case 'dashed': return [lineWidth * 4, lineWidth * 2];
+    case 'dash-dot': return [lineWidth * 4, lineWidth * 2, lineWidth, lineWidth * 2];
+    default: return [];
+  }
+}
+
+function defaultShadow(): TextShadow {
+  return { enabled: false, color: '#000000', opacity: 60, angle: 45, distance: 4, spread: 2, size: 8 };
+}
+
+function defaultGlow(): TextGlow {
+  return { enabled: false, color: '#ffffff', opacity: 80, spread: 4, size: 12 };
+}
+
+function defaultStroke(): TextStroke {
+  return { enabled: false, color: '#000000', width: 2, dash: 'solid' };
+}
+
 function defaultTextLayer(size: CanvasSize): TextLayer {
   return {
     id: uid(),
@@ -130,6 +196,10 @@ function defaultTextLayer(size: CanvasSize): TextLayer {
     italic: false,
     underline: false,
     align: 'center',
+    opacity: 100,
+    shadow: defaultShadow(),
+    glow: defaultGlow(),
+    stroke: defaultStroke(),
   };
 }
 
@@ -144,12 +214,68 @@ function drawTextLayers(ctx: CanvasRenderingContext2D, layers: TextLayer[], scal
     parts.push(`${fontSize}px`);
     parts.push(`"${layer.fontFamily}", sans-serif`);
     ctx.font = parts.join(' ');
-    ctx.fillStyle = layer.color;
     ctx.textAlign = layer.align;
     ctx.textBaseline = 'middle';
+    ctx.globalAlpha = (layer.opacity ?? 100) / 100;
+
     const x = layer.x * scale;
     const y = layer.y * scale;
+
+    // Glow (rendered before fill so it sits below)
+    if (layer.glow?.enabled) {
+      const g = layer.glow;
+      const glowAlpha = (g.opacity / 100) * (layer.opacity / 100);
+      ctx.save();
+      ctx.globalAlpha = glowAlpha;
+      ctx.shadowColor = g.color;
+      ctx.shadowBlur = (g.size + g.spread) * scale;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      // Draw multiple times to intensify
+      for (let i = 0; i < 3; i++) {
+        ctx.fillStyle = g.color;
+        ctx.fillText(layer.text, x, y);
+      }
+      ctx.restore();
+    }
+
+    // Drop shadow
+    if (layer.shadow?.enabled) {
+      const s = layer.shadow;
+      const rad = degToRad(s.angle);
+      ctx.shadowColor = hexWithOpacity(s.color, s.opacity);
+      ctx.shadowBlur = (s.size + s.spread) * scale;
+      ctx.shadowOffsetX = Math.cos(rad) * s.distance * scale;
+      ctx.shadowOffsetY = Math.sin(rad) * s.distance * scale;
+    } else {
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+    }
+
+    // Fill text
+    ctx.fillStyle = layer.color;
     ctx.fillText(layer.text, x, y);
+
+    // Reset shadow before stroke
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Stroke / Contorno
+    if (layer.stroke?.enabled) {
+      const st = layer.stroke;
+      ctx.strokeStyle = st.color;
+      ctx.lineWidth = st.width * scale;
+      const dashArr = getDashArray(st.dash, st.width * scale);
+      ctx.setLineDash(dashArr);
+      ctx.strokeText(layer.text, x, y);
+      ctx.setLineDash([]);
+    }
+
+    // Underline
     if (layer.underline) {
       const metrics = ctx.measureText(layer.text);
       const textW = metrics.width;
@@ -158,14 +284,80 @@ function drawTextLayers(ctx: CanvasRenderingContext2D, layers: TextLayer[], scal
       else if (layer.align === 'right') startX = x - textW;
       ctx.strokeStyle = layer.color;
       ctx.lineWidth = Math.max(1, fontSize * 0.05);
+      ctx.setLineDash([]);
       ctx.beginPath();
       ctx.moveTo(startX, y + fontSize * 0.55);
       ctx.lineTo(startX + textW, y + fontSize * 0.55);
       ctx.stroke();
     }
+
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 }
+
+// ── Collapsible section ────────────────────────────────────────────────────────
+const Section: React.FC<{ title: string; enabled?: boolean; onToggleEnabled?: (v: boolean) => void; children: React.ReactNode; defaultOpen?: boolean }> = ({
+  title, enabled, onToggleEnabled, children, defaultOpen = false,
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        type="button"
+        className="flex items-center justify-between w-full px-3 py-2 bg-muted/40 hover:bg-muted/70 transition-colors"
+        onClick={() => setOpen(o => !o)}
+      >
+        <div className="flex items-center gap-2">
+          {onToggleEnabled !== undefined && (
+            <span
+              onClick={e => { e.stopPropagation(); onToggleEnabled(!enabled); }}
+              className={cn(
+                'w-4 h-4 rounded border flex items-center justify-center transition-colors flex-shrink-0',
+                enabled ? 'bg-primary border-primary' : 'border-border bg-background'
+              )}
+            >
+              {enabled && <Check size={10} className="text-primary-foreground" />}
+            </span>
+          )}
+          <span className="text-xs font-semibold text-foreground">{title}</span>
+        </div>
+        {open ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
+      </button>
+      {open && <div className="p-3 space-y-3 bg-background">{children}</div>}
+    </div>
+  );
+};
+
+// ── Slider row helper ──────────────────────────────────────────────────────────
+const SliderRow: React.FC<{ label: string; value: number; min: number; max: number; step?: number; unit?: string; onChange: (v: number) => void }> = ({
+  label, value, min, max, step = 1, unit = '', onChange,
+}) => (
+  <div>
+    <div className="flex justify-between items-center mb-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-foreground">{value}{unit}</span>
+    </div>
+    <input
+      type="range" min={min} max={max} step={step} value={value}
+      onChange={e => onChange(Number(e.target.value))}
+      className="w-full accent-primary h-1.5"
+    />
+  </div>
+);
+
+// ── Color row helper ───────────────────────────────────────────────────────────
+const ColorRow: React.FC<{ label: string; value: string; onChange: (v: string) => void }> = ({ label, value, onChange }) => (
+  <div>
+    <span className="text-xs text-muted-foreground block mb-1">{label}</span>
+    <div className="flex items-center gap-2">
+      <input type="color" value={value} onChange={e => onChange(e.target.value)}
+        className="w-8 h-7 rounded border border-border cursor-pointer bg-background p-0.5 flex-shrink-0" />
+      <input type="text" value={value} onChange={e => onChange(e.target.value)} maxLength={7}
+        className="flex-1 text-xs border border-border rounded px-2 py-1 bg-background text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-ring" />
+    </div>
+  </div>
+);
 
 // ── Page Canvas Component ──────────────────────────────────────────────────────
 type PageCanvasProps = {
@@ -220,7 +412,6 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
       ctx.drawImage(frameImg, 0, 0, previewW, previewH);
     }
 
-    // Draw text layers on top
     drawTextLayers(ctx, page.textLayers, scale);
   }, [page.photoImg, page.imgPos, page.imgScale, page.imgRotation, page.textLayers, frameImg, previewW, previewH, cx, cy, imgW, imgH, scale]);
 
@@ -455,7 +646,6 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
   })() : null;
   const polygonPoints = corners.map(c => `${c.x},${c.y}`).join(' ');
 
-  // Determine sidebar mode
   const sidebarMode: 'none' | 'image' | 'text' = selectedTextId ? 'text' : selected ? 'image' : 'none';
 
   return (
@@ -498,14 +688,12 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
             onPointerUp={() => { onPointerUp(); onTextPointerUp(); }}
             onPointerLeave={() => { onPointerUp(); onTextPointerUp(); }}
           >
-            {/* Base canvas */}
             <canvas
               ref={canvasRef}
               style={{ width: previewW, height: previewH, display: 'block', borderRadius: 8, border: '1px solid hsl(var(--border))' }}
               onClick={() => { setSelected(false); setSelectedTextId(null); }}
             />
 
-            {/* Image move/click layer */}
             {page.photoImg && corners.length === 4 && (
               <svg
                 className="absolute inset-0 overflow-visible"
@@ -521,7 +709,6 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
               </svg>
             )}
 
-            {/* Image selection handles */}
             {selected && page.photoImg && corners.length === 4 && (
               <svg
                 className="absolute inset-0 overflow-visible"
@@ -558,13 +745,11 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
               </svg>
             )}
 
-            {/* Text layer hit areas (above frame, zIndex 4) */}
             {page.textLayers.map((layer) => {
               const tx = layer.x * scale;
               const ty = layer.y * scale;
               const fs = layer.fontSize * scale;
               const isSelText = selectedTextId === layer.id;
-              // Approximate hit box
               const approxW = layer.text.length * fs * 0.6;
               let boxX = tx;
               if (layer.align === 'center') boxX = tx - approxW / 2;
@@ -598,9 +783,11 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
           </p>
         </div>
 
-        {/* Controls sidebar — context-sensitive */}
-        <div className="flex flex-col gap-4 p-4 lg:w-64 border-t lg:border-t-0 lg:border-l border-border min-h-[200px]">
-
+        {/* Controls sidebar */}
+        <div
+          className="flex flex-col gap-3 p-4 lg:w-72 border-t lg:border-t-0 lg:border-l border-border min-h-[200px] overflow-y-auto"
+          style={{ maxHeight: previewH + 80 }}
+        >
           {/* TEXT CONTROLS */}
           {sidebarMode === 'text' && selectedText && (
             <>
@@ -679,34 +866,22 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
                 <div className="flex gap-1">
                   <button
                     onClick={() => updateTextLayer(selectedText.id, { bold: !selectedText.bold })}
-                    className={cn(
-                      'h-8 w-8 rounded border flex items-center justify-center transition-colors',
-                      selectedText.bold ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted'
-                    )}
+                    className={cn('h-8 w-8 rounded border flex items-center justify-center transition-colors',
+                      selectedText.bold ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted')}
                     title="Negrito"
-                  >
-                    <Bold size={13} />
-                  </button>
+                  ><Bold size={13} /></button>
                   <button
                     onClick={() => updateTextLayer(selectedText.id, { italic: !selectedText.italic })}
-                    className={cn(
-                      'h-8 w-8 rounded border flex items-center justify-center transition-colors',
-                      selectedText.italic ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted'
-                    )}
+                    className={cn('h-8 w-8 rounded border flex items-center justify-center transition-colors',
+                      selectedText.italic ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted')}
                     title="Itálico"
-                  >
-                    <Italic size={13} />
-                  </button>
+                  ><Italic size={13} /></button>
                   <button
                     onClick={() => updateTextLayer(selectedText.id, { underline: !selectedText.underline })}
-                    className={cn(
-                      'h-8 w-8 rounded border flex items-center justify-center transition-colors',
-                      selectedText.underline ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted'
-                    )}
+                    className={cn('h-8 w-8 rounded border flex items-center justify-center transition-colors',
+                      selectedText.underline ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted')}
                     title="Sublinhado"
-                  >
-                    <Underline size={13} />
-                  </button>
+                  ><Underline size={13} /></button>
                 </div>
               </div>
 
@@ -720,22 +895,147 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
                       <button
                         key={align}
                         onClick={() => updateTextLayer(selectedText.id, { align })}
-                        className={cn(
-                          'h-8 w-8 rounded border flex items-center justify-center transition-colors',
-                          selectedText.align === align ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted'
-                        )}
+                        className={cn('h-8 w-8 rounded border flex items-center justify-center transition-colors',
+                          selectedText.align === align ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted')}
                         title={align === 'left' ? 'Esquerda' : align === 'center' ? 'Centro' : 'Direita'}
-                      >
-                        <Icon size={13} />
-                      </button>
+                      ><Icon size={13} /></button>
                     );
                   })}
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-2">
+                <p className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2">Efeitos</p>
+                <div className="space-y-2">
+
+                  {/* Opacidade */}
+                  <Section title="Opacidade" defaultOpen>
+                    <SliderRow
+                      label="Transparência"
+                      value={selectedText.opacity ?? 100}
+                      min={0} max={100} unit="%"
+                      onChange={v => updateTextLayer(selectedText.id, { opacity: v })}
+                    />
+                  </Section>
+
+                  {/* Contorno */}
+                  <Section
+                    title="Contorno"
+                    enabled={selectedText.stroke?.enabled ?? false}
+                    onToggleEnabled={v => updateTextLayer(selectedText.id, { stroke: { ...(selectedText.stroke ?? defaultStroke()), enabled: v } })}
+                  >
+                    <ColorRow
+                      label="Cor"
+                      value={selectedText.stroke?.color ?? '#000000'}
+                      onChange={v => updateTextLayer(selectedText.id, { stroke: { ...(selectedText.stroke ?? defaultStroke()), color: v } })}
+                    />
+                    <SliderRow
+                      label="Espessura"
+                      value={selectedText.stroke?.width ?? 2}
+                      min={1} max={30} unit="px"
+                      onChange={v => updateTextLayer(selectedText.id, { stroke: { ...(selectedText.stroke ?? defaultStroke()), width: v } })}
+                    />
+                    <div>
+                      <span className="text-xs text-muted-foreground block mb-1">Tipo</span>
+                      <div className="grid grid-cols-2 gap-1">
+                        {STROKE_DASHES.map(d => (
+                          <button
+                            key={d.value}
+                            onClick={() => updateTextLayer(selectedText.id, { stroke: { ...(selectedText.stroke ?? defaultStroke()), dash: d.value } })}
+                            className={cn(
+                              'text-[10px] px-2 py-1 rounded border transition-colors',
+                              (selectedText.stroke?.dash ?? 'solid') === d.value
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'border-border bg-background text-foreground hover:bg-muted'
+                            )}
+                          >
+                            {d.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </Section>
+
+                  {/* Sombra */}
+                  <Section
+                    title="Sombra"
+                    enabled={selectedText.shadow?.enabled ?? false}
+                    onToggleEnabled={v => updateTextLayer(selectedText.id, { shadow: { ...(selectedText.shadow ?? defaultShadow()), enabled: v } })}
+                  >
+                    <ColorRow
+                      label="Cor da sombra"
+                      value={selectedText.shadow?.color ?? '#000000'}
+                      onChange={v => updateTextLayer(selectedText.id, { shadow: { ...(selectedText.shadow ?? defaultShadow()), color: v } })}
+                    />
+                    <SliderRow
+                      label="Opacidade"
+                      value={selectedText.shadow?.opacity ?? 60}
+                      min={0} max={100} unit="%"
+                      onChange={v => updateTextLayer(selectedText.id, { shadow: { ...(selectedText.shadow ?? defaultShadow()), opacity: v } })}
+                    />
+                    <SliderRow
+                      label="Ângulo"
+                      value={selectedText.shadow?.angle ?? 45}
+                      min={0} max={360} unit="°"
+                      onChange={v => updateTextLayer(selectedText.id, { shadow: { ...(selectedText.shadow ?? defaultShadow()), angle: v } })}
+                    />
+                    <SliderRow
+                      label="Distância"
+                      value={selectedText.shadow?.distance ?? 4}
+                      min={0} max={100} unit="px"
+                      onChange={v => updateTextLayer(selectedText.id, { shadow: { ...(selectedText.shadow ?? defaultShadow()), distance: v } })}
+                    />
+                    <SliderRow
+                      label="Expansão"
+                      value={selectedText.shadow?.spread ?? 2}
+                      min={0} max={50} unit="px"
+                      onChange={v => updateTextLayer(selectedText.id, { shadow: { ...(selectedText.shadow ?? defaultShadow()), spread: v } })}
+                    />
+                    <SliderRow
+                      label="Tamanho (blur)"
+                      value={selectedText.shadow?.size ?? 8}
+                      min={0} max={80} unit="px"
+                      onChange={v => updateTextLayer(selectedText.id, { shadow: { ...(selectedText.shadow ?? defaultShadow()), size: v } })}
+                    />
+                  </Section>
+
+                  {/* Brilho */}
+                  <Section
+                    title="Brilho (Glow)"
+                    enabled={selectedText.glow?.enabled ?? false}
+                    onToggleEnabled={v => updateTextLayer(selectedText.id, { glow: { ...(selectedText.glow ?? defaultGlow()), enabled: v } })}
+                  >
+                    <ColorRow
+                      label="Cor do brilho"
+                      value={selectedText.glow?.color ?? '#ffffff'}
+                      onChange={v => updateTextLayer(selectedText.id, { glow: { ...(selectedText.glow ?? defaultGlow()), color: v } })}
+                    />
+                    <SliderRow
+                      label="Opacidade"
+                      value={selectedText.glow?.opacity ?? 80}
+                      min={0} max={100} unit="%"
+                      onChange={v => updateTextLayer(selectedText.id, { glow: { ...(selectedText.glow ?? defaultGlow()), opacity: v } })}
+                    />
+                    <SliderRow
+                      label="Expansão"
+                      value={selectedText.glow?.spread ?? 4}
+                      min={0} max={50} unit="px"
+                      onChange={v => updateTextLayer(selectedText.id, { glow: { ...(selectedText.glow ?? defaultGlow()), spread: v } })}
+                    />
+                    <SliderRow
+                      label="Tamanho (blur)"
+                      value={selectedText.glow?.size ?? 12}
+                      min={0} max={80} unit="px"
+                      onChange={v => updateTextLayer(selectedText.id, { glow: { ...(selectedText.glow ?? defaultGlow()), size: v } })}
+                    />
+                  </Section>
+
                 </div>
               </div>
             </>
           )}
 
-          {/* IMAGE selected — just hint text, no extra controls */}
+          {/* IMAGE selected — just hint text */}
           {sidebarMode === 'image' && (
             <div className="flex flex-col gap-2 items-center justify-center flex-1 text-center text-muted-foreground py-4">
               <p className="text-xs leading-relaxed">
@@ -761,17 +1061,15 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
             </div>
           )}
 
-          {/* Download — always visible at bottom */}
+          {/* Download */}
           <div className="border-t border-border pt-3 mt-auto">
             <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">Baixar</p>
             <div className="flex flex-col gap-2">
               <Button size="sm" onClick={() => downloadPage('png')} className="gap-2 text-xs">
-                <Download size={12} />
-                PNG
+                <Download size={12} />PNG
               </Button>
               <Button variant="outline" size="sm" onClick={() => downloadPage('jpg')} className="gap-2 text-xs">
-                <Download size={12} />
-                JPG
+                <Download size={12} />JPG
               </Button>
             </div>
           </div>
@@ -838,7 +1136,6 @@ const Canva: React.FC = () => {
   const [showStock, setShowStock] = useState(false);
   const [downloadingZip, setDownloadingZip] = useState(false);
 
-  // ── Stock fetch ─────────────────────────────────────────────────────────────
   const fetchStockVehicles = useCallback(async () => {
     if (!profile?.tbEstoque) return;
     setLoadingStock(true);
@@ -948,13 +1245,11 @@ const Canva: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto py-6 px-4 space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Canva de Criativos</h1>
         <p className="text-muted-foreground text-sm mt-1">Crie artes para Instagram com moldura personalizada</p>
       </div>
 
-      {/* Steps */}
       <div className="flex items-center gap-2 flex-wrap">
         {STEPS.map((s, i) => (
           <React.Fragment key={s}>
@@ -1059,12 +1354,10 @@ const Canva: React.FC = () => {
           <p className="text-sm text-muted-foreground">Adicione uma ou mais fotos. Cada foto será uma <strong>Página</strong> no editor.</p>
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" onClick={() => photoInputRef.current?.click()}>
-              <Upload size={16} className="mr-2" />
-              Enviar Fotos
+              <Upload size={16} className="mr-2" />Enviar Fotos
             </Button>
             <Button variant="outline" onClick={() => { setShowStock(!showStock); if (!showStock) fetchStockVehicles(); }}>
-              <Car size={16} className="mr-2" />
-              Escolher do Estoque
+              <Car size={16} className="mr-2" />Escolher do Estoque
             </Button>
           </div>
           <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
@@ -1081,9 +1374,7 @@ const Canva: React.FC = () => {
                     <button
                       onClick={() => removePage(page.id)}
                       className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X size={10} />
-                    </button>
+                    ><X size={10} /></button>
                   </div>
                 ))}
               </div>
@@ -1179,13 +1470,11 @@ const Canva: React.FC = () => {
       {/* Navigation */}
       <div className="flex justify-between pt-2 border-t border-border">
         <Button variant="outline" onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0} className="gap-2">
-          <ChevronLeft size={16} />
-          Voltar
+          <ChevronLeft size={16} />Voltar
         </Button>
         {step < STEPS.length - 1 && (
-          <Button onClick={() => setStep(s => s + 1)} disabled={!canAdvance()} className="gap-2">
-            Avançar
-            <ChevronRight size={16} />
+          <Button onClick={() => setStep(s => Math.min(STEPS.length - 1, s + 1))} disabled={!canAdvance()} className="gap-2">
+            Avançar <ChevronRight size={16} />
           </Button>
         )}
       </div>
