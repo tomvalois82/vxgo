@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Upload, Download, RotateCcw, Car,
-  Check, ChevronLeft, ChevronRight, X, PackageOpen, RotateCw,
+  Upload, Download, Car,
+  Check, ChevronLeft, ChevronRight, X, PackageOpen,
+  Type, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Plus, Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,20 @@ type CanvasSize = {
   icon: string;
 };
 
+type TextLayer = {
+  id: string;
+  text: string;
+  x: number; // in canvas px (full resolution)
+  y: number;
+  fontSize: number; // in canvas px
+  fontFamily: string;
+  color: string;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  align: 'left' | 'center' | 'right';
+};
+
 type PageState = {
   id: string;
   photoUrl: string;
@@ -27,6 +42,7 @@ type PageState = {
   imgPos: { x: number; y: number };
   imgRotation: number; // degrees
   photoImg: HTMLImageElement | null;
+  textLayers: TextLayer[];
 };
 
 type StockVehicle = {
@@ -58,8 +74,12 @@ const STEPS = ['Tamanho', 'Moldura', 'Fotos', 'Editor'];
 const PREVIEW_MAX_W = 380;
 const PREVIEW_MAX_H = 520;
 
-// Handle size in px (screen)
 const H = 10;
+
+const FONT_FAMILIES = [
+  'Arial', 'Georgia', 'Times New Roman', 'Verdana', 'Trebuchet MS',
+  'Impact', 'Courier New', 'Comic Sans MS', 'Palatino', 'Tahoma',
+];
 
 function getPreviewDimensions(width: number, height: number) {
   const scaleW = PREVIEW_MAX_W / width;
@@ -84,27 +104,67 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 function degToRad(deg: number) { return (deg * Math.PI) / 180; }
 
-// Get bounding box corners of a rotated rect (in canvas/preview space)
-function getRotatedCorners(
-  cx: number, cy: number, // center in preview px
-  w: number, h: number,   // dimensions in preview px
-  angleDeg: number
-) {
+function getRotatedCorners(cx: number, cy: number, w: number, h: number, angleDeg: number) {
   const r = degToRad(angleDeg);
   const cos = Math.cos(r);
   const sin = Math.sin(r);
   const hw = w / 2;
   const hh = h / 2;
-  const corners = [
-    [-hw, -hh],
-    [ hw, -hh],
-    [ hw,  hh],
-    [-hw,  hh],
-  ];
+  const corners = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
   return corners.map(([lx, ly]) => ({
     x: cx + lx * cos - ly * sin,
     y: cy + lx * sin + ly * cos,
   }));
+}
+
+function defaultTextLayer(size: CanvasSize): TextLayer {
+  return {
+    id: uid(),
+    text: 'Seu texto aqui',
+    x: size.width / 2,
+    y: size.height / 2,
+    fontSize: Math.round(size.width * 0.06),
+    fontFamily: 'Arial',
+    color: '#ffffff',
+    bold: true,
+    italic: false,
+    underline: false,
+    align: 'center',
+  };
+}
+
+// ── Draw text layers on canvas ─────────────────────────────────────────────────
+function drawTextLayers(ctx: CanvasRenderingContext2D, layers: TextLayer[], scale: number) {
+  for (const layer of layers) {
+    ctx.save();
+    const fontSize = layer.fontSize * scale;
+    const parts: string[] = [];
+    if (layer.italic) parts.push('italic');
+    if (layer.bold) parts.push('bold');
+    parts.push(`${fontSize}px`);
+    parts.push(`"${layer.fontFamily}", sans-serif`);
+    ctx.font = parts.join(' ');
+    ctx.fillStyle = layer.color;
+    ctx.textAlign = layer.align;
+    ctx.textBaseline = 'middle';
+    const x = layer.x * scale;
+    const y = layer.y * scale;
+    ctx.fillText(layer.text, x, y);
+    if (layer.underline) {
+      const metrics = ctx.measureText(layer.text);
+      const textW = metrics.width;
+      let startX = x;
+      if (layer.align === 'center') startX = x - textW / 2;
+      else if (layer.align === 'right') startX = x - textW;
+      ctx.strokeStyle = layer.color;
+      ctx.lineWidth = Math.max(1, fontSize * 0.05);
+      ctx.beginPath();
+      ctx.moveTo(startX, y + fontSize * 0.55);
+      ctx.lineTo(startX + textW, y + fontSize * 0.55);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 }
 
 // ── Page Canvas Component ──────────────────────────────────────────────────────
@@ -122,16 +182,18 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState(false);
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
 
   const { w: previewW, h: previewH, scale } = getPreviewDimensions(size.width, size.height);
 
-  // Derived preview-space values
   const imgW = page.photoImg ? page.photoImg.naturalWidth * page.imgScale * scale : 0;
   const imgH = page.photoImg ? page.photoImg.naturalHeight * page.imgScale * scale : 0;
-  const imgX = page.imgPos.x * scale; // top-left in preview px
+  const imgX = page.imgPos.x * scale;
   const imgY = page.imgPos.y * scale;
-  const cx = imgX + imgW / 2; // center in preview px
+  const cx = imgX + imgW / 2;
   const cy = imgY + imgH / 2;
+
+  const selectedText = page.textLayers.find(l => l.id === selectedTextId) ?? null;
 
   // ── Draw canvas ─────────────────────────────────────────────────────────────
   const draw = useCallback(() => {
@@ -157,11 +219,14 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
     if (frameImg) {
       ctx.drawImage(frameImg, 0, 0, previewW, previewH);
     }
-  }, [page.photoImg, page.imgPos, page.imgScale, page.imgRotation, frameImg, previewW, previewH, cx, cy, imgW, imgH]);
+
+    // Draw text layers on top
+    drawTextLayers(ctx, page.textLayers, scale);
+  }, [page.photoImg, page.imgPos, page.imgScale, page.imgRotation, page.textLayers, frameImg, previewW, previewH, cx, cy, imgW, imgH, scale]);
 
   useEffect(() => { draw(); }, [draw]);
 
-  // ── Interaction state ────────────────────────────────────────────────────────
+  // ── Image interaction ────────────────────────────────────────────────────────
   const interactRef = useRef<{
     active: boolean;
     handle: HandleType;
@@ -177,15 +242,9 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
   const getCursor = (handle: HandleType): string => {
     const cursors: Record<HandleType, string> = {
       'move': 'move',
-      'resize-nw': 'nwse-resize',
-      'resize-n': 'ns-resize',
-      'resize-ne': 'nesw-resize',
-      'resize-e': 'ew-resize',
-      'resize-se': 'nwse-resize',
-      'resize-s': 'ns-resize',
-      'resize-sw': 'nesw-resize',
-      'resize-w': 'ew-resize',
-      'rotate': 'crosshair',
+      'resize-nw': 'nwse-resize', 'resize-n': 'ns-resize', 'resize-ne': 'nesw-resize',
+      'resize-e': 'ew-resize', 'resize-se': 'nwse-resize', 'resize-s': 'ns-resize',
+      'resize-sw': 'nesw-resize', 'resize-w': 'ew-resize', 'rotate': 'crosshair',
     };
     return cursors[handle] || 'default';
   };
@@ -195,115 +254,79 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setSelected(true);
+    setSelectedTextId(null);
     interactRef.current = {
-      active: true,
-      handle,
-      startX: e.clientX,
-      startY: e.clientY,
+      active: true, handle,
+      startX: e.clientX, startY: e.clientY,
       origPos: { ...page.imgPos },
       origScale: page.imgScale,
       origRot: page.imgRotation,
-      origW: imgW,
-      origH: imgH,
+      origW: imgW, origH: imgH,
     };
   };
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     const ref = interactRef.current;
     if (!ref || !ref.active || !page.photoImg) return;
-
-    const dx = e.clientX - ref.startX; // screen px delta
+    const dx = e.clientX - ref.startX;
     const dy = e.clientY - ref.startY;
 
     if (ref.handle === 'move') {
-      onChange({
-        imgPos: {
-          x: ref.origPos.x + dx / scale,
-          y: ref.origPos.y + dy / scale,
-        },
-      });
+      onChange({ imgPos: { x: ref.origPos.x + dx / scale, y: ref.origPos.y + dy / scale } });
       return;
     }
-
     if (ref.handle === 'rotate') {
-      // Angle from center to current pointer vs start pointer
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const originX = rect.left + cx;
       const originY = rect.top + cy;
       const startAngle = Math.atan2(ref.startY - originY, ref.startX - originX);
       const currentAngle = Math.atan2(e.clientY - originY, e.clientX - originX);
-      const deltaDeg = ((currentAngle - startAngle) * 180) / Math.PI;
-      onChange({ imgRotation: ref.origRot + deltaDeg });
+      onChange({ imgRotation: ref.origRot + ((currentAngle - startAngle) * 180) / Math.PI });
       return;
     }
-
-    // Resize handles — work in the image's local (rotated) coordinate system
     const r = degToRad(ref.origRot);
     const cos = Math.cos(r);
     const sin = Math.sin(r);
-    // Project delta onto image's local axes
     const localDx = dx * cos + dy * sin;
     const localDy = -dx * sin + dy * cos;
-
     const origNatW = page.photoImg.naturalWidth;
     const origNatH = page.photoImg.naturalHeight;
     const origS = ref.origScale;
-
     let newScale = origS;
     let newPosX = ref.origPos.x;
     let newPosY = ref.origPos.y;
-
     const MIN_SCALE = 0.01;
-
     switch (ref.handle) {
-      // ── Corner handles (proportional) ───────────────────────────────────────
       case 'resize-se': {
-        // SE: drag right/down enlarges; proportional by avg
         const ds = (localDx / ref.origW + localDy / ref.origH) / 2;
         newScale = Math.max(MIN_SCALE, origS + ds * origS);
-        // top-left corner stays fixed → adjust pos so center shifts correctly
-        const dW = (newScale - origS) * origNatW;
-        const dH = (newScale - origS) * origNatH;
-        newPosX = ref.origPos.x - dW / 2 * (1 / scale);
-        newPosY = ref.origPos.y - dH / 2 * (1 / scale);
-        // Actually SE: top-left fixed, so pos unchanged
-        newPosX = ref.origPos.x;
-        newPosY = ref.origPos.y;
+        newPosX = ref.origPos.x; newPosY = ref.origPos.y;
         break;
       }
       case 'resize-nw': {
         const ds = (-localDx / ref.origW + -localDy / ref.origH) / 2;
         newScale = Math.max(MIN_SCALE, origS + ds * origS);
-        // NW: bottom-right corner fixed
         const dW = (newScale - origS) * origNatW * scale;
         const dH = (newScale - origS) * origNatH * scale;
-        // SE corner in local = (+origW/2, +origH/2) from center
-        // After scale change, new center shifts to keep SE fixed
-        newPosX = ref.origPos.x - dW / scale;
-        newPosY = ref.origPos.y - dH / scale;
+        newPosX = ref.origPos.x - dW / scale; newPosY = ref.origPos.y - dH / scale;
         break;
       }
       case 'resize-ne': {
         const ds = (localDx / ref.origW + -localDy / ref.origH) / 2;
         newScale = Math.max(MIN_SCALE, origS + ds * origS);
         const dH = (newScale - origS) * origNatH * scale;
-        newPosX = ref.origPos.x;
-        newPosY = ref.origPos.y - dH / scale;
+        newPosX = ref.origPos.x; newPosY = ref.origPos.y - dH / scale;
         break;
       }
       case 'resize-sw': {
         const ds = (-localDx / ref.origW + localDy / ref.origH) / 2;
         newScale = Math.max(MIN_SCALE, origS + ds * origS);
         const dW = (newScale - origS) * origNatW * scale;
-        newPosX = ref.origPos.x - dW / scale;
-        newPosY = ref.origPos.y;
+        newPosX = ref.origPos.x - dW / scale; newPosY = ref.origPos.y;
         break;
       }
-      // ── Edge handles (non-proportional width/height) ─────────────────────────
       case 'resize-e': {
-        // Change width only → scale to maintain height, adjust width independently
-        // We treat this as uniform scale based on width change
         const ds = localDx / ref.origW;
         newScale = Math.max(MIN_SCALE, origS + ds * origS);
         newPosX = ref.origPos.x;
@@ -334,24 +357,50 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
         break;
       }
     }
-
     onChange({ imgScale: newScale, imgPos: { x: newPosX, y: newPosY } });
   }, [page, scale, cx, cy, onChange]);
 
-  const onPointerUp = () => {
-    if (interactRef.current) interactRef.current.active = false;
+  const onPointerUp = () => { if (interactRef.current) interactRef.current.active = false; };
+
+  // ── Text layer drag ───────────────────────────────────────────────────────────
+  const textDragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+
+  const onTextPointerDown = (e: React.PointerEvent, layer: TextLayer) => {
+    e.stopPropagation();
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    setSelectedTextId(layer.id);
+    setSelected(false);
+    textDragRef.current = { id: layer.id, startX: e.clientX, startY: e.clientY, origX: layer.x, origY: layer.y };
   };
 
-  // ── Center photo ─────────────────────────────────────────────────────────────
-  const centerPhoto = () => {
-    if (!page.photoImg) return;
-    const img = page.photoImg;
-    const s = Math.max(size.width / img.naturalWidth, size.height / img.naturalHeight);
+  const onTextPointerMove = (e: React.PointerEvent) => {
+    const ref = textDragRef.current;
+    if (!ref) return;
+    const dx = (e.clientX - ref.startX) / scale;
+    const dy = (e.clientY - ref.startY) / scale;
+    updateTextLayer(ref.id, { x: ref.origX + dx, y: ref.origY + dy });
+  };
+
+  const onTextPointerUp = () => { textDragRef.current = null; };
+
+  // ── Text helpers ─────────────────────────────────────────────────────────────
+  const addTextLayer = () => {
+    const layer = defaultTextLayer(size);
+    onChange({ textLayers: [...page.textLayers, layer] });
+    setSelectedTextId(layer.id);
+    setSelected(false);
+  };
+
+  const updateTextLayer = (id: string, updates: Partial<TextLayer>) => {
     onChange({
-      imgScale: s,
-      imgRotation: 0,
-      imgPos: { x: (size.width - img.naturalWidth * s) / 2, y: (size.height - img.naturalHeight * s) / 2 },
+      textLayers: page.textLayers.map(l => l.id === id ? { ...l, ...updates } : l),
     });
+  };
+
+  const removeTextLayer = (id: string) => {
+    onChange({ textLayers: page.textLayers.filter(l => l.id !== id) });
+    if (selectedTextId === id) setSelectedTextId(null);
   };
 
   // ── Download ─────────────────────────────────────────────────────────────────
@@ -375,6 +424,7 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
     ctx.drawImage(img, -fullW / 2, -fullH / 2, fullW, fullH);
     ctx.restore();
     if (frameImg) ctx.drawImage(frameImg, 0, 0, size.width, size.height);
+    drawTextLayers(ctx, page.textLayers, 1);
     const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
     const dataUrl = offscreen.toDataURL(mimeType, 0.92);
     const a = document.createElement('a');
@@ -383,40 +433,30 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
     a.click();
   };
 
-  // ── Handle positions (in preview px, relative to container) ──────────────────
-  // We place handles on corners and edges of the (rotated) bounding box
-  const corners = page.photoImg
-    ? getRotatedCorners(cx, cy, imgW, imgH, page.imgRotation)
-    : [];
-
-  // Midpoints of edges
+  // ── SVG handles ──────────────────────────────────────────────────────────────
+  const corners = page.photoImg ? getRotatedCorners(cx, cy, imgW, imgH, page.imgRotation) : [];
   const midpoints = corners.length === 4 ? [
     { x: (corners[0].x + corners[1].x) / 2, y: (corners[0].y + corners[1].y) / 2, handle: 'resize-n' as HandleType },
     { x: (corners[1].x + corners[2].x) / 2, y: (corners[1].y + corners[2].y) / 2, handle: 'resize-e' as HandleType },
     { x: (corners[2].x + corners[3].x) / 2, y: (corners[2].y + corners[3].y) / 2, handle: 'resize-s' as HandleType },
     { x: (corners[3].x + corners[0].x) / 2, y: (corners[3].y + corners[0].y) / 2, handle: 'resize-w' as HandleType },
   ] : [];
-
   const cornerHandles: { x: number; y: number; handle: HandleType }[] = corners.length === 4 ? [
     { ...corners[0], handle: 'resize-nw' as HandleType },
     { ...corners[1], handle: 'resize-ne' as HandleType },
     { ...corners[2], handle: 'resize-se' as HandleType },
     { ...corners[3], handle: 'resize-sw' as HandleType },
   ] : [];
-
-  // Rotate handle: above the top-center midpoint
   const ROTATE_OFFSET = 28;
   const rotateHandle = corners.length === 4 ? (() => {
     const topMid = { x: (corners[0].x + corners[1].x) / 2, y: (corners[0].y + corners[1].y) / 2 };
     const r = degToRad(page.imgRotation);
-    return {
-      x: topMid.x - Math.sin(r) * ROTATE_OFFSET,
-      y: topMid.y - Math.cos(r) * ROTATE_OFFSET,
-    };
+    return { x: topMid.x - Math.sin(r) * ROTATE_OFFSET, y: topMid.y - Math.cos(r) * ROTATE_OFFSET };
   })() : null;
-
-  // Outline box using corners as SVG polygon
   const polygonPoints = corners.map(c => `${c.x},${c.y}`).join(' ');
+
+  // Determine sidebar mode
+  const sidebarMode: 'none' | 'image' | 'text' = selectedTextId ? 'text' : selected ? 'image' : 'none';
 
   return (
     <div className="border border-border rounded-2xl bg-card overflow-hidden">
@@ -426,179 +466,303 @@ const PageCanvas: React.FC<PageCanvasProps> = ({ page, size, frameImg, onChange,
           Página {index + 1}
           {total > 1 && <span className="text-muted-foreground font-normal"> de {total}</span>}
         </span>
-        {total > 1 && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={onRemove}
-            className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
-            title="Remover página"
+            onClick={addTextLayer}
+            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-md hover:bg-primary/10 border border-primary/30"
+            title="Adicionar texto"
           >
-            <X size={14} />
+            <Type size={12} />
+            + Texto
           </button>
-        )}
+          {total > 1 && (
+            <button
+              onClick={onRemove}
+              className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
+              title="Remover página"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-0">
-        {/* Canvas + overlay area */}
+        {/* Canvas area */}
         <div className="flex-1 flex flex-col items-center gap-3 p-4">
           <div
             ref={containerRef}
             className="relative select-none"
             style={{ width: previewW, height: previewH }}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerLeave={onPointerUp}
+            onPointerMove={(e) => { onPointerMove(e); onTextPointerMove(e); }}
+            onPointerUp={() => { onPointerUp(); onTextPointerUp(); }}
+            onPointerLeave={() => { onPointerUp(); onTextPointerUp(); }}
           >
             {/* Base canvas */}
             <canvas
               ref={canvasRef}
               style={{ width: previewW, height: previewH, display: 'block', borderRadius: 8, border: '1px solid hsl(var(--border))' }}
-              onClick={() => setSelected(true)}
+              onClick={() => { setSelected(false); setSelectedTextId(null); }}
             />
 
-            {/* Deselect overlay (click outside image) */}
-            {selected && (
-              <div
-                className="absolute inset-0"
-                style={{ zIndex: 1 }}
-                onClick={() => setSelected(false)}
-              />
-            )}
-
-            {/* Move/drag layer over the rotated image bounding box */}
+            {/* Image move/click layer */}
             {page.photoImg && corners.length === 4 && (
               <svg
                 className="absolute inset-0 overflow-visible"
                 style={{ zIndex: 2, width: previewW, height: previewH, pointerEvents: selected ? 'none' : 'auto' }}
-                onClick={() => setSelected(true)}
               >
-                {/* Invisible hit area for move */}
                 <polygon
                   points={polygonPoints}
                   fill="transparent"
                   stroke="transparent"
                   style={{ cursor: 'move', pointerEvents: 'all' }}
-                  onPointerDown={(e) => { setSelected(true); onHandlePointerDown(e as any, 'move'); }}
+                  onPointerDown={(e) => { setSelected(true); setSelectedTextId(null); onHandlePointerDown(e as any, 'move'); }}
                 />
               </svg>
             )}
 
-            {/* SVG handles overlay — only when selected */}
+            {/* Image selection handles */}
             {selected && page.photoImg && corners.length === 4 && (
               <svg
                 className="absolute inset-0 overflow-visible"
                 style={{ zIndex: 3, width: previewW, height: previewH, pointerEvents: 'none' }}
               >
-                {/* Dashed outline */}
-                <polygon
-                  points={polygonPoints}
-                  fill="none"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="1.5"
-                  strokeDasharray="5 3"
-                  style={{ pointerEvents: 'none' }}
-                />
-
-                {/* Rotate stem line */}
+                <polygon points={polygonPoints} fill="none" stroke="hsl(var(--primary))" strokeWidth="1.5" strokeDasharray="5 3" style={{ pointerEvents: 'none' }} />
                 {rotateHandle && (
                   <line
-                    x1={(corners[0].x + corners[1].x) / 2}
-                    y1={(corners[0].y + corners[1].y) / 2}
-                    x2={rotateHandle.x}
-                    y2={rotateHandle.y}
-                    stroke="hsl(var(--primary))"
-                    strokeWidth="1.5"
-                    style={{ pointerEvents: 'none' }}
+                    x1={(corners[0].x + corners[1].x) / 2} y1={(corners[0].y + corners[1].y) / 2}
+                    x2={rotateHandle.x} y2={rotateHandle.y}
+                    stroke="hsl(var(--primary))" strokeWidth="1.5" style={{ pointerEvents: 'none' }}
                   />
                 )}
-
-                {/* Rotate handle */}
                 {rotateHandle && (
-                  <circle
-                    cx={rotateHandle.x}
-                    cy={rotateHandle.y}
-                    r={H}
-                    fill="hsl(var(--primary))"
-                    stroke="white"
-                    strokeWidth="1.5"
+                  <circle cx={rotateHandle.x} cy={rotateHandle.y} r={H} fill="hsl(var(--primary))" stroke="white" strokeWidth="1.5"
                     style={{ cursor: 'crosshair', pointerEvents: 'all' }}
                     onPointerDown={(e) => onHandlePointerDown(e as any, 'rotate')}
                   />
                 )}
-
-                {/* Edge midpoint handles (square, white fill) */}
                 {midpoints.map(({ x, y, handle }) => (
-                  <rect
-                    key={handle}
-                    x={x - H / 2}
-                    y={y - H / 2}
-                    width={H}
-                    height={H}
-                    rx={2}
-                    fill="white"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth="1.5"
+                  <rect key={handle} x={x - H / 2} y={y - H / 2} width={H} height={H} rx={2}
+                    fill="white" stroke="hsl(var(--primary))" strokeWidth="1.5"
                     style={{ cursor: getCursor(handle), pointerEvents: 'all' }}
                     onPointerDown={(e) => onHandlePointerDown(e as any, handle)}
                   />
                 ))}
-
-                {/* Corner handles (larger squares) */}
                 {cornerHandles.map(({ x, y, handle }) => (
-                  <rect
-                    key={handle}
-                    x={x - (H + 2) / 2}
-                    y={y - (H + 2) / 2}
-                    width={H + 2}
-                    height={H + 2}
-                    rx={2}
-                    fill="hsl(var(--primary))"
-                    stroke="white"
-                    strokeWidth="1.5"
+                  <rect key={handle} x={x - (H + 2) / 2} y={y - (H + 2) / 2} width={H + 2} height={H + 2} rx={2}
+                    fill="hsl(var(--primary))" stroke="white" strokeWidth="1.5"
                     style={{ cursor: getCursor(handle), pointerEvents: 'all' }}
                     onPointerDown={(e) => onHandlePointerDown(e as any, handle)}
                   />
                 ))}
               </svg>
             )}
+
+            {/* Text layer hit areas (above frame, zIndex 4) */}
+            {page.textLayers.map((layer) => {
+              const tx = layer.x * scale;
+              const ty = layer.y * scale;
+              const fs = layer.fontSize * scale;
+              const isSelText = selectedTextId === layer.id;
+              // Approximate hit box
+              const approxW = layer.text.length * fs * 0.6;
+              let boxX = tx;
+              if (layer.align === 'center') boxX = tx - approxW / 2;
+              else if (layer.align === 'right') boxX = tx - approxW;
+              return (
+                <div
+                  key={layer.id}
+                  style={{
+                    position: 'absolute',
+                    left: boxX - 4,
+                    top: ty - fs / 2 - 4,
+                    width: approxW + 8,
+                    height: fs + 8,
+                    zIndex: 4,
+                    cursor: 'move',
+                    border: isSelText ? '1.5px dashed hsl(var(--primary))' : '1.5px dashed transparent',
+                    borderRadius: 3,
+                    boxSizing: 'border-box',
+                  }}
+                  onPointerDown={(e) => onTextPointerDown(e, layer)}
+                />
+              );
+            })}
           </div>
           <p className="text-xs text-muted-foreground">
-            {selected ? 'Arraste • Redimensione pelas bordas • Rotacione pelo círculo' : 'Clique na imagem para selecionar'}
+            {sidebarMode === 'text'
+              ? 'Arraste o texto para reposicionar • Edite à direita'
+              : sidebarMode === 'image'
+              ? 'Arraste • Redimensione pelas bordas • Rotacione pelo círculo'
+              : 'Clique na imagem ou texto para selecionar'}
           </p>
         </div>
 
-        {/* Controls sidebar */}
-        <div className="flex flex-col gap-4 p-4 lg:w-52 border-t lg:border-t-0 lg:border-l border-border">
-          {/* Scale display */}
-          <div>
-            <p className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">Escala</p>
-            <p className="text-sm text-muted-foreground tabular-nums">{Math.round(page.imgScale * 100)}%</p>
-          </div>
+        {/* Controls sidebar — context-sensitive */}
+        <div className="flex flex-col gap-4 p-4 lg:w-64 border-t lg:border-t-0 lg:border-l border-border min-h-[200px]">
 
-          {/* Rotation */}
-          <div>
-            <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">Rotação</p>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8"
-                onClick={() => onChange({ imgRotation: page.imgRotation - 15 })}>
-                <RotateCcw size={13} />
-              </Button>
-              <span className="text-sm text-foreground flex-1 text-center tabular-nums">
-                {Math.round(page.imgRotation)}°
-              </span>
-              <Button variant="outline" size="icon" className="h-8 w-8"
-                onClick={() => onChange({ imgRotation: page.imgRotation + 15 })}>
-                <RotateCw size={13} />
-              </Button>
+          {/* TEXT CONTROLS */}
+          {sidebarMode === 'text' && selectedText && (
+            <>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Texto</p>
+                <button onClick={() => removeTextLayer(selectedText.id)} className="text-destructive hover:text-destructive/80 transition-colors" title="Remover texto">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+
+              {/* Text content */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Conteúdo</p>
+                <textarea
+                  value={selectedText.text}
+                  onChange={e => updateTextLayer(selectedText.id, { text: e.target.value })}
+                  className="w-full text-sm border border-border rounded-md px-2 py-1.5 bg-background text-foreground resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+                  rows={2}
+                />
+              </div>
+
+              {/* Font family */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Fonte</p>
+                <select
+                  value={selectedText.fontFamily}
+                  onChange={e => updateTextLayer(selectedText.id, { fontFamily: e.target.value })}
+                  className="w-full text-sm border border-border rounded-md px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  {FONT_FAMILIES.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+
+              {/* Font size */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Tamanho <span className="text-foreground font-medium">{selectedText.fontSize}px</span></p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range" min={12} max={400} step={2}
+                    value={selectedText.fontSize}
+                    onChange={e => updateTextLayer(selectedText.id, { fontSize: Number(e.target.value) })}
+                    className="flex-1 accent-primary"
+                  />
+                  <input
+                    type="number" min={12} max={400}
+                    value={selectedText.fontSize}
+                    onChange={e => updateTextLayer(selectedText.id, { fontSize: Number(e.target.value) })}
+                    className="w-16 text-sm border border-border rounded-md px-2 py-1 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring text-center"
+                  />
+                </div>
+              </div>
+
+              {/* Color */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Cor</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={selectedText.color}
+                    onChange={e => updateTextLayer(selectedText.id, { color: e.target.value })}
+                    className="w-10 h-8 rounded border border-border cursor-pointer bg-background p-0.5"
+                  />
+                  <input
+                    type="text"
+                    value={selectedText.color}
+                    onChange={e => updateTextLayer(selectedText.id, { color: e.target.value })}
+                    className="flex-1 text-sm border border-border rounded-md px-2 py-1.5 bg-background text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+                    maxLength={9}
+                  />
+                </div>
+              </div>
+
+              {/* Bold / Italic / Underline */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Estilo</p>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => updateTextLayer(selectedText.id, { bold: !selectedText.bold })}
+                    className={cn(
+                      'h-8 w-8 rounded border flex items-center justify-center transition-colors',
+                      selectedText.bold ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted'
+                    )}
+                    title="Negrito"
+                  >
+                    <Bold size={13} />
+                  </button>
+                  <button
+                    onClick={() => updateTextLayer(selectedText.id, { italic: !selectedText.italic })}
+                    className={cn(
+                      'h-8 w-8 rounded border flex items-center justify-center transition-colors',
+                      selectedText.italic ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted'
+                    )}
+                    title="Itálico"
+                  >
+                    <Italic size={13} />
+                  </button>
+                  <button
+                    onClick={() => updateTextLayer(selectedText.id, { underline: !selectedText.underline })}
+                    className={cn(
+                      'h-8 w-8 rounded border flex items-center justify-center transition-colors',
+                      selectedText.underline ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted'
+                    )}
+                    title="Sublinhado"
+                  >
+                    <Underline size={13} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Alignment */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Alinhamento</p>
+                <div className="flex gap-1">
+                  {(['left', 'center', 'right'] as const).map((align) => {
+                    const Icon = align === 'left' ? AlignLeft : align === 'center' ? AlignCenter : AlignRight;
+                    return (
+                      <button
+                        key={align}
+                        onClick={() => updateTextLayer(selectedText.id, { align })}
+                        className={cn(
+                          'h-8 w-8 rounded border flex items-center justify-center transition-colors',
+                          selectedText.align === align ? 'bg-primary text-primary-foreground border-primary' : 'border-border bg-background text-foreground hover:bg-muted'
+                        )}
+                        title={align === 'left' ? 'Esquerda' : align === 'center' ? 'Centro' : 'Direita'}
+                      >
+                        <Icon size={13} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* IMAGE selected — just hint text, no extra controls */}
+          {sidebarMode === 'image' && (
+            <div className="flex flex-col gap-2 items-center justify-center flex-1 text-center text-muted-foreground py-4">
+              <p className="text-xs leading-relaxed">
+                Use as <strong>alças</strong> na imagem para redimensionar e rotacionar.
+              </p>
             </div>
-          </div>
+          )}
 
-          <Button variant="outline" size="sm" onClick={centerPhoto} className="gap-2 text-xs">
-            <RotateCcw size={12} />
-            Centralizar
-          </Button>
+          {/* Nothing selected */}
+          {sidebarMode === 'none' && (
+            <div className="flex flex-col gap-3 items-center justify-center flex-1 text-center text-muted-foreground py-4">
+              <Type size={20} className="opacity-40" />
+              <p className="text-xs leading-relaxed">
+                Clique na imagem ou em um texto para ver os controles
+              </p>
+              <button
+                onClick={addTextLayer}
+                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-md border border-primary/40 hover:bg-primary/10"
+              >
+                <Plus size={12} />
+                Adicionar Texto
+              </button>
+            </div>
+          )}
 
-          {/* Download individual */}
-          <div className="border-t border-border pt-3">
+          {/* Download — always visible at bottom */}
+          <div className="border-t border-border pt-3 mt-auto">
             <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">Baixar</p>
             <div className="flex flex-col gap-2">
               <Button size="sm" onClick={() => downloadPage('png')} className="gap-2 text-xs">
@@ -645,6 +809,7 @@ async function renderPageToBlob(
       ctx.restore();
     }
     if (frameImg) ctx.drawImage(frameImg, 0, 0, size.width, size.height);
+    drawTextLayers(ctx, page.textLayers, 1);
     const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
     offscreen.toBlob((blob) => {
       if (blob) resolve(blob);
@@ -660,22 +825,17 @@ const Canva: React.FC = () => {
   const [step, setStep] = useState(0);
   const [selectedSize, setSelectedSize] = useState<CanvasSize | null>(null);
 
-  // Frame
   const [frameUrl, setFrameUrl] = useState<string | null>(null);
   const [frameFile, setFrameFile] = useState<File | null>(null);
   const [frameImg, setFrameImg] = useState<HTMLImageElement | null>(null);
   const frameInputRef = useRef<HTMLInputElement>(null);
 
-  // Pages (multiple photos)
   const [pages, setPages] = useState<PageState[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  // Stock
   const [stockVehicles, setStockVehicles] = useState<StockVehicle[]>([]);
   const [loadingStock, setLoadingStock] = useState(false);
   const [showStock, setShowStock] = useState(false);
-
-  // Zip download state
   const [downloadingZip, setDownloadingZip] = useState(false);
 
   // ── Stock fetch ─────────────────────────────────────────────────────────────
@@ -700,13 +860,11 @@ const Canva: React.FC = () => {
     if (step === 2 && showStock) fetchStockVehicles();
   }, [step, showStock, fetchStockVehicles]);
 
-  // ── Load frame ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!frameUrl) { setFrameImg(null); return; }
     loadImage(frameUrl).then(setFrameImg).catch(() => setFrameImg(null));
   }, [frameUrl]);
 
-  // ── Add photo URLs to pages ─────────────────────────────────────────────────
   const addPhotoUrls = useCallback(async (urls: string[]) => {
     const newPages: PageState[] = [];
     for (const url of urls) {
@@ -724,6 +882,7 @@ const Canva: React.FC = () => {
           imgPos: selectedSize
             ? { x: (selectedSize.width - img.naturalWidth * s) / 2, y: (selectedSize.height - img.naturalHeight * s) / 2 }
             : { x: 0, y: 0 },
+          textLayers: [],
         });
       } catch {
         toast({ title: `Erro ao carregar imagem`, variant: 'destructive' });
@@ -732,7 +891,6 @@ const Canva: React.FC = () => {
     setPages(prev => [...prev, ...newPages]);
   }, [selectedSize]);
 
-  // ── Photo upload (multiple) ─────────────────────────────────────────────────
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -742,20 +900,14 @@ const Canva: React.FC = () => {
     e.target.value = '';
   };
 
-  const handleSelectStockPhoto = async (url: string) => {
-    await addPhotoUrls([url]);
-  };
+  const handleSelectStockPhoto = async (url: string) => { await addPhotoUrls([url]); };
 
-  // ── Page updates ─────────────────────────────────────────────────────────────
   const updatePage = (id: string, updates: Partial<PageState>) => {
     setPages(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
   };
 
-  const removePage = (id: string) => {
-    setPages(prev => prev.filter(p => p.id !== id));
-  };
+  const removePage = (id: string) => { setPages(prev => prev.filter(p => p.id !== id)); };
 
-  // ── Frame upload ────────────────────────────────────────────────────────────
   const handleFrameUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -763,7 +915,6 @@ const Canva: React.FC = () => {
     setFrameUrl(URL.createObjectURL(file));
   };
 
-  // ── Download ZIP ─────────────────────────────────────────────────────────────
   const downloadAllZip = async (format: 'png' | 'jpg') => {
     if (!selectedSize || pages.length === 0) return;
     setDownloadingZip(true);
@@ -771,8 +922,7 @@ const Canva: React.FC = () => {
       const zip = new JSZip();
       const folder = zip.folder('criativos') ?? zip;
       for (let i = 0; i < pages.length; i++) {
-        const page = pages[i];
-        const blob = await renderPageToBlob(page, selectedSize, frameImg, format);
+        const blob = await renderPageToBlob(pages[i], selectedSize, frameImg, format);
         folder.file(`pagina_${i + 1}_${selectedSize.label.replace(/\s/g, '_')}.${format}`, blob);
       }
       const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -787,7 +937,6 @@ const Canva: React.FC = () => {
     }
   };
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
   const canAdvance = () => {
     if (step === 0) return !!selectedSize;
     if (step === 1) return !!frameUrl;
@@ -802,9 +951,7 @@ const Canva: React.FC = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Canva de Criativos</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Crie artes para Instagram com moldura personalizada
-        </p>
+        <p className="text-muted-foreground text-sm mt-1">Crie artes para Instagram com moldura personalizada</p>
       </div>
 
       {/* Steps */}
@@ -828,7 +975,7 @@ const Canva: React.FC = () => {
         ))}
       </div>
 
-      {/* ── Step 0: Tamanho ── */}
+      {/* Step 0: Tamanho */}
       {step === 0 && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-foreground">Escolha o tamanho</h2>
@@ -858,13 +1005,11 @@ const Canva: React.FC = () => {
         </div>
       )}
 
-      {/* ── Step 1: Moldura ── */}
+      {/* Step 1: Moldura */}
       {step === 1 && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-foreground">Escolha a Moldura</h2>
-          <p className="text-sm text-muted-foreground">
-            Faça upload de um arquivo PNG com transparência. A moldura será usada em todas as páginas.
-          </p>
+          <p className="text-sm text-muted-foreground">Faça upload de um arquivo PNG com transparência. A moldura será usada em todas as páginas.</p>
           <div className="flex flex-col sm:flex-row gap-6 items-start">
             <button
               onClick={() => frameInputRef.current?.click()}
@@ -888,37 +1033,30 @@ const Canva: React.FC = () => {
               )}
             </button>
             <input ref={frameInputRef} type="file" accept="image/png,image/webp" className="hidden" onChange={handleFrameUpload} />
-
             {frameUrl && previewDims && (
               <div className="space-y-2">
                 <p className="text-sm text-foreground font-medium">Pré-visualização</p>
                 <div
                   className="relative rounded-lg overflow-hidden border border-border"
                   style={{
-                    width: Math.min(previewDims.w, 160),
-                    height: Math.min(previewDims.h, 160),
+                    width: Math.min(previewDims.w, 160), height: Math.min(previewDims.h, 160),
                     background: 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 12px 12px',
                   }}
                 >
                   <img src={frameUrl} alt="Preview moldura" className="absolute inset-0 w-full h-full object-contain" />
                 </div>
-                <button onClick={() => { setFrameUrl(null); setFrameFile(null); setFrameImg(null); }} className="text-xs text-destructive hover:underline">
-                  Remover
-                </button>
+                <button onClick={() => { setFrameUrl(null); setFrameFile(null); setFrameImg(null); }} className="text-xs text-destructive hover:underline">Remover</button>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ── Step 2: Fotos ── */}
+      {/* Step 2: Fotos */}
       {step === 2 && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-foreground">Escolha as Fotos</h2>
-          <p className="text-sm text-muted-foreground">
-            Adicione uma ou mais fotos. Cada foto será uma <strong>Página</strong> no editor.
-          </p>
-
+          <p className="text-sm text-muted-foreground">Adicione uma ou mais fotos. Cada foto será uma <strong>Página</strong> no editor.</p>
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" onClick={() => photoInputRef.current?.click()}>
               <Upload size={16} className="mr-2" />
@@ -929,10 +1067,7 @@ const Canva: React.FC = () => {
               Escolher do Estoque
             </Button>
           </div>
-
           <input ref={photoInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoUpload} />
-
-          {/* Selected photos preview */}
           {pages.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">{pages.length} foto{pages.length > 1 ? 's' : ''} selecionada{pages.length > 1 ? 's' : ''}</p>
@@ -942,9 +1077,7 @@ const Canva: React.FC = () => {
                     <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-primary">
                       <img src={page.photoUrl} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
                     </div>
-                    <span className="absolute top-0.5 left-0.5 bg-black/60 text-white text-[10px] px-1 rounded">
-                      P{i + 1}
-                    </span>
+                    <span className="absolute top-0.5 left-0.5 bg-black/60 text-white text-[10px] px-1 rounded">P{i + 1}</span>
                     <button
                       onClick={() => removePage(page.id)}
                       className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -956,8 +1089,6 @@ const Canva: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* Stock grid */}
           {showStock && (
             <div className="space-y-3">
               {loadingStock ? (
@@ -1002,10 +1133,9 @@ const Canva: React.FC = () => {
         </div>
       )}
 
-      {/* ── Step 3: Editor ── */}
+      {/* Step 3: Editor */}
       {step === 3 && selectedSize && (
         <div className="space-y-4">
-          {/* Download all toolbar */}
           {pages.length > 1 && (
             <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-muted/30">
               <PackageOpen size={18} className="text-primary flex-shrink-0" />
@@ -1015,18 +1145,14 @@ const Canva: React.FC = () => {
               </div>
               <div className="flex gap-2 flex-shrink-0">
                 <Button size="sm" onClick={() => downloadAllZip('png')} className="gap-2" disabled={downloadingZip}>
-                  <Download size={12} />
-                  ZIP PNG
+                  <Download size={12} />ZIP PNG
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => downloadAllZip('jpg')} className="gap-2" disabled={downloadingZip}>
-                  <Download size={12} />
-                  ZIP JPG
+                  <Download size={12} />ZIP JPG
                 </Button>
               </div>
             </div>
           )}
-
-          {/* Pages list */}
           <div className="space-y-6">
             {pages.map((page, i) => (
               <PageCanvas
@@ -1041,7 +1167,6 @@ const Canva: React.FC = () => {
               />
             ))}
           </div>
-
           {pages.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground border-2 border-dashed border-border rounded-xl">
               <PackageOpen size={32} />
