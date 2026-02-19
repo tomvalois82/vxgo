@@ -72,9 +72,10 @@ type HandleType =
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const CANVAS_SIZES: CanvasSize[] = [
-  { label: 'Feed Retrato',   subtitle: 'Posts no Feed',    width: 1080, height: 1440, ratio: '3:4',  icon: '📸' },
-  { label: 'Feed Quadrado',  subtitle: 'Posts no Feed',    width: 1080, height: 1080, ratio: '1:1',  icon: '⬛' },
-  { label: 'Reels e Stories', subtitle: 'Stories / Reels', width: 1080, height: 1920, ratio: '9:16', icon: '📱' },
+  { label: 'Feed Retrato',    subtitle: 'Posts no Feed',       width: 1080, height: 1440, ratio: '3:4',        icon: '📸' },
+  { label: 'Feed Quadrado',   subtitle: 'Posts no Feed',       width: 1080, height: 1080, ratio: '1:1',        icon: '⬛' },
+  { label: 'Reels e Stories', subtitle: 'Stories / Reels',     width: 1080, height: 1920, ratio: '9:16',       icon: '📱' },
+  { label: 'Classificados',   subtitle: 'Classificados / Site', width: 864,  height: 648,  ratio: '4:3',        icon: '🖼️' },
 ];
 
 const STEPS = ['Tamanho', 'Moldura', 'Fotos', 'Editor'];
