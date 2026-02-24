@@ -101,7 +101,7 @@ const CarCard = ({ car, onDelete }: { car: CarType; onDelete: (id: string) => vo
         )}
       </div>
       <CardContent className="p-4">
-        <Link to={`/car/${car.id}`}>
+        <Link to={`/dashboard/car/${car.id}`}>
           <h3 className="text-xl font-bold hover:text-carblue transition-colors">
             {car.brand} {car.model}
           </h3>
@@ -130,7 +130,7 @@ const CarCard = ({ car, onDelete }: { car: CarType; onDelete: (id: string) => vo
         </div>
       </CardContent>
       <CardFooter className="bg-gray-50 p-4 flex justify-between">
-        <Link to={`/edit-car/${car.id}`}>
+        <Link to={`/dashboard/edit-car/${car.id}`}>
           <Button variant="outline" size="sm" className="flex items-center gap-1">
             <Edit size={16} />
             <span>Editar</span>
