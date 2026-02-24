@@ -17,7 +17,7 @@ const EditCar = () => {
   const handleUpdateCar = (data: CarFormData) => {
     if (id) {
       updateCar(id, data);
-      navigate(`/car/${id}`);
+      navigate(`/dashboard/car/${id}`);
     }
   };
 

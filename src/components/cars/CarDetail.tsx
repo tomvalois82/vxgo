@@ -44,7 +44,7 @@ const CarDetail = () => {
           </h1>
         </div>
         <div className="flex space-x-2">
-          <Link to={`/edit-car/${car.id}`}>
+          <Link to={`/dashboard/edit-car/${car.id}`}>
             <Button variant="outline" className="flex items-center gap-1">
               <Edit size={16} />
               <span>Editar</span>
