@@ -12,6 +12,7 @@ import {
 } from '@/hooks/crm/useKanban';
 import KanbanEditDialog from './KanbanEditDialog';
 import OportunidadeDialog from './OportunidadeDialog';
+import OportunidadeDetailDialog from './OportunidadeDetailDialog';
 
 const KanbanBoard: React.FC = () => {
   const { data: allColumns = [], isLoading: columnsLoading } = useKanbanColumns();
@@ -19,6 +20,7 @@ const KanbanBoard: React.FC = () => {
   const moveOpp = useMoveOportunidade();
   const [editOpen, setEditOpen] = useState(false);
   const [newOppColumn, setNewOppColumn] = useState<{ id: number; name: string } | null>(null);
+  const [detailOppId, setDetailOppId] = useState<number | null>(null);
 
   const visibleColumns = useMemo(() => {
     return allColumns
@@ -77,6 +79,7 @@ const KanbanBoard: React.FC = () => {
                 onAddOpp={() =>
                   setNewOppColumn({ id: column.id, name: column.descricao || 'Sem nome' })
                 }
+                onClickOpp={(id) => setDetailOppId(id)}
               />
             ))}
 
@@ -99,6 +102,14 @@ const KanbanBoard: React.FC = () => {
         columnId={newOppColumn?.id ?? 0}
         columnName={newOppColumn?.name}
       />
+
+      <OportunidadeDetailDialog
+        oppId={detailOppId}
+        open={!!detailOppId}
+        onOpenChange={(open) => {
+          if (!open) setDetailOppId(null);
+        }}
+      />
     </div>
   );
 };
@@ -107,9 +118,10 @@ interface ColumnProps {
   column: KanbanColumn;
   oportunidades: Oportunidade[];
   onAddOpp: () => void;
+  onClickOpp: (id: number) => void;
 }
 
-const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddOpp }) => {
+const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddOpp, onClickOpp }) => {
   return (
     <div className="flex flex-col w-72 min-w-[18rem] flex-shrink-0 bg-muted/40 rounded-xl border">
       <div
@@ -150,7 +162,8 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
-                    className={`bg-card rounded-lg border p-3 cursor-grab active:cursor-grabbing transition-shadow ${
+                    onClick={() => onClickOpp(opp.id)}
+                    className={`bg-card rounded-lg border p-3 cursor-pointer transition-shadow ${
                       snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'shadow-sm hover:shadow-md'
                     }`}
                   >
