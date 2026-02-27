@@ -38,7 +38,7 @@ export const useUserStockVehicles = () => {
     const { data, error } = await (supabase as any)
       .from(profile.tbEstoque)
       .select(selectColumns)
-      .not('status', 'in', '("Vendido","Fora de estoque")');
+      .not('status', 'in', '("Vendido","Fora de estoque","Fora de Estoque")');
 
     if (error) {
       console.error('Error fetching user stock vehicles:', error);
