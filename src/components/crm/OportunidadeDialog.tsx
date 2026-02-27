@@ -21,6 +21,8 @@ import { useCreateOportunidade } from '@/hooks/crm/useKanban';
 import { useUserStockVehicles } from '@/hooks/crm/useUserStockVehicles';
 import { formatCurrency, extractNumericValue } from '@/lib/formUtils';
 import { Car } from 'lucide-react';
+import LeadSearchField, { type LeadOption } from './LeadSearchField';
+import CreateLeadDialog from './CreateLeadDialog';
 
 interface OportunidadeDialogProps {
   open: boolean;
@@ -42,6 +44,8 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
   const [valorDisplay, setValorDisplay] = useState('');
   const [obs, setObs] = useState('');
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
+  const [selectedLead, setSelectedLead] = useState<LeadOption | null>(null);
+  const [showCreateLead, setShowCreateLead] = useState(false);
   const createOpp = useCreateOportunidade();
   const { data: vehicles = [] } = useUserStockVehicles();
 
@@ -68,6 +72,7 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
     setValorDisplay('');
     setObs('');
     setSelectedVehicleId('');
+    setSelectedLead(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -85,6 +90,7 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
         id_kanban: columnId,
         status: 'aberta',
         idEstoque: selectedVehicleId ? Number(selectedVehicleId) : undefined,
+        id_lead: selectedLead?.id ?? undefined,
       },
       {
         onSuccess: () => {
@@ -96,6 +102,7 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -118,6 +125,12 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
               autoFocus
             />
           </div>
+
+          <LeadSearchField
+            selectedLead={selectedLead}
+            onSelectLead={setSelectedLead}
+            onCreateNew={() => setShowCreateLead(true)}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="opp-valor">Valor</Label>
@@ -190,7 +203,15 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
         </form>
       </DialogContent>
     </Dialog>
+
+    <CreateLeadDialog
+      open={showCreateLead}
+      onOpenChange={setShowCreateLead}
+      onCreated={(lead) => setSelectedLead(lead)}
+    />
+    </>
   );
 };
+
 
 export default OportunidadeDialog;
