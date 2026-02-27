@@ -37,7 +37,8 @@ export const useUserStockVehicles = () => {
     // Using any to bypass TypeScript strict typing for dynamic table names
     const { data, error } = await (supabase as any)
       .from(profile.tbEstoque)
-      .select(selectColumns);
+      .select(selectColumns)
+      .not('status', 'in', '("Vendido","Fora de estoque")');
 
     if (error) {
       console.error('Error fetching user stock vehicles:', error);
