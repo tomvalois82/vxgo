@@ -1207,7 +1207,7 @@ export type Database = {
           status: string | null
           titulo: string | null
           ultima_interacao: string | null
-          valor: string | null
+          valor: number | null
         }
         Insert: {
           created_at?: string
@@ -1224,7 +1224,7 @@ export type Database = {
           status?: string | null
           titulo?: string | null
           ultima_interacao?: string | null
-          valor?: string | null
+          valor?: number | null
         }
         Update: {
           created_at?: string
@@ -1241,7 +1241,7 @@ export type Database = {
           status?: string | null
           titulo?: string | null
           ultima_interacao?: string | null
-          valor?: string | null
+          valor?: number | null
         }
         Relationships: [
           {

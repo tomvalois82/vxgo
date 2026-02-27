@@ -22,7 +22,8 @@ export interface Vehicle {
   combustivel: string | null;
   imagem_principal_url: string | null;
   todas_imagens_urls: string[] | null;
-  // Adicione outros campos conforme necessário
+  status: string | null;
+  foto: string | null;
 }
 
 export const useUserStockVehicles = () => {
@@ -34,7 +35,7 @@ export const useUserStockVehicles = () => {
     }
 
     // A lista de colunas a serem selecionadas.
-    const selectColumns = 'id, nome, marca, modelo, ano_modelo, valor, vendido, placa, created_at, km, renavam, cor, cidade_auto, cambio, combustivel, imagem_principal_url, todas_imagens_urls';
+    const selectColumns = 'id, nome, marca, modelo, ano_modelo, valor, vendido, placa, created_at, km, renavam, cor, cidade_auto, cambio, combustivel, imagem_principal_url, todas_imagens_urls, status, foto';
 
     // Using any to bypass TypeScript strict typing for dynamic table names
     const { data, error } = await (supabase as any)
