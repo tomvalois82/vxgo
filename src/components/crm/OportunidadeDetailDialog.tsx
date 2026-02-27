@@ -5,7 +5,6 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
 import { Pencil, User, Phone, Mail, Car, MessageSquare, CalendarClock, Check, Search, X } from 'lucide-react';
 import { useOportunidadeDetail } from '@/hooks/crm/useOportunidadeDetail';
 import { useUpdateOportunidade } from '@/hooks/crm/useUpdateOportunidade';
@@ -22,6 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface Props {
   oppId: number | null;
@@ -274,26 +279,40 @@ const KanbanStageSelector: React.FC<{
   const visibleColumns = useMemo(() => columns.filter(c => c.visivel !== false), [columns]);
 
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {visibleColumns.map(col => {
-        const isActive = col.id === currentId;
-        return (
-          <button
-            key={col.id}
-            onClick={() => { if (!isActive) onChange(col.id); }}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
-              isActive
-                ? 'text-white shadow-sm'
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted border-transparent'
-            }`}
-            style={isActive ? { backgroundColor: col.cor || 'hsl(var(--primary))', borderColor: col.cor || 'hsl(var(--primary))' } : undefined}
-          >
-            {isActive && <Check className="h-3 w-3" />}
-            {col.descricao || 'Sem nome'}
-          </button>
-        );
-      })}
-    </div>
+    <TooltipProvider delayDuration={200}>
+      <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto">
+        {visibleColumns.map((col, idx) => {
+          const isActive = col.id === currentId;
+          const color = col.cor || 'hsl(var(--primary))';
+          return (
+            <React.Fragment key={col.id}>
+              {idx > 0 && (
+                <div className="w-3 h-px bg-border shrink-0" />
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => { if (!isActive) onChange(col.id); }}
+                    className={`shrink-0 rounded-full transition-all flex items-center justify-center ${
+                      isActive ? 'w-6 h-6 ring-2 ring-offset-1 ring-offset-background' : 'w-4 h-4 opacity-50 hover:opacity-80'
+                    }`}
+                    style={{
+                      backgroundColor: color,
+                      ...(isActive ? { ringColor: color } : {}),
+                    }}
+                  >
+                    {isActive && <Check className="h-3 w-3 text-white" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {col.descricao || 'Sem nome'}
+                </TooltipContent>
+              </Tooltip>
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </TooltipProvider>
   );
 };
 
@@ -432,13 +451,14 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                   {/* Responsável */}
                   <SidebarSection title="Responsável">
                     <Select
-                      value={opp.id_usuario ? String(opp.id_usuario) : ''}
-                      onValueChange={(v) => save('id_usuario', Number(v))}
+                      value={opp.id_usuario ? String(opp.id_usuario) : '__none__'}
+                      onValueChange={(v) => save('id_usuario', v === '__none__' ? null : Number(v))}
                     >
                       <SelectTrigger className="w-full h-8 text-sm">
                         <SelectValue placeholder="Selecionar responsável" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="__none__">Nenhum</SelectItem>
                         {configUsers.map(u => (
                           <SelectItem key={u.id} value={String(u.id)}>
                             {u.nome || `Usuário #${u.id}`}
