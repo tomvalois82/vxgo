@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useCreateOportunidade } from '@/hooks/crm/useKanban';
+import { useUserStockVehicles } from '@/hooks/crm/useUserStockVehicles';
+import { formatCurrency, extractNumericValue } from '@/lib/formUtils';
+import { Car } from 'lucide-react';
 
 interface OportunidadeDialogProps {
   open: boolean;
@@ -18,6 +28,8 @@ interface OportunidadeDialogProps {
   columnId: number;
   columnName?: string;
 }
+
+const EXCLUDED_STATUS = ['vendido', 'fora de estoque'];
 
 const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
   open,
@@ -27,29 +39,56 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
 }) => {
   const [titulo, setTitulo] = useState('');
   const [resumo, setResumo] = useState('');
-  const [valor, setValor] = useState('');
+  const [valorDisplay, setValorDisplay] = useState('');
   const [obs, setObs] = useState('');
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   const createOpp = useCreateOportunidade();
+  const { data: vehicles = [] } = useUserStockVehicles();
+
+  const availableVehicles = useMemo(
+    () =>
+      vehicles.filter(
+        (v) => !EXCLUDED_STATUS.includes((v.status ?? '').toLowerCase())
+      ),
+    [vehicles]
+  );
+
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    if (!raw) {
+      setValorDisplay('');
+      return;
+    }
+    setValorDisplay(formatCurrency(raw));
+  };
+
+  const resetForm = () => {
+    setTitulo('');
+    setResumo('');
+    setValorDisplay('');
+    setObs('');
+    setSelectedVehicleId('');
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!titulo.trim()) return;
 
+    const numericValor = valorDisplay ? extractNumericValue(valorDisplay) : null;
+
     createOpp.mutate(
       {
         titulo: titulo.trim(),
         resumo: resumo.trim() || undefined,
-        valor: valor.trim() || undefined,
+        valor: numericValor && numericValor > 0 ? numericValor : undefined,
         obs: obs.trim() || undefined,
         id_kanban: columnId,
         status: 'aberta',
+        idEstoque: selectedVehicleId ? Number(selectedVehicleId) : undefined,
       },
       {
         onSuccess: () => {
-          setTitulo('');
-          setResumo('');
-          setValor('');
-          setObs('');
+          resetForm();
           onOpenChange(false);
         },
       }
@@ -84,10 +123,38 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
             <Label htmlFor="opp-valor">Valor</Label>
             <Input
               id="opp-valor"
-              placeholder="Ex: R$ 85.000"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
+              placeholder="R$ 0,00"
+              value={valorDisplay}
+              onChange={handleValorChange}
+              inputMode="numeric"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="opp-veiculo">Veículo</Label>
+            <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
+              <SelectTrigger id="opp-veiculo">
+                <SelectValue placeholder="Selecione um veículo (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableVehicles.map((v) => (
+                  <SelectItem key={v.id} value={String(v.id)}>
+                    <span className="flex items-center gap-2">
+                      <Car className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate">
+                        {[v.marca, v.modelo, v.ano_modelo].filter(Boolean).join(' ') || `Veículo #${v.id}`}
+                        {v.valor != null ? ` — ${typeof v.valor === 'number' ? v.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : v.valor}` : ''}
+                      </span>
+                    </span>
+                  </SelectItem>
+                ))}
+                {availableVehicles.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    Nenhum veículo disponível
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -116,8 +183,8 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" loading={createOpp.isPending} disabled={!titulo.trim()}>
-              Criar Oportunidade
+            <Button type="submit" disabled={!titulo.trim() || createOpp.isPending}>
+              {createOpp.isPending ? 'Criando...' : 'Criar Oportunidade'}
             </Button>
           </DialogFooter>
         </form>

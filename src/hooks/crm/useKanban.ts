@@ -17,7 +17,7 @@ export interface Oportunidade {
   titulo: string | null;
   resumo: string | null;
   status: string | null;
-  valor: string | null;
+  valor: number | null;
   id_kanban: number | null;
   id_lead: number | null;
   id_usuario: number | null;
@@ -127,13 +127,13 @@ export function useCreateOportunidade() {
     mutationFn: async (opp: {
       titulo?: string;
       resumo?: string;
-      valor?: string;
+      valor?: number | null;
       status?: string;
       obs?: string;
       id_kanban?: number;
       id_lead?: number;
       id_usuario?: number;
-      idEstoque?: number;
+      idEstoque?: number | null;
     }) => {
       const { error } = await supabase
         .from('opotunidade')
