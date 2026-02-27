@@ -148,7 +148,21 @@ const KanbanEditDialog: React.FC<Props> = ({ open, onOpenChange, columns }) => {
 
           <ScrollArea className="max-h-[50vh] pr-2">
             <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="kanban-edit-list">
+              <Droppable droppableId="kanban-edit-list" renderClone={(provided, snapshot, rubric) => {
+                const item = items[rubric.source.index];
+                return (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    className="flex items-center gap-3 p-3 rounded-lg border shadow-lg bg-accent"
+                  >
+                    <GripVertical size={18} className="text-muted-foreground" />
+                    <div className="w-4 h-8 rounded flex-shrink-0" style={{ backgroundColor: item?.cor || '#ccc' }} />
+                    <span className="text-sm font-medium flex-1">{item?.descricao || 'Nova Coluna'}</span>
+                  </div>
+                );
+              }}>
                 {(provided) => (
                   <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
                     {items.map((item, index) => (
