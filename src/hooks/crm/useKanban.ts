@@ -1,0 +1,162 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+
+export interface KanbanColumn {
+  id: number;
+  descricao: string | null;
+  cor: string | null;
+  posicao: number | null;
+  padrao: boolean | null;
+  visivel: boolean | null;
+  created_at: string;
+}
+
+export interface Oportunidade {
+  id: number;
+  titulo: string | null;
+  resumo: string | null;
+  status: string | null;
+  valor: string | null;
+  id_kanban: number | null;
+  id_lead: number | null;
+  id_usuario: number | null;
+  idEstoque: number | null;
+  created_at: string;
+  data_criacao: string | null;
+  ultima_interacao: string | null;
+}
+
+export function useKanbanColumns() {
+  return useQuery({
+    queryKey: ['kanban-columns'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('kanban')
+        .select('*')
+        .order('posicao', { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return (data || []) as KanbanColumn[];
+    },
+  });
+}
+
+export function useKanbanOportunidades() {
+  return useQuery({
+    queryKey: ['kanban-oportunidades'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('opotunidade')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as Oportunidade[];
+    },
+  });
+}
+
+export function useUpdateKanbanColumn() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (column: Partial<KanbanColumn> & { id: number }) => {
+      const { id, ...updates } = column;
+      const { error } = await supabase
+        .from('kanban')
+        .update(updates)
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanban-columns'] });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Erro ao atualizar coluna', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useCreateKanbanColumn() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (column: { descricao: string; cor: string; posicao: number; visivel: boolean }) => {
+      const { error } = await supabase
+        .from('kanban')
+        .insert({ ...column, padrao: false });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanban-columns'] });
+      toast({ title: 'Coluna criada com sucesso' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Erro ao criar coluna', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useDeleteKanbanColumn() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      // Check if there are opportunities linked
+      const { data: opps, error: checkError } = await supabase
+        .from('opotunidade')
+        .select('id')
+        .eq('id_kanban', id)
+        .limit(1);
+      if (checkError) throw checkError;
+      if (opps && opps.length > 0) {
+        throw new Error('Não é possível excluir: existem oportunidades vinculadas a esta coluna.');
+      }
+      const { error } = await supabase.from('kanban').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanban-columns'] });
+      toast({ title: 'Coluna excluída com sucesso' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Erro ao excluir coluna', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useMoveOportunidade() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, id_kanban }: { id: number; id_kanban: number }) => {
+      const { error } = await supabase
+        .from('opotunidade')
+        .update({ id_kanban })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanban-oportunidades'] });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Erro ao mover oportunidade', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
+export function useBulkUpdateKanbanPositions() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (updates: { id: number; posicao: number }[]) => {
+      // Update each column position
+      const promises = updates.map(({ id, posicao }) =>
+        supabase.from('kanban').update({ posicao }).eq('id', id)
+      );
+      const results = await Promise.all(promises);
+      const err = results.find(r => r.error);
+      if (err?.error) throw err.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanban-columns'] });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Erro ao reordenar', description: error.message, variant: 'destructive' });
+    },
+  });
+}
