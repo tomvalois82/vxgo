@@ -121,6 +121,38 @@ export function useDeleteKanbanColumn() {
   });
 }
 
+export function useCreateOportunidade() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (opp: {
+      titulo?: string;
+      resumo?: string;
+      valor?: string;
+      status?: string;
+      obs?: string;
+      id_kanban?: number;
+      id_lead?: number;
+      id_usuario?: number;
+      idEstoque?: number;
+    }) => {
+      const { error } = await supabase
+        .from('opotunidade')
+        .insert({
+          ...opp,
+          data_criacao: new Date().toISOString(),
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanban-oportunidades'] });
+      toast({ title: 'Oportunidade criada com sucesso' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Erro ao criar oportunidade', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
 export function useMoveOportunidade() {
   const queryClient = useQueryClient();
   return useMutation({
