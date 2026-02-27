@@ -6,14 +6,22 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, User, Phone, Mail, Car, FileText, MessageSquare, CalendarClock } from 'lucide-react';
+import { Pencil, User, Phone, Mail, Car, MessageSquare, CalendarClock, Check, Search, X } from 'lucide-react';
 import { useOportunidadeDetail } from '@/hooks/crm/useOportunidadeDetail';
 import { useUpdateOportunidade } from '@/hooks/crm/useUpdateOportunidade';
 import { useKanbanColumns } from '@/hooks/crm/useKanban';
 import { useUserStockVehicles, type Vehicle } from '@/hooks/crm/useUserStockVehicles';
+import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
 import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Props {
   oppId: number | null;
@@ -43,10 +51,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    setDraft(value);
-  }, [value]);
-
+  useEffect(() => { setDraft(value); }, [value]);
   useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
@@ -56,20 +61,12 @@ const EditableField: React.FC<EditableFieldProps> = ({
 
   const commit = useCallback(() => {
     setEditing(false);
-    if (draft.trim() !== value) {
-      onSave(draft.trim());
-    }
+    if (draft.trim() !== value) onSave(draft.trim());
   }, [draft, value, onSave]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !multiline) {
-      e.preventDefault();
-      commit();
-    }
-    if (e.key === 'Escape') {
-      setDraft(value);
-      setEditing(false);
-    }
+    if (e.key === 'Enter' && !multiline) { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { setDraft(value); setEditing(false); }
   };
 
   if (editing) {
@@ -109,18 +106,205 @@ const EditableField: React.FC<EditableFieldProps> = ({
   );
 };
 
+/* ─── Editable Value (currency) ─── */
+const EditableValue: React.FC<{
+  value: number | null;
+  onSave: (val: number | null) => void;
+}> = ({ value, onSave }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setDraft(value != null ? String(value) : '');
+  }, [value]);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  const commit = () => {
+    setEditing(false);
+    const parsed = parseFloat(draft.replace(/[^\d.,]/g, '').replace(',', '.'));
+    const newVal = isNaN(parsed) ? null : parsed;
+    if (newVal !== value) onSave(newVal);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { setDraft(value != null ? String(value) : ''); setEditing(false); }
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        className="bg-background border border-input rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring w-40"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={handleKeyDown}
+        placeholder="0.00"
+      />
+    );
+  }
+
+  return (
+    <span
+      className="group inline-flex items-center gap-1.5 cursor-pointer"
+      onClick={() => setEditing(true)}
+      title="Clique para editar"
+    >
+      <span className={value != null ? 'text-sm text-muted-foreground' : 'text-sm text-muted-foreground italic'}>
+        {value != null ? formatCurrency(value) : 'Sem valor'}
+      </span>
+      <Pencil className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+    </span>
+  );
+};
+
+/* ─── Vehicle Autocomplete ─── */
+const VehicleAutocomplete: React.FC<{
+  vehicles: Vehicle[];
+  currentId: number | null;
+  onSelect: (id: number | null) => void;
+}> = ({ vehicles, currentId, onSelect }) => {
+  const [editing, setEditing] = useState(false);
+  const [search, setSearch] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const currentVehicle = useMemo(() => vehicles.find(v => v.id === currentId), [vehicles, currentId]);
+  const vehicleLabel = (v: Vehicle) => [v.fabricante, v.modelo, v.ano].filter(Boolean).join(' ');
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return vehicles.slice(0, 15);
+    const term = search.toLowerCase();
+    return vehicles.filter(v =>
+      vehicleLabel(v).toLowerCase().includes(term) ||
+      (v.placa && v.placa.toLowerCase().includes(term))
+    ).slice(0, 15);
+  }, [vehicles, search]);
+
+  useEffect(() => {
+    if (editing && inputRef.current) inputRef.current.focus();
+  }, [editing]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setEditing(false);
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [editing]);
+
+  if (editing) {
+    return (
+      <div ref={containerRef} className="relative">
+        <div className="flex items-center gap-1">
+          <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <input
+            ref={inputRef}
+            className="w-full bg-background border border-input rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar veículo..."
+          />
+          {currentId && (
+            <button
+              className="text-muted-foreground hover:text-destructive"
+              onClick={() => { onSelect(null); setEditing(false); setSearch(''); }}
+              title="Remover veículo"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        {filtered.length > 0 && (
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-md max-h-48 overflow-y-auto">
+            {filtered.map(v => (
+              <button
+                key={v.id}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${v.id === currentId ? 'bg-accent/50 font-medium' : ''}`}
+                onClick={() => { onSelect(v.id); setEditing(false); setSearch(''); }}
+              >
+                <span>{vehicleLabel(v)}</span>
+                {v.placa && <span className="ml-2 text-muted-foreground text-xs">({v.placa})</span>}
+              </button>
+            ))}
+          </div>
+        )}
+        {filtered.length === 0 && search.trim() && (
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-md p-3">
+            <p className="text-sm text-muted-foreground">Nenhum veículo encontrado</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="group flex items-center gap-2 text-sm cursor-pointer"
+      onClick={() => setEditing(true)}
+      title="Clique para editar"
+    >
+      <Car className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <span className={currentVehicle ? '' : 'text-muted-foreground italic'}>
+        {currentVehicle ? vehicleLabel(currentVehicle) : 'Nenhum veículo'}
+      </span>
+      <Pencil className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+    </div>
+  );
+};
+
+/* ─── Kanban Stage Selector ─── */
+const KanbanStageSelector: React.FC<{
+  columns: { id: number; descricao: string | null; cor: string | null; visivel: boolean | null }[];
+  currentId: number | null;
+  onChange: (id: number) => void;
+}> = ({ columns, currentId, onChange }) => {
+  const visibleColumns = useMemo(() => columns.filter(c => c.visivel !== false), [columns]);
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {visibleColumns.map(col => {
+        const isActive = col.id === currentId;
+        return (
+          <button
+            key={col.id}
+            onClick={() => { if (!isActive) onChange(col.id); }}
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
+              isActive
+                ? 'text-white shadow-sm'
+                : 'bg-muted/50 text-muted-foreground hover:bg-muted border-transparent'
+            }`}
+            style={isActive ? { backgroundColor: col.cor || 'hsl(var(--primary))', borderColor: col.cor || 'hsl(var(--primary))' } : undefined}
+          >
+            {isActive && <Check className="h-3 w-3" />}
+            {col.descricao || 'Sem nome'}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
 /* ─── Main Dialog ─── */
 const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }) => {
   const { data: opp, isLoading } = useOportunidadeDetail(oppId);
   const updateOpp = useUpdateOportunidade();
   const { data: columns = [] } = useKanbanColumns();
   const { data: vehicles = [] } = useUserStockVehicles();
+  const { data: configUsers = [] } = useConfigUsers();
   const queryClient = useQueryClient();
-
-  const currentColumn = useMemo(
-    () => columns.find((c) => c.id === opp?.id_kanban),
-    [columns, opp?.id_kanban]
-  );
 
   const currentVehicle = useMemo(
     () => vehicles.find((v) => v.id === opp?.idEstoque),
@@ -181,11 +365,18 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                 className="text-xl font-bold text-foreground"
                 inputClassName="text-xl font-bold"
               />
-              {subtitleParts.length > 0 && (
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {subtitleParts.join(' — ')}
-                </p>
-              )}
+              <div className="flex items-center gap-2 mt-0.5">
+                <EditableValue
+                  value={opp.valor}
+                  onSave={(v) => save('valor', v)}
+                />
+                {vehicleLabel && (
+                  <>
+                    <span className="text-sm text-muted-foreground">—</span>
+                    <span className="text-sm text-muted-foreground">{vehicleLabel}</span>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* ─── Body ─── */}
@@ -195,14 +386,11 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                 <div className="p-4 space-y-5">
                   {/* Etapa */}
                   <SidebarSection title="Etapa">
-                    <Badge
-                      style={{
-                        backgroundColor: currentColumn?.cor || undefined,
-                        color: '#fff',
-                      }}
-                    >
-                      {currentColumn?.descricao || 'Sem etapa'}
-                    </Badge>
+                    <KanbanStageSelector
+                      columns={columns}
+                      currentId={opp.id_kanban}
+                      onChange={(id) => save('id_kanban', id)}
+                    />
                   </SidebarSection>
 
                   {/* Lead */}
@@ -243,23 +431,30 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
 
                   {/* Responsável */}
                   <SidebarSection title="Responsável">
-                    <p className="text-sm">
-                      {opp.usuario?.nome || (
-                        <span className="text-muted-foreground italic">Não definido</span>
-                      )}
-                    </p>
+                    <Select
+                      value={opp.id_usuario ? String(opp.id_usuario) : ''}
+                      onValueChange={(v) => save('id_usuario', Number(v))}
+                    >
+                      <SelectTrigger className="w-full h-8 text-sm">
+                        <SelectValue placeholder="Selecionar responsável" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {configUsers.map(u => (
+                          <SelectItem key={u.id} value={String(u.id)}>
+                            {u.nome || `Usuário #${u.id}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </SidebarSection>
 
                   {/* Veículo */}
                   <SidebarSection title="Veículo de Interesse">
-                    {currentVehicle ? (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Car className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span>{vehicleLabel}</span>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic">Nenhum veículo</p>
-                    )}
+                    <VehicleAutocomplete
+                      vehicles={vehicles}
+                      currentId={opp.idEstoque}
+                      onSelect={(id) => save('idEstoque', id)}
+                    />
                   </SidebarSection>
 
                   <Separator />
