@@ -5,14 +5,17 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Pencil, User, Phone, Mail, Car, MessageSquare, CalendarClock, Check, Search, X } from 'lucide-react';
+import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X } from 'lucide-react';
 import { useOportunidadeDetail } from '@/hooks/crm/useOportunidadeDetail';
 import { useUpdateOportunidade } from '@/hooks/crm/useUpdateOportunidade';
 import { useKanbanColumns } from '@/hooks/crm/useKanban';
 import { useUserStockVehicles, type Vehicle } from '@/hooks/crm/useUserStockVehicles';
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
 import { useLeads, type Lead } from '@/hooks/crm/useLeads';
+import { useAtividades } from '@/hooks/crm/useAtividades';
 import { formatCurrency } from '@/lib/utils';
+import AtividadeForm from './AtividadeForm';
+import AtividadeTimeline from './AtividadeTimeline';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -424,6 +427,7 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
   const { data: vehicles = [] } = useUserStockVehicles();
   const { data: leads = [] } = useLeads();
   const { data: configUsers = [] } = useConfigUsers();
+  const { atividades, create: ativCreate, update: ativUpdate, isCreating: ativIsCreating } = useAtividades(oppId);
   const queryClient = useQueryClient();
 
   const currentVehicle = useMemo(
@@ -606,22 +610,29 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                 </div>
               </ScrollArea>
 
-              {/* ─── Central area: Atividades (placeholder) ─── */}
+              {/* ─── Central area: Atividades ─── */}
               <div className="flex-1 flex flex-col min-w-0">
-                <div className="px-6 py-3 border-b shrink-0">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                {/* Floating form */}
+                <div className="px-4 py-3 border-b shrink-0">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
                     <CalendarClock className="h-4 w-4" />
                     Atividades
                   </h3>
+                  <AtividadeForm
+                    oppId={opp.id}
+                    leadId={opp.id_lead}
+                    userId={opp.id_usuario}
+                    onSubmit={ativCreate}
+                    isCreating={ativIsCreating}
+                  />
                 </div>
+                {/* Timeline */}
                 <ScrollArea className="flex-1">
-                  <div className="flex-1 flex items-center justify-center p-8">
-                    <div className="text-center space-y-2">
-                      <MessageSquare className="h-10 w-10 text-muted-foreground/30 mx-auto" />
-                      <p className="text-sm text-muted-foreground">
-                        As atividades serão implementadas em breve.
-                      </p>
-                    </div>
+                  <div className="p-4">
+                    <AtividadeTimeline
+                      atividades={atividades}
+                      onUpdate={ativUpdate}
+                    />
                   </div>
                 </ScrollArea>
               </div>
