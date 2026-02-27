@@ -11,6 +11,7 @@ import { useUpdateOportunidade } from '@/hooks/crm/useUpdateOportunidade';
 import { useKanbanColumns } from '@/hooks/crm/useKanban';
 import { useUserStockVehicles, type Vehicle } from '@/hooks/crm/useUserStockVehicles';
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
+import { useLeads, type Lead } from '@/hooks/crm/useLeads';
 import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -270,6 +271,105 @@ const VehicleAutocomplete: React.FC<{
   );
 };
 
+/* ─── Lead Autocomplete ─── */
+const LeadAutocomplete: React.FC<{
+  leads: Lead[];
+  currentId: number | null;
+  onSelect: (id: number | null) => void;
+}> = ({ leads, currentId, onSelect }) => {
+  const [editing, setEditing] = useState(false);
+  const [search, setSearch] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const currentLead = useMemo(() => leads.find(l => l.id === currentId), [leads, currentId]);
+  const leadLabel = (l: Lead) => [l.nome, l.telefone].filter(Boolean).join(' — ');
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return leads.slice(0, 15);
+    const term = search.toLowerCase();
+    return leads.filter(l =>
+      (l.nome && l.nome.toLowerCase().includes(term)) ||
+      (l.telefone && l.telefone.toLowerCase().includes(term))
+    ).slice(0, 15);
+  }, [leads, search]);
+
+  useEffect(() => {
+    if (editing && inputRef.current) inputRef.current.focus();
+  }, [editing]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setEditing(false);
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [editing]);
+
+  if (editing) {
+    return (
+      <div ref={containerRef} className="relative">
+        <div className="flex items-center gap-1">
+          <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <input
+            ref={inputRef}
+            className="w-full bg-background border border-input rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar lead por nome ou telefone..."
+          />
+          {currentId && (
+            <button
+              className="text-muted-foreground hover:text-destructive"
+              onClick={() => { onSelect(null); setEditing(false); setSearch(''); }}
+              title="Remover lead"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        {filtered.length > 0 && (
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-md max-h-48 overflow-y-auto">
+            {filtered.map(l => (
+              <button
+                key={l.id}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${l.id === currentId ? 'bg-accent/50 font-medium' : ''}`}
+                onClick={() => { onSelect(l.id); setEditing(false); setSearch(''); }}
+              >
+                <span>{l.nome || 'Sem nome'}</span>
+                {l.telefone && <span className="ml-2 text-muted-foreground text-xs">({l.telefone})</span>}
+              </button>
+            ))}
+          </div>
+        )}
+        {filtered.length === 0 && search.trim() && (
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-md shadow-md p-3">
+            <p className="text-sm text-muted-foreground">Nenhum lead encontrado</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="group flex items-center gap-2 text-sm cursor-pointer"
+      onClick={() => setEditing(true)}
+      title="Clique para vincular um lead"
+    >
+      <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <span className={currentLead ? '' : 'text-muted-foreground italic'}>
+        {currentLead ? leadLabel(currentLead) : 'Nenhum lead vinculado'}
+      </span>
+      <Pencil className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+    </div>
+  );
+};
+
 /* ─── Kanban Stage Selector ─── */
 const KanbanStageSelector: React.FC<{
   columns: { id: number; descricao: string | null; cor: string | null; visivel: boolean | null }[];
@@ -322,6 +422,7 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
   const updateOpp = useUpdateOportunidade();
   const { data: columns = [] } = useKanbanColumns();
   const { data: vehicles = [] } = useUserStockVehicles();
+  const { data: leads = [] } = useLeads();
   const { data: configUsers = [] } = useConfigUsers();
   const queryClient = useQueryClient();
 
@@ -442,7 +543,11 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground italic">Nenhum lead vinculado</p>
+                      <LeadAutocomplete
+                        leads={leads}
+                        currentId={opp.id_lead}
+                        onSelect={(id) => save('id_lead', id)}
+                      />
                     )}
                   </SidebarSection>
 
