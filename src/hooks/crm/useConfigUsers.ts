@@ -15,10 +15,7 @@ export function useConfigUsers() {
     queryFn: async () => {
       if (!profile?.config) return [];
       const { data, error } = await supabase
-        .from('usuario')
-        .select('id, nome')
-        .eq('config', profile.config)
-        .eq('ativo', true);
+        .rpc('get_users_by_config', { p_config: profile.config });
       if (error) throw error;
       return (data || []) as ConfigUser[];
     },

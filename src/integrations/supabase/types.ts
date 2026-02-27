@@ -2541,6 +2541,13 @@ export type Database = {
     }
     Functions: {
       get_user_config_id: { Args: never; Returns: number }
+      get_users_by_config: {
+        Args: { p_config: number }
+        Returns: {
+          id: number
+          nome: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       match_documents: {
