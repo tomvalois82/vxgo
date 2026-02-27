@@ -947,22 +947,31 @@ export type Database = {
       }
       kanban: {
         Row: {
+          cor: string | null
           created_at: string
           descricao: string | null
           id: number
+          padrao: boolean | null
           posicao: number | null
+          visivel: boolean | null
         }
         Insert: {
+          cor?: string | null
           created_at?: string
           descricao?: string | null
           id?: number
+          padrao?: boolean | null
           posicao?: number | null
+          visivel?: boolean | null
         }
         Update: {
+          cor?: string | null
           created_at?: string
           descricao?: string | null
           id?: number
+          padrao?: boolean | null
           posicao?: number | null
+          visivel?: boolean | null
         }
         Relationships: []
       }
