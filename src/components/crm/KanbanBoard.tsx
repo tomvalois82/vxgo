@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Settings2 } from 'lucide-react';
+import { Settings2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import {
   useKanbanColumns,
@@ -12,12 +11,14 @@ import {
   KanbanColumn,
 } from '@/hooks/crm/useKanban';
 import KanbanEditDialog from './KanbanEditDialog';
+import OportunidadeDialog from './OportunidadeDialog';
 
 const KanbanBoard: React.FC = () => {
   const { data: allColumns = [], isLoading: columnsLoading } = useKanbanColumns();
   const { data: oportunidades = [], isLoading: oppsLoading } = useKanbanOportunidades();
   const moveOpp = useMoveOportunidade();
   const [editOpen, setEditOpen] = useState(false);
+  const [newOppColumn, setNewOppColumn] = useState<{ id: number; name: string } | null>(null);
 
   const visibleColumns = useMemo(() => {
     return allColumns
@@ -42,11 +43,8 @@ const KanbanBoard: React.FC = () => {
     if (!result.destination) return;
     const oppId = parseInt(result.draggableId.replace('opp-', ''), 10);
     const destColumnId = parseInt(result.destination.droppableId.replace('col-', ''), 10);
-    
-    // Only move if column changed
     const sourceColumnId = parseInt(result.source.droppableId.replace('col-', ''), 10);
     if (sourceColumnId === destColumnId) return;
-
     moveOpp.mutate({ id: oppId, id_kanban: destColumnId });
   };
 
@@ -60,7 +58,6 @@ const KanbanBoard: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-foreground">CRM - Kanban</h1>
         <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="gap-1.5">
@@ -69,7 +66,6 @@ const KanbanBoard: React.FC = () => {
         </Button>
       </div>
 
-      {/* Board */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex-1 overflow-x-auto pb-4">
           <div className="flex gap-4 h-full min-h-[60vh]">
@@ -78,6 +74,9 @@ const KanbanBoard: React.FC = () => {
                 key={column.id}
                 column={column}
                 oportunidades={oppsByColumn[column.id] || []}
+                onAddOpp={() =>
+                  setNewOppColumn({ id: column.id, name: column.descricao || 'Sem nome' })
+                }
               />
             ))}
 
@@ -91,6 +90,15 @@ const KanbanBoard: React.FC = () => {
       </DragDropContext>
 
       <KanbanEditDialog open={editOpen} onOpenChange={setEditOpen} columns={allColumns} />
+
+      <OportunidadeDialog
+        open={!!newOppColumn}
+        onOpenChange={(open) => {
+          if (!open) setNewOppColumn(null);
+        }}
+        columnId={newOppColumn?.id ?? 0}
+        columnName={newOppColumn?.name}
+      />
     </div>
   );
 };
@@ -98,26 +106,34 @@ const KanbanBoard: React.FC = () => {
 interface ColumnProps {
   column: KanbanColumn;
   oportunidades: Oportunidade[];
+  onAddOpp: () => void;
 }
 
-const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades }) => {
+const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddOpp }) => {
   return (
     <div className="flex flex-col w-72 min-w-[18rem] flex-shrink-0 bg-muted/40 rounded-xl border">
-      {/* Column header with color stripe */}
       <div
         className="h-1.5 rounded-t-xl"
         style={{ backgroundColor: column.cor || '#94a3b8' }}
       />
       <div className="px-3 py-2.5 flex items-center justify-between border-b">
-        <h3 className="text-sm font-semibold text-foreground truncate">
-          {column.descricao || 'Sem nome'}
-        </h3>
-        <Badge variant="secondary" className="text-xs ml-2 font-normal">
-          {oportunidades.length}
-        </Badge>
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="text-sm font-semibold text-foreground truncate">
+            {column.descricao || 'Sem nome'}
+          </h3>
+          <Badge variant="secondary" className="text-xs font-normal">
+            {oportunidades.length}
+          </Badge>
+        </div>
+        <button
+          onClick={onAddOpp}
+          className="flex-shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          title="Nova oportunidade"
+        >
+          <Plus size={16} />
+        </button>
       </div>
 
-      {/* Cards area */}
       <Droppable droppableId={`col-${column.id}`}>
         {(provided, snapshot) => (
           <div
