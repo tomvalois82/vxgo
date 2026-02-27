@@ -5,25 +5,22 @@ import { useAuth } from '@/contexts/AuthContext';
 
 // Definindo um tipo mais específico para o retorno dos veículos
 export interface Vehicle {
-  id: string; // ou number, dependendo do schema
-  nome: string | null;
-  marca: string | null;
+  id: number;
+  fabricante: string | null;
   modelo: string | null;
-  ano_modelo: number | null;
-  valor: number | null;
-  vendido: boolean | null;
+  ano: string | null;
+  ano_fabricacao: string | null;
+  valor: string | null;
   placa: string | null;
   created_at: string | null;
-  km: number | null;
-  renavam: string | null;
+  km: string | null;
   cor: string | null;
-  cidade_auto: string | null;
   cambio: string | null;
-  combustivel: string | null;
-  imagem_principal_url: string | null;
-  todas_imagens_urls: string[] | null;
-  status: string | null;
+  motor: string | null;
   foto: string | null;
+  fotos: string[] | null;
+  status: string | null;
+  categoria: string | null;
 }
 
 export const useUserStockVehicles = () => {
@@ -35,7 +32,7 @@ export const useUserStockVehicles = () => {
     }
 
     // A lista de colunas a serem selecionadas.
-    const selectColumns = 'id, nome, marca, modelo, ano_modelo, valor, vendido, placa, created_at, km, renavam, cor, cidade_auto, cambio, combustivel, imagem_principal_url, todas_imagens_urls, status, foto';
+    const selectColumns = 'id, fabricante, modelo, ano, ano_fabricacao, valor, placa, created_at, km, cor, cambio, motor, foto, fotos, status, categoria';
 
     // Using any to bypass TypeScript strict typing for dynamic table names
     const { data, error } = await (supabase as any)

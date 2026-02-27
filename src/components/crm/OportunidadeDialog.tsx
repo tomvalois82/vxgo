@@ -142,8 +142,8 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
                     <span className="flex items-center gap-2">
                       <Car className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span className="truncate">
-                        {[v.marca, v.modelo, v.ano_modelo].filter(Boolean).join(' ') || `Veículo #${v.id}`}
-                        {v.valor != null ? ` — ${typeof v.valor === 'number' ? v.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : v.valor}` : ''}
+                        {[v.fabricante, v.modelo, v.ano].filter(Boolean).join(' ') || `Veículo #${v.id}`}
+                        {v.valor != null ? ` — R$ ${v.valor}` : ''}
                       </span>
                     </span>
                   </SelectItem>
