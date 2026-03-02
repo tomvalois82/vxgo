@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Pencil, PhoneCall, MessageSquare, MapPin, CheckCircle2, Info, StickyNote } from 'lucide-react';
+import { Pencil, PhoneCall, MessageSquare, MapPin, CheckCircle2, Info, StickyNote, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { Atividade } from '@/hooks/crm/useAtividades';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -134,9 +144,11 @@ const InlineDateTimeEdit: React.FC<{
 interface Props {
   atividades: Atividade[];
   onUpdate: (data: { id: number; [key: string]: any }) => void;
+  onDelete?: (id: number) => void;
 }
 
-const AtividadeTimeline: React.FC<Props> = ({ atividades, onUpdate }) => {
+const AtividadeTimeline: React.FC<Props> = ({ atividades, onUpdate, onDelete }) => {
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   if (atividades.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -175,11 +187,20 @@ const AtividadeTimeline: React.FC<Props> = ({ atividades, onUpdate }) => {
                     placeholder="Sem descrição"
                   />
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex flex-col items-center gap-1 shrink-0">
                   <Checkbox
                     checked={a.concluida === true}
                     onCheckedChange={(v) => onUpdate({ id: a.id, concluida: v === true })}
                   />
+                  {onDelete && (
+                    <button
+                      onClick={() => setDeleteId(a.id)}
+                      className="text-muted-foreground/30 hover:text-destructive transition-colors"
+                      title="Excluir atividade"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -205,6 +226,32 @@ const AtividadeTimeline: React.FC<Props> = ({ atividades, onUpdate }) => {
           </div>
         );
       })}
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir atividade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteId !== null && onDelete) {
+                  onDelete(deleteId);
+                  setDeleteId(null);
+                }
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

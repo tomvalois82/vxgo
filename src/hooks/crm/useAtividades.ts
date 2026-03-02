@@ -62,11 +62,25 @@ export function useAtividades(oppId: number | null) {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase
+        .from('atividade')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['atividades', oppId] });
+    },
+  });
+
   return {
     atividades: query.data || [],
     isLoading: query.isLoading,
     create: createMutation.mutateAsync,
     update: updateMutation.mutate,
+    remove: deleteMutation.mutate,
     isCreating: createMutation.isPending,
   };
 }

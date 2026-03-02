@@ -427,7 +427,7 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
   const { data: vehicles = [] } = useUserStockVehicles();
   const { data: leads = [] } = useLeads();
   const { data: configUsers = [] } = useConfigUsers();
-  const { atividades, create: ativCreate, update: ativUpdate, isCreating: ativIsCreating } = useAtividades(oppId);
+  const { atividades, create: ativCreate, update: ativUpdate, remove: ativRemove, isCreating: ativIsCreating } = useAtividades(oppId);
   const queryClient = useQueryClient();
 
   const currentVehicle = useMemo(
@@ -632,6 +632,7 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                     <AtividadeTimeline
                       atividades={atividades}
                       onUpdate={ativUpdate}
+                      onDelete={ativRemove}
                     />
                   </div>
                 </ScrollArea>
