@@ -165,23 +165,25 @@ const Agenda: React.FC = () => {
             </Select>
           </div>
 
-          {/* Responsável */}
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Responsável</Label>
-            <Select value={filterUsuario} onValueChange={setFilterUsuario}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {isManager && <SelectItem value="todos">Todos</SelectItem>}
-                {configUsers?.map((u) => (
-                  <SelectItem key={u.id} value={u.id.toString()}>
-                    {u.nome || `Usuário #${u.id}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Responsável - only managers can change */}
+          {isManager && (
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Responsável</Label>
+              <Select value={filterUsuario} onValueChange={setFilterUsuario}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {configUsers?.map((u) => (
+                    <SelectItem key={u.id} value={u.id.toString()}>
+                      {u.nome || `Usuário #${u.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
 
