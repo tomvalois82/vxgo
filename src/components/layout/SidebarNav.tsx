@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Car, Users, MessageSquare, Settings, LogOut, ChevronLeft, Menu, X, BarChart3, Link as LinkIcon, Clock, Palette, Kanban } from 'lucide-react';
+import { Car, Users, MessageSquare, Settings, LogOut, ChevronLeft, ChevronDown, Menu, X, BarChart3, Link as LinkIcon, Clock, Palette, Kanban, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +31,8 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
     signOut();
   };
 
+  const [crmOpen, setCrmOpen] = useState(location.pathname.startsWith('/dashboard/crm'));
+
   const navItems = [{
     icon: BarChart3,
     label: 'Dashboard',
@@ -48,10 +50,6 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
     label: 'Followup',
     href: '/dashboard/followup'
   }, {
-    icon: Kanban,
-    label: 'CRM',
-    href: '/dashboard/crm'
-  }, {
     icon: Palette,
     label: 'Canva',
     href: '/dashboard/canva'
@@ -68,6 +66,11 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
     label: 'Usuários',
     href: '/dashboard/users'
   }] : [])];
+
+  const crmSubItems = [
+    { icon: Kanban, label: 'Kanban', href: '/dashboard/crm' },
+    { icon: CalendarDays, label: 'Agenda', href: '/dashboard/crm/agenda' },
+  ];
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -90,8 +93,32 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
             </Button>
           </div>
           
-          <nav className="flex flex-col p-4 space-y-2">
-            {navItems.map(item => <Link key={item.href} to={item.href} onClick={onClose} className={cn("flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors", isActive(item.href) ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
+           <nav className="flex flex-col p-4 space-y-2">
+            {navItems.slice(0, 4).map(item => <Link key={item.href} to={item.href} onClick={onClose} className={cn("flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors", isActive(item.href) ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
+                <item.icon size={20} className="flex-shrink-0" />
+                <span>{item.label}</span>
+              </Link>)}
+
+            {/* CRM submenu */}
+            <div>
+              <button onClick={() => setCrmOpen(!crmOpen)} className={cn("flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full", location.pathname.startsWith('/dashboard/crm') ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
+                <Kanban size={20} className="flex-shrink-0" />
+                <span className="flex-1 text-left">CRM</span>
+                <ChevronDown size={16} className={cn("transition-transform", crmOpen && "rotate-180")} />
+              </button>
+              {crmOpen && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {crmSubItems.map(sub => (
+                    <Link key={sub.href} to={sub.href} onClick={onClose} className={cn("flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm transition-colors", location.pathname === sub.href ? "bg-carblue/80 text-white" : "text-gray-600 hover:bg-gray-100")}>
+                      <sub.icon size={16} className="flex-shrink-0" />
+                      <span>{sub.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {navItems.slice(4).map(item => <Link key={item.href} to={item.href} onClick={onClose} className={cn("flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors", isActive(item.href) ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
                 <item.icon size={20} className="flex-shrink-0" />
                 <span>{item.label}</span>
               </Link>)}
@@ -117,8 +144,38 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
-        {navItems.map(item => <Link key={item.href} to={item.href} className={cn("flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors", isCollapsed ? "justify-center" : "space-x-3", isActive(item.href) ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        {navItems.slice(0, 4).map(item => <Link key={item.href} to={item.href} className={cn("flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors", isCollapsed ? "justify-center" : "space-x-3", isActive(item.href) ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
+            <item.icon size={20} className="flex-shrink-0" />
+            {!isCollapsed && <span>{item.label}</span>}
+          </Link>)}
+
+        {/* CRM submenu */}
+        {isCollapsed ? (
+          <Link to="/dashboard/crm" className={cn("flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium transition-colors", location.pathname.startsWith('/dashboard/crm') ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
+            <Kanban size={20} className="flex-shrink-0" />
+          </Link>
+        ) : (
+          <div>
+            <button onClick={() => setCrmOpen(!crmOpen)} className={cn("flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full", location.pathname.startsWith('/dashboard/crm') ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
+              <Kanban size={20} className="flex-shrink-0" />
+              <span className="flex-1 text-left">CRM</span>
+              <ChevronDown size={16} className={cn("transition-transform", crmOpen && "rotate-180")} />
+            </button>
+            {crmOpen && (
+              <div className="ml-6 mt-1 space-y-1">
+                {crmSubItems.map(sub => (
+                  <Link key={sub.href} to={sub.href} className={cn("flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm transition-colors", location.pathname === sub.href ? "bg-carblue/80 text-white" : "text-gray-600 hover:bg-gray-100")}>
+                    <sub.icon size={16} className="flex-shrink-0" />
+                    <span>{sub.label}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {navItems.slice(4).map(item => <Link key={item.href} to={item.href} className={cn("flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors", isCollapsed ? "justify-center" : "space-x-3", isActive(item.href) ? "bg-carblue text-white" : "text-gray-700 hover:bg-gray-100")}>
             <item.icon size={20} className="flex-shrink-0" />
             {!isCollapsed && <span>{item.label}</span>}
           </Link>)}
