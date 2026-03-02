@@ -172,6 +172,26 @@ export function useMoveOportunidade() {
   });
 }
 
+export function useDeleteOportunidade() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase
+        .from('opotunidade')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kanban-oportunidades'] });
+      toast({ title: 'Oportunidade excluída com sucesso' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Erro ao excluir oportunidade', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
 export function useBulkUpdateKanbanPositions() {
   const queryClient = useQueryClient();
   return useMutation({
