@@ -494,65 +494,63 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
         ) : (
           <>
             {/* ─── Header ─── */}
-            <div className="px-6 py-4 border-b shrink-0">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <EditableField
-                    value={opp.titulo || ''}
-                    onSave={(v) => save('titulo', v)}
-                    placeholder="Título da oportunidade"
-                    className="text-xl font-bold text-foreground"
-                    inputClassName="text-xl font-bold"
-                  />
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <EditableValue
-                      value={opp.valor}
-                      onSave={(v) => save('valor', v)}
-                    />
-                    {vehicleLabel && (
-                      <>
-                        <span className="text-sm text-muted-foreground">—</span>
-                        <span className="text-sm text-muted-foreground">{vehicleLabel}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-                  <AlertDialogTrigger asChild>
-                    <button
-                      className="ml-2 mt-1 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      title="Excluir oportunidade"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir oportunidade?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta ação é irreversível. Todas as atividades atreladas a esta oportunidade também serão excluídas permanentemente.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        onClick={() => {
-                          if (!opp) return;
-                          deleteOpp.mutate(opp.id, {
-                            onSuccess: () => {
-                              onOpenChange(false);
-                            },
-                          });
-                        }}
-                      >
-                        Excluir
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+            <div className="px-6 py-4 border-b shrink-0 pr-20">
+              <EditableField
+                value={opp.titulo || ''}
+                onSave={(v) => save('titulo', v)}
+                placeholder="Título da oportunidade"
+                className="text-xl font-bold text-foreground"
+                inputClassName="text-xl font-bold"
+              />
+              <div className="flex items-center gap-2 mt-0.5">
+                <EditableValue
+                  value={opp.valor}
+                  onSave={(v) => save('valor', v)}
+                />
+                {vehicleLabel && (
+                  <>
+                    <span className="text-sm text-muted-foreground">—</span>
+                    <span className="text-sm text-muted-foreground">{vehicleLabel}</span>
+                  </>
+                )}
               </div>
             </div>
+
+            {/* Delete button aligned with close (X) */}
+            <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="absolute right-12 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  title="Excluir oportunidade"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir oportunidade?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação é irreversível. Todas as atividades atreladas a esta oportunidade também serão excluídas permanentemente.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => {
+                      if (!opp) return;
+                      deleteOpp.mutate(opp.id, {
+                        onSuccess: () => {
+                          onOpenChange(false);
+                        },
+                      });
+                    }}
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
             {/* ─── Body ─── */}
             <div className="flex flex-1 min-h-0">
