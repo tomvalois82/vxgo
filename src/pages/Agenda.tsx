@@ -1,13 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAgendaAtividades } from '@/hooks/crm/useAgendaAtividades';
+import { useAgendaAtividades, type AgendaFilters, type AgendaAtividade } from '@/hooks/crm/useAgendaAtividades';
+import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
+import { useAuth } from '@/contexts/AuthContext';
 import AtividadeDetailDialog from '@/components/crm/AtividadeDetailDialog';
-import type { Atividade } from '@/hooks/crm/useAtividades';
 import { PhoneCall, MessageSquare, MapPin, CheckCircle2, Info, StickyNote } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const TIPO_ICONS: Record<string, React.FC<{ className?: string }>> = {
   'Ligação': PhoneCall,
@@ -27,18 +30,57 @@ const TIPO_COLORS: Record<string, string> = {
   'Observação': 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/30',
 };
 
+const TIPOS = ['Ligação', 'Mensagem', 'Visita', 'Confirmar', 'Informação', 'Observação'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
+function formatPhoneBR(phone: string | null | undefined): string {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits[2]} ${digits.slice(3, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return phone;
+}
+
 const Agenda: React.FC = () => {
+  const { profile } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedAtividade, setSelectedAtividade] = useState<Atividade | null>(null);
+  const [selectedAtividade, setSelectedAtividade] = useState<AgendaAtividade | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { atividades, isLoading, update, remove } = useAgendaAtividades(selectedDate);
+  // Filters
+  const isManager = profile?.cargo === 'Gerente' || profile?.cargo === 'Supervisor';
+  const [filterConcluida, setFilterConcluida] = useState<string>('nao'); // 'todos' | 'sim' | 'nao'
+  const [filterTipo, setFilterTipo] = useState<string>('Ligação');
+  const [filterUsuario, setFilterUsuario] = useState<string>(() => {
+    return profile?.id?.toString() || 'me';
+  });
+
+  const { data: configUsers } = useConfigUsers();
+
+  const filters: AgendaFilters = useMemo(() => {
+    const f: AgendaFilters = {};
+    if (filterConcluida === 'sim') f.concluida = true;
+    else if (filterConcluida === 'nao') f.concluida = false;
+    if (filterTipo && filterTipo !== 'todos') f.tipo = filterTipo;
+    if (filterUsuario === 'todos') {
+      f.id_usuario = null;
+    } else if (filterUsuario && filterUsuario !== 'me') {
+      f.id_usuario = parseInt(filterUsuario, 10);
+    } else if (profile?.id) {
+      f.id_usuario = profile.id;
+    }
+    return f;
+  }, [filterConcluida, filterTipo, filterUsuario, profile?.id]);
+
+  const { atividades, isLoading, update, remove } = useAgendaAtividades(selectedDate, filters);
 
   // Group activities by hour
   const atividadesByHour = useMemo(() => {
-    const map: Record<number, Atividade[]> = {};
+    const map: Record<number, AgendaAtividade[]> = {};
     atividades.forEach((a) => {
       if (a.data_hora) {
         const hour = new Date(a.data_hora).getHours();
@@ -49,14 +91,13 @@ const Agenda: React.FC = () => {
     return map;
   }, [atividades]);
 
-  const handleClickAtividade = (a: Atividade) => {
+  const handleClickAtividade = (a: AgendaAtividade) => {
     setSelectedAtividade(a);
     setDialogOpen(true);
   };
 
   const handleUpdate = (data: { id: number; [key: string]: any }) => {
     update(data);
-    // Update the local selected atividade for immediate feedback
     if (selectedAtividade && data.id === selectedAtividade.id) {
       setSelectedAtividade((prev) => prev ? { ...prev, ...data } : prev);
     }
@@ -64,10 +105,17 @@ const Agenda: React.FC = () => {
 
   const formattedDate = format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
+  // Set filterUsuario to profile.id once loaded
+  React.useEffect(() => {
+    if (profile?.id && filterUsuario === 'me') {
+      setFilterUsuario(profile.id.toString());
+    }
+  }, [profile?.id]);
+
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-5rem)] gap-0">
-      {/* Left side - Calendar */}
-      <div className="md:w-[300px] shrink-0 border-r border-border bg-card p-4 flex flex-col gap-4">
+      {/* Left side - Calendar + Filters */}
+      <div className="md:w-[300px] shrink-0 border-r border-border bg-card p-4 flex flex-col gap-4 overflow-y-auto">
         <Calendar
           mode="single"
           selected={selectedDate}
@@ -80,6 +128,60 @@ const Agenda: React.FC = () => {
         </div>
         <div className="text-xs text-muted-foreground text-center">
           {atividades.length} atividade{atividades.length !== 1 ? 's' : ''}
+        </div>
+
+        {/* Filters */}
+        <div className="border-t border-border pt-3 space-y-3">
+          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Filtros</div>
+
+          {/* Concluída */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Concluída</Label>
+            <Select value={filterConcluida} onValueChange={setFilterConcluida}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas</SelectItem>
+                <SelectItem value="sim">Sim</SelectItem>
+                <SelectItem value="nao">Não</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Tipo */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Tipo</Label>
+            <Select value={filterTipo} onValueChange={setFilterTipo}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {TIPOS.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Responsável */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Responsável</Label>
+            <Select value={filterUsuario} onValueChange={setFilterUsuario}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {isManager && <SelectItem value="todos">Todos</SelectItem>}
+                {configUsers?.map((u) => (
+                  <SelectItem key={u.id} value={u.id.toString()}>
+                    {u.nome || `Usuário #${u.id}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -123,6 +225,14 @@ const Agenda: React.FC = () => {
                         ? format(new Date(a.data_hora), 'HH:mm')
                         : '';
 
+                      // Build description with lead info
+                      const descParts: string[] = [];
+                      if (a.descricao) descParts.push(a.descricao);
+                      const leadInfo: string[] = [];
+                      if (a.lead_nome) leadInfo.push(a.lead_nome);
+                      if (a.lead_telefone) leadInfo.push(formatPhoneBR(a.lead_telefone));
+                      const leadStr = leadInfo.join(' • ');
+
                       return (
                         <button
                           key={a.id}
@@ -133,6 +243,9 @@ const Agenda: React.FC = () => {
                             <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                             <span className={`text-sm font-medium truncate ${a.concluida ? 'line-through' : ''}`}>
                               {a.descricao || 'Sem descrição'}
+                              {leadStr && (
+                                <span className="font-normal text-muted-foreground"> — {leadStr}</span>
+                              )}
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground mt-0.5">
