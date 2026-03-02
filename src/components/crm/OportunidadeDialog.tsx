@@ -19,8 +19,10 @@ import {
 } from '@/components/ui/select';
 import { useCreateOportunidade } from '@/hooks/crm/useKanban';
 import { useUserStockVehicles } from '@/hooks/crm/useUserStockVehicles';
+import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatCurrency, extractNumericValue } from '@/lib/formUtils';
-import { Car } from 'lucide-react';
+import { Car, User } from 'lucide-react';
 import LeadSearchField, { type LeadOption } from './LeadSearchField';
 import CreateLeadDialog from './CreateLeadDialog';
 
@@ -46,8 +48,18 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   const [selectedLead, setSelectedLead] = useState<LeadOption | null>(null);
   const [showCreateLead, setShowCreateLead] = useState(false);
+  const [selectedResponsavel, setSelectedResponsavel] = useState<string>('');
   const createOpp = useCreateOportunidade();
   const { data: vehicles = [] } = useUserStockVehicles();
+  const { data: configUsers = [] } = useConfigUsers();
+  const { profile } = useAuth();
+
+  // Set default responsável to logged-in user
+  React.useEffect(() => {
+    if (profile?.id && !selectedResponsavel) {
+      setSelectedResponsavel(String(profile.id));
+    }
+  }, [profile?.id]);
 
   const availableVehicles = useMemo(
     () =>
@@ -73,6 +85,7 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
     setObs('');
     setSelectedVehicleId('');
     setSelectedLead(null);
+    setSelectedResponsavel(profile?.id ? String(profile.id) : '');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -91,6 +104,7 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
         status: 'aberta',
         idEstoque: selectedVehicleId ? Number(selectedVehicleId) : undefined,
         id_lead: selectedLead?.id ?? undefined,
+        id_usuario: selectedResponsavel ? Number(selectedResponsavel) : undefined,
       },
       {
         onSuccess: () => {
@@ -190,6 +204,25 @@ const OportunidadeDialog: React.FC<OportunidadeDialogProps> = ({
               onChange={(e) => setObs(e.target.value)}
               rows={2}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="opp-responsavel">Responsável</Label>
+            <Select value={selectedResponsavel} onValueChange={setSelectedResponsavel}>
+              <SelectTrigger id="opp-responsavel">
+                <SelectValue placeholder="Selecione um responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                {configUsers.map((u) => (
+                  <SelectItem key={u.id} value={String(u.id)}>
+                    <span className="flex items-center gap-2">
+                      <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      {u.nome || `Usuário #${u.id}`}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <DialogFooter>
