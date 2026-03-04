@@ -1,8 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Settings2, Plus } from 'lucide-react';
+import { Settings2, Plus, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import {
   useKanbanColumns,
   useKanbanOportunidades,
@@ -10,17 +13,31 @@ import {
   Oportunidade,
   KanbanColumn,
 } from '@/hooks/crm/useKanban';
+import { useActiveFunis } from '@/hooks/crm/useFunis';
 import KanbanEditDialog from './KanbanEditDialog';
 import OportunidadeDialog from './OportunidadeDialog';
 import OportunidadeDetailDialog from './OportunidadeDetailDialog';
+import FunilManageDialog from './FunilManageDialog';
 
 const KanbanBoard: React.FC = () => {
-  const { data: allColumns = [], isLoading: columnsLoading } = useKanbanColumns();
-  const { data: oportunidades = [], isLoading: oppsLoading } = useKanbanOportunidades();
-  const moveOpp = useMoveOportunidade();
+  const { data: activeFunis = [], isLoading: funisLoading } = useActiveFunis();
+  const [selectedFunilId, setSelectedFunilId] = useState<number | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [funilManageOpen, setFunilManageOpen] = useState(false);
   const [newOppColumn, setNewOppColumn] = useState<{ id: number; name: string } | null>(null);
   const [detailOppId, setDetailOppId] = useState<number | null>(null);
+
+  // Auto-select first funnel when loaded
+  const currentFunilId = useMemo(() => {
+    if (selectedFunilId && activeFunis.some(f => f.id === selectedFunilId)) {
+      return selectedFunilId;
+    }
+    return activeFunis.length > 0 ? activeFunis[0].id : null;
+  }, [selectedFunilId, activeFunis]);
+
+  const { data: allColumns = [], isLoading: columnsLoading } = useKanbanColumns(currentFunilId);
+  const { data: oportunidades = [], isLoading: oppsLoading } = useKanbanOportunidades();
+  const moveOpp = useMoveOportunidade();
 
   const visibleColumns = useMemo(() => {
     return allColumns
@@ -50,7 +67,9 @@ const KanbanBoard: React.FC = () => {
     moveOpp.mutate({ id: oppId, id_kanban: destColumnId });
   };
 
-  if (columnsLoading || oppsLoading) {
+  const isLoading = funisLoading || columnsLoading || oppsLoading;
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Carregando Kanban...</p>
@@ -60,39 +79,93 @@ const KanbanBoard: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-foreground">CRM - Kanban</h1>
-        <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="gap-1.5">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-2xl font-bold text-foreground">CRM - Kanban</h1>
+
+          {activeFunis.length > 0 && (
+            <Select
+              value={currentFunilId ? String(currentFunilId) : undefined}
+              onValueChange={(val) => setSelectedFunilId(Number(val))}
+            >
+              <SelectTrigger className="w-48 h-9">
+                <SelectValue placeholder="Selecione o funil" />
+              </SelectTrigger>
+              <SelectContent>
+                {activeFunis.map((f) => (
+                  <SelectItem key={f.id} value={String(f.id)}>
+                    {f.titulo || `Funil #${f.id}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setFunilManageOpen(true)}
+            className="gap-1.5"
+            title="Gerenciar Funis"
+          >
+            <GitBranch size={16} />
+            <span className="hidden sm:inline">Funis</span>
+          </Button>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setEditOpen(true)}
+          className="gap-1.5"
+          disabled={!currentFunilId}
+        >
           <Settings2 size={16} />
           Gerenciar Colunas
         </Button>
       </div>
 
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex-1 overflow-x-auto pb-4">
-          <div className="flex gap-4 h-full min-h-[60vh]">
-            {visibleColumns.map((column) => (
-              <KanbanColumnView
-                key={column.id}
-                column={column}
-                oportunidades={oppsByColumn[column.id] || []}
-                onAddOpp={() =>
-                  setNewOppColumn({ id: column.id, name: column.descricao || 'Sem nome' })
-                }
-                onClickOpp={(id) => setDetailOppId(id)}
-              />
-            ))}
-
-            {visibleColumns.length === 0 && (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <p>Nenhuma coluna visível. Clique em "Gerenciar Colunas" para configurar.</p>
-              </div>
-            )}
-          </div>
+      {!currentFunilId ? (
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+          <p>Nenhum funil ativo. Clique em "Funis" para criar um.</p>
         </div>
-      </DragDropContext>
+      ) : (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="flex-1 overflow-x-auto pb-4">
+            <div className="flex gap-4 h-full min-h-[60vh]">
+              {visibleColumns.map((column) => (
+                <KanbanColumnView
+                  key={column.id}
+                  column={column}
+                  oportunidades={oppsByColumn[column.id] || []}
+                  onAddOpp={() =>
+                    setNewOppColumn({ id: column.id, name: column.descricao || 'Sem nome' })
+                  }
+                  onClickOpp={(id) => setDetailOppId(id)}
+                />
+              ))}
 
-      <KanbanEditDialog open={editOpen} onOpenChange={setEditOpen} columns={allColumns} />
+              {visibleColumns.length === 0 && (
+                <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                  <p>Nenhuma coluna visível. Clique em "Gerenciar Colunas" para configurar.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </DragDropContext>
+      )}
+
+      <KanbanEditDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        columns={allColumns}
+        funilId={currentFunilId}
+      />
+
+      <FunilManageDialog
+        open={funilManageOpen}
+        onOpenChange={setFunilManageOpen}
+      />
 
       <OportunidadeDialog
         open={!!newOppColumn}
