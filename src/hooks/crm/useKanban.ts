@@ -53,13 +53,12 @@ export function useKanbanOportunidades() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('opotunidade')
-        .select('*, lead:id_lead(nome, telefone), estoque:idEstoque(modelo, fabricante)')
+        .select('*, lead:id_lead(nome, telefone)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || []).map((d: any) => ({
         ...d,
         lead: Array.isArray(d.lead) ? d.lead[0] ?? null : d.lead,
-        estoque: Array.isArray(d.estoque) ? d.estoque[0] ?? null : d.estoque,
       })) as Oportunidade[];
     },
   });
