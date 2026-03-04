@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Settings2, Plus, GitBranch } from 'lucide-react';
+import { Settings2, Plus, GitBranch, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -14,6 +14,7 @@ import {
   KanbanColumn,
 } from '@/hooks/crm/useKanban';
 import { useActiveFunis } from '@/hooks/crm/useFunis';
+import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
 import KanbanEditDialog from './KanbanEditDialog';
 import OportunidadeDialog from './OportunidadeDialog';
 import OportunidadeDetailDialog from './OportunidadeDetailDialog';
@@ -26,7 +27,8 @@ const KanbanBoard: React.FC = () => {
   const [funilManageOpen, setFunilManageOpen] = useState(false);
   const [newOppColumn, setNewOppColumn] = useState<{ id: number; name: string } | null>(null);
   const [detailOppId, setDetailOppId] = useState<number | null>(null);
-
+  const [selectedUserId, setSelectedUserId] = useState<string>('all');
+  const { data: configUsers = [] } = useConfigUsers();
   // Auto-select first funnel when loaded
   const currentFunilId = useMemo(() => {
     if (selectedFunilId && activeFunis.some(f => f.id === selectedFunilId)) {
@@ -52,11 +54,12 @@ const KanbanBoard: React.FC = () => {
     });
     oportunidades.forEach((opp) => {
       if (opp.id_kanban && map[opp.id_kanban]) {
+        if (selectedUserId !== 'all' && opp.id_usuario !== Number(selectedUserId)) return;
         map[opp.id_kanban].push(opp);
       }
     });
     return map;
-  }, [visibleColumns, oportunidades]);
+  }, [visibleColumns, oportunidades, selectedUserId]);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -111,6 +114,26 @@ const KanbanBoard: React.FC = () => {
             <GitBranch size={16} />
             <span className="hidden sm:inline">Funis</span>
           </Button>
+
+          <Select
+            value={selectedUserId}
+            onValueChange={setSelectedUserId}
+          >
+            <SelectTrigger className="w-44 h-9">
+              <div className="flex items-center gap-1.5">
+                <Users size={14} className="flex-shrink-0 text-muted-foreground" />
+                <SelectValue placeholder="Responsável" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {configUsers.map((u) => (
+                <SelectItem key={u.id} value={String(u.id)}>
+                  {u.nome || `Usuário #${u.id}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Button
