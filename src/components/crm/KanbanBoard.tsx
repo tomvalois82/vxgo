@@ -54,7 +54,8 @@ const KanbanBoard: React.FC = () => {
     });
     oportunidades.forEach((opp) => {
       if (opp.id_kanban && map[opp.id_kanban]) {
-        if (selectedUserId !== 'all' && opp.id_usuario !== Number(selectedUserId)) return;
+      if (selectedUserId === 'unassigned' && opp.id_usuario != null) return;
+        if (selectedUserId !== 'all' && selectedUserId !== 'unassigned' && opp.id_usuario !== Number(selectedUserId)) return;
         map[opp.id_kanban].push(opp);
       }
     });
@@ -127,6 +128,7 @@ const KanbanBoard: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="unassigned">Sem responsável</SelectItem>
               {configUsers.map((u) => (
                 <SelectItem key={u.id} value={String(u.id)}>
                   {u.nome || `Usuário #${u.id}`}
