@@ -69,13 +69,11 @@ const KanbanBoard: React.FC = () => {
         if (searchLower) {
           const leadNome = opp.lead?.nome?.toLowerCase() || '';
           const leadTel = opp.lead?.telefone?.toLowerCase() || '';
-          const veiculo = `${opp.estoque?.fabricante || ''} ${opp.estoque?.modelo || ''}`.toLowerCase();
           const outroInteresse = (opp.outro_interesse || []).join(' ').toLowerCase();
           const titulo = (opp.titulo || '').toLowerCase();
           if (
             !leadNome.includes(searchLower) &&
             !leadTel.includes(searchLower) &&
-            !veiculo.includes(searchLower) &&
             !outroInteresse.includes(searchLower) &&
             !titulo.includes(searchLower)
           ) return;
