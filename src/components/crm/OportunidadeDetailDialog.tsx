@@ -9,6 +9,7 @@ import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2
 import { useOportunidadeDetail } from '@/hooks/crm/useOportunidadeDetail';
 import { useUpdateOportunidade } from '@/hooks/crm/useUpdateOportunidade';
 import { useKanbanColumns, useDeleteOportunidade } from '@/hooks/crm/useKanban';
+import { useActiveFunis } from '@/hooks/crm/useFunis';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -434,7 +435,9 @@ const KanbanStageSelector: React.FC<{
 const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }) => {
   const { data: opp, isLoading } = useOportunidadeDetail(oppId);
   const updateOpp = useUpdateOportunidade();
-  const { data: columns = [] } = useKanbanColumns();
+  const { data: funis = [] } = useActiveFunis();
+  const [selectedFunilId, setSelectedFunilId] = useState<number | null>(null);
+  const { data: columns = [] } = useKanbanColumns(selectedFunilId);
   const { data: vehicles = [] } = useUserStockVehicles();
   const { data: leads = [] } = useLeads();
   const { data: configUsers = [] } = useConfigUsers();
@@ -442,6 +445,28 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
   const queryClient = useQueryClient();
   const deleteOpp = useDeleteOportunidade();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Auto-detect funnel from opp's current kanban column
+  useEffect(() => {
+    if (!opp?.id_kanban || selectedFunilId) return;
+    // Find which funnel contains this kanban column by querying all funnels' columns
+    const detectFunil = async () => {
+      const { data } = await supabase
+        .from('kanban')
+        .select('crm_funil')
+        .eq('id', opp.id_kanban!)
+        .single();
+      if (data?.crm_funil) {
+        setSelectedFunilId(data.crm_funil);
+      }
+    };
+    detectFunil();
+  }, [opp?.id_kanban]);
+
+  // Reset funnel selection when dialog closes
+  useEffect(() => {
+    if (!open) setSelectedFunilId(null);
+  }, [open]);
 
   const currentVehicle = useMemo(
     () => vehicles.find((v) => v.id === opp?.idEstoque),
@@ -558,13 +583,33 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
               <ScrollArea className="w-full max-w-xs border-r shrink-0">
                 <div className="p-4 space-y-5">
                   {/* Etapa */}
-                  <SidebarSection title="Etapa">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Etapa
+                      </p>
+                      <Select
+                        value={selectedFunilId ? String(selectedFunilId) : ''}
+                        onValueChange={(v) => setSelectedFunilId(Number(v))}
+                      >
+                        <SelectTrigger className="h-6 text-xs w-auto min-w-[100px] max-w-[160px] px-2 py-0">
+                          <SelectValue placeholder="Funil" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {funis.map(f => (
+                            <SelectItem key={f.id} value={String(f.id)}>
+                              {f.titulo || `Funil #${f.id}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <KanbanStageSelector
                       columns={columns}
                       currentId={opp.id_kanban}
                       onChange={(id) => save('id_kanban', id)}
                     />
-                  </SidebarSection>
+                  </div>
 
                   {/* Lead */}
                   <SidebarSection title="Lead / Interessado">
