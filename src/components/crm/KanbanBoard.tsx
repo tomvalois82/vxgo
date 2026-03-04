@@ -19,6 +19,7 @@ import KanbanEditDialog from './KanbanEditDialog';
 import OportunidadeDialog from './OportunidadeDialog';
 import OportunidadeDetailDialog from './OportunidadeDetailDialog';
 import FunilManageDialog from './FunilManageDialog';
+import KanbanFilterBar from './KanbanFilterBar';
 
 const KanbanBoard: React.FC = () => {
   const { data: activeFunis = [], isLoading: funisLoading } = useActiveFunis();
@@ -28,6 +29,9 @@ const KanbanBoard: React.FC = () => {
   const [newOppColumn, setNewOppColumn] = useState<{ id: number; name: string } | null>(null);
   const [detailOppId, setDetailOppId] = useState<number | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterColumnId, setFilterColumnId] = useState<string>('all');
+  const [filterSearch, setFilterSearch] = useState<string>('');
   const { data: configUsers = [] } = useConfigUsers();
   // Auto-select first funnel when loaded
   const currentFunilId = useMemo(() => {
@@ -47,6 +51,8 @@ const KanbanBoard: React.FC = () => {
       .sort((a, b) => (a.posicao ?? 999) - (b.posicao ?? 999));
   }, [allColumns]);
 
+  const searchLower = useMemo(() => filterSearch.toLowerCase().trim(), [filterSearch]);
+
   const oppsByColumn = useMemo(() => {
     const map: Record<number, Oportunidade[]> = {};
     visibleColumns.forEach((col) => {
@@ -54,13 +60,31 @@ const KanbanBoard: React.FC = () => {
     });
     oportunidades.forEach((opp) => {
       if (opp.id_kanban && map[opp.id_kanban]) {
-      if (selectedUserId === 'unassigned' && opp.id_usuario != null) return;
+        // User filter
+        if (selectedUserId === 'unassigned' && opp.id_usuario != null) return;
         if (selectedUserId !== 'all' && selectedUserId !== 'unassigned' && opp.id_usuario !== Number(selectedUserId)) return;
+        // Column filter
+        if (filterColumnId !== 'all' && opp.id_kanban !== Number(filterColumnId)) return;
+        // Text search filter
+        if (searchLower) {
+          const leadNome = opp.lead?.nome?.toLowerCase() || '';
+          const leadTel = opp.lead?.telefone?.toLowerCase() || '';
+          const veiculo = `${opp.estoque?.fabricante || ''} ${opp.estoque?.modelo || ''}`.toLowerCase();
+          const outroInteresse = (opp.outro_interesse || []).join(' ').toLowerCase();
+          const titulo = (opp.titulo || '').toLowerCase();
+          if (
+            !leadNome.includes(searchLower) &&
+            !leadTel.includes(searchLower) &&
+            !veiculo.includes(searchLower) &&
+            !outroInteresse.includes(searchLower) &&
+            !titulo.includes(searchLower)
+          ) return;
+        }
         map[opp.id_kanban].push(opp);
       }
     });
     return map;
-  }, [visibleColumns, oportunidades, selectedUserId]);
+  }, [visibleColumns, oportunidades, selectedUserId, filterColumnId, searchLower]);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -149,6 +173,16 @@ const KanbanBoard: React.FC = () => {
           Gerenciar Colunas
         </Button>
       </div>
+
+      <KanbanFilterBar
+        open={filterOpen}
+        onToggle={() => setFilterOpen((v) => !v)}
+        columns={visibleColumns}
+        selectedColumnId={filterColumnId}
+        onColumnChange={setFilterColumnId}
+        searchText={filterSearch}
+        onSearchChange={setFilterSearch}
+      />
 
       {!currentFunilId ? (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">
