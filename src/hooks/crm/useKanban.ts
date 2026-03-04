@@ -27,17 +27,20 @@ export interface Oportunidade {
   ultima_interacao: string | null;
 }
 
-export function useKanbanColumns() {
+export function useKanbanColumns(funilId?: number | null) {
   return useQuery({
-    queryKey: ['kanban-columns'],
+    queryKey: ['kanban-columns', funilId],
     queryFn: async () => {
+      if (!funilId) return [];
       const { data, error } = await supabase
         .from('kanban')
         .select('*')
+        .eq('crm_funil', funilId)
         .order('posicao', { ascending: true, nullsFirst: false });
       if (error) throw error;
       return (data || []) as KanbanColumn[];
     },
+    enabled: !!funilId,
   });
 }
 
@@ -78,7 +81,7 @@ export function useUpdateKanbanColumn() {
 export function useCreateKanbanColumn() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (column: { descricao: string; cor: string; posicao: number; visivel: boolean }) => {
+    mutationFn: async (column: { descricao: string; cor: string; posicao: number; visivel: boolean; crm_funil?: number }) => {
       const { error } = await supabase
         .from('kanban')
         .insert({ ...column, padrao: false });

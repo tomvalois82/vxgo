@@ -287,6 +287,38 @@ export type Database = {
           },
         ]
       }
+      crm_funil: {
+        Row: {
+          ativo: boolean | null
+          config: number | null
+          created_at: string
+          id: number
+          titulo: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          config?: number | null
+          created_at?: string
+          id?: number
+          titulo?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          config?: number | null
+          created_at?: string
+          id?: number
+          titulo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_config_fkey"
+            columns: ["config"]
+            isOneToOne: false
+            referencedRelation: "config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dados_cliente: {
         Row: {
           created_at: string | null
@@ -949,6 +981,7 @@ export type Database = {
         Row: {
           cor: string | null
           created_at: string
+          crm_funil: number | null
           descricao: string | null
           id: number
           padrao: boolean | null
@@ -958,6 +991,7 @@ export type Database = {
         Insert: {
           cor?: string | null
           created_at?: string
+          crm_funil?: number | null
           descricao?: string | null
           id?: number
           padrao?: boolean | null
@@ -967,13 +1001,22 @@ export type Database = {
         Update: {
           cor?: string | null
           created_at?: string
+          crm_funil?: number | null
           descricao?: string | null
           id?: number
           padrao?: boolean | null
           posicao?: number | null
           visivel?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kanban_crm_funil_fkey"
+            columns: ["crm_funil"]
+            isOneToOne: false
+            referencedRelation: "crm_funil"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       langchain_chat_histories: {
         Row: {
@@ -1201,6 +1244,7 @@ export type Database = {
           id_usuario: number | null
           idEstoque: number | null
           obs: string | null
+          outro_interesse: string[] | null
           resumo: string | null
           session_id_olx: string | null
           session_id_whatsapp: string | null
@@ -1218,6 +1262,7 @@ export type Database = {
           id_usuario?: number | null
           idEstoque?: number | null
           obs?: string | null
+          outro_interesse?: string[] | null
           resumo?: string | null
           session_id_olx?: string | null
           session_id_whatsapp?: string | null
@@ -1235,6 +1280,7 @@ export type Database = {
           id_usuario?: number | null
           idEstoque?: number | null
           obs?: string | null
+          outro_interesse?: string[] | null
           resumo?: string | null
           session_id_olx?: string | null
           session_id_whatsapp?: string | null
@@ -1349,6 +1395,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vx_acesso_paginas: {
+        Row: {
+          cargo: string
+          created_at: string | null
+          id: string
+          pagina: string
+          permitido: boolean
+        }
+        Insert: {
+          cargo: string
+          created_at?: string | null
+          id?: string
+          pagina: string
+          permitido?: boolean
+        }
+        Update: {
+          cargo?: string
+          created_at?: string | null
+          id?: string
+          pagina?: string
+          permitido?: boolean
+        }
+        Relationships: []
       }
       vx_fin_anexo: {
         Row: {

@@ -25,13 +25,14 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   columns: KanbanColumn[];
+  funilId?: number | null;
 }
 
 interface EditableColumn extends KanbanColumn {
   isNew?: boolean;
 }
 
-const KanbanEditDialog: React.FC<Props> = ({ open, onOpenChange, columns }) => {
+const KanbanEditDialog: React.FC<Props> = ({ open, onOpenChange, columns, funilId }) => {
   const [items, setItems] = useState<EditableColumn[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<EditableColumn | null>(null);
   const [saving, setSaving] = useState(false);
@@ -98,6 +99,7 @@ const KanbanEditDialog: React.FC<Props> = ({ open, onOpenChange, columns }) => {
           cor: item.cor || '#3B82F6',
           posicao: items.indexOf(item) + 1,
           visivel: item.visivel ?? true,
+          crm_funil: funilId ?? undefined,
         });
       }
 
