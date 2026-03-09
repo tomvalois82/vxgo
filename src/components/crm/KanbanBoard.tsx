@@ -299,9 +299,33 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
               snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'shadow-sm hover:shadow-md'}`
               }>
               
-                    <p className="text-sm font-medium text-foreground line-clamp-2">
-                      {opp.titulo || `Oportunidade #${opp.id}`}
-                    </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium text-foreground line-clamp-2 flex-1">
+                        {opp.titulo || `Oportunidade #${opp.id}`}
+                      </p>
+                      {opp.usuario && (
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Avatar className="h-8 w-8 flex-shrink-0">
+                                {opp.usuario.foto ? (
+                                  <AvatarImage src={opp.usuario.foto} alt={opp.usuario.nome || ''} />
+                                ) : null}
+                                <AvatarFallback
+                                  className="text-xs font-semibold text-white"
+                                  style={{ backgroundColor: getUserColor(opp.usuario.id) }}
+                                >
+                                  {(opp.usuario.nome || '?').charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p>{opp.usuario.nome || 'Sem nome'}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                     {opp.valor &&
               <p className="text-xs text-muted-foreground mt-1">
                         R$ {opp.valor}
