@@ -4,15 +4,15 @@ import { Settings2, Plus, GitBranch, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from
+'@/components/ui/select';
 import {
   useKanbanColumns,
   useKanbanOportunidades,
   useMoveOportunidade,
   Oportunidade,
-  KanbanColumn,
-} from '@/hooks/crm/useKanban';
+  KanbanColumn } from
+'@/hooks/crm/useKanban';
 import { useActiveFunis } from '@/hooks/crm/useFunis';
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
 import KanbanEditDialog from './KanbanEditDialog';
@@ -26,7 +26,7 @@ const KanbanBoard: React.FC = () => {
   const [selectedFunilId, setSelectedFunilId] = useState<number | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [funilManageOpen, setFunilManageOpen] = useState(false);
-  const [newOppColumn, setNewOppColumn] = useState<{ id: number; name: string } | null>(null);
+  const [newOppColumn, setNewOppColumn] = useState<{id: number;name: string;} | null>(null);
   const [detailOppId, setDetailOppId] = useState<number | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
   const [filterOpen, setFilterOpen] = useState(false);
@@ -35,7 +35,7 @@ const KanbanBoard: React.FC = () => {
   const { data: configUsers = [] } = useConfigUsers();
   // Auto-select first funnel when loaded
   const currentFunilId = useMemo(() => {
-    if (selectedFunilId && activeFunis.some(f => f.id === selectedFunilId)) {
+    if (selectedFunilId && activeFunis.some((f) => f.id === selectedFunilId)) {
       return selectedFunilId;
     }
     return activeFunis.length > 0 ? activeFunis[0].id : null;
@@ -46,9 +46,9 @@ const KanbanBoard: React.FC = () => {
   const moveOpp = useMoveOportunidade();
 
   const visibleColumns = useMemo(() => {
-    return allColumns
-      .filter((c) => c.visivel !== false)
-      .sort((a, b) => (a.posicao ?? 999) - (b.posicao ?? 999));
+    return allColumns.
+    filter((c) => c.visivel !== false).
+    sort((a, b) => (a.posicao ?? 999) - (b.posicao ?? 999));
   }, [allColumns]);
 
   const searchLower = useMemo(() => filterSearch.toLowerCase().trim(), [filterSearch]);
@@ -72,11 +72,11 @@ const KanbanBoard: React.FC = () => {
           const outroInteresse = (opp.outro_interesse || []).join(' ').toLowerCase();
           const titulo = (opp.titulo || '').toLowerCase();
           if (
-            !leadNome.includes(searchLower) &&
-            !leadTel.includes(searchLower) &&
-            !outroInteresse.includes(searchLower) &&
-            !titulo.includes(searchLower)
-          ) return;
+          !leadNome.includes(searchLower) &&
+          !leadTel.includes(searchLower) &&
+          !outroInteresse.includes(searchLower) &&
+          !titulo.includes(searchLower))
+          return;
         }
         map[opp.id_kanban].push(opp);
       }
@@ -99,8 +99,8 @@ const KanbanBoard: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Carregando Kanban...</p>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -109,39 +109,39 @@ const KanbanBoard: React.FC = () => {
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-bold text-foreground">CRM - Kanban</h1>
 
-          {activeFunis.length > 0 && (
-            <Select
-              value={currentFunilId ? String(currentFunilId) : undefined}
-              onValueChange={(val) => setSelectedFunilId(Number(val))}
-            >
+          {activeFunis.length > 0 &&
+          <Select
+            value={currentFunilId ? String(currentFunilId) : undefined}
+            onValueChange={(val) => setSelectedFunilId(Number(val))}>
+            
               <SelectTrigger className="w-48 h-9">
                 <SelectValue placeholder="Selecione o funil" />
               </SelectTrigger>
               <SelectContent>
-                {activeFunis.map((f) => (
-                  <SelectItem key={f.id} value={String(f.id)}>
+                {activeFunis.map((f) =>
+              <SelectItem key={f.id} value={String(f.id)}>
                     {f.titulo || `Funil #${f.id}`}
                   </SelectItem>
-                ))}
+              )}
               </SelectContent>
             </Select>
-          )}
+          }
 
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setFunilManageOpen(true)}
             className="gap-1.5"
-            title="Gerenciar Funis"
-          >
+            title="Gerenciar Funis">
+            
             <GitBranch size={16} />
             <span className="hidden sm:inline">Funis</span>
           </Button>
 
           <Select
             value={selectedUserId}
-            onValueChange={setSelectedUserId}
-          >
+            onValueChange={setSelectedUserId}>
+            
             <SelectTrigger className="w-44 h-9">
               <div className="flex items-center gap-1.5">
                 <Users size={14} className="flex-shrink-0 text-muted-foreground" />
@@ -151,11 +151,11 @@ const KanbanBoard: React.FC = () => {
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="unassigned">Sem responsável</SelectItem>
-              {configUsers.map((u) => (
-                <SelectItem key={u.id} value={String(u.id)}>
+              {configUsers.map((u) =>
+              <SelectItem key={u.id} value={String(u.id)}>
                   {u.nome || `Usuário #${u.id}`}
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -165,8 +165,8 @@ const KanbanBoard: React.FC = () => {
           size="sm"
           onClick={() => setEditOpen(true)}
           className="gap-1.5"
-          disabled={!currentFunilId}
-        >
+          disabled={!currentFunilId}>
+          
           <Settings2 size={16} />
           Gerenciar Colunas
         </Button>
@@ -179,50 +179,50 @@ const KanbanBoard: React.FC = () => {
         selectedColumnId={filterColumnId}
         onColumnChange={setFilterColumnId}
         searchText={filterSearch}
-        onSearchChange={setFilterSearch}
-      />
+        onSearchChange={setFilterSearch} className="my-[4px] mt-0 mb-[5px] py-[4px]" />
+      
 
-      {!currentFunilId ? (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+      {!currentFunilId ?
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">
           <p>Nenhum funil ativo. Clique em "Funis" para criar um.</p>
-        </div>
-      ) : (
-        <DragDropContext onDragEnd={handleDragEnd}>
+        </div> :
+
+      <DragDropContext onDragEnd={handleDragEnd}>
           <div className="flex-1 overflow-x-auto pb-4">
             <div className="flex gap-4 h-full min-h-[60vh]">
-              {visibleColumns.map((column) => (
-                <KanbanColumnView
-                  key={column.id}
-                  column={column}
-                  oportunidades={oppsByColumn[column.id] || []}
-                  onAddOpp={() =>
-                    setNewOppColumn({ id: column.id, name: column.descricao || 'Sem nome' })
-                  }
-                  onClickOpp={(id) => setDetailOppId(id)}
-                />
-              ))}
+              {visibleColumns.map((column) =>
+            <KanbanColumnView
+              key={column.id}
+              column={column}
+              oportunidades={oppsByColumn[column.id] || []}
+              onAddOpp={() =>
+              setNewOppColumn({ id: column.id, name: column.descricao || 'Sem nome' })
+              }
+              onClickOpp={(id) => setDetailOppId(id)} />
 
-              {visibleColumns.length === 0 && (
-                <div className="flex-1 flex items-center justify-center text-muted-foreground">
+            )}
+
+              {visibleColumns.length === 0 &&
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
                   <p>Nenhuma coluna visível. Clique em "Gerenciar Colunas" para configurar.</p>
                 </div>
-              )}
+            }
             </div>
           </div>
         </DragDropContext>
-      )}
+      }
 
       <KanbanEditDialog
         open={editOpen}
         onOpenChange={setEditOpen}
         columns={allColumns}
-        funilId={currentFunilId}
-      />
+        funilId={currentFunilId} />
+      
 
       <FunilManageDialog
         open={funilManageOpen}
-        onOpenChange={setFunilManageOpen}
-      />
+        onOpenChange={setFunilManageOpen} />
+      
 
       <OportunidadeDialog
         open={!!newOppColumn}
@@ -230,18 +230,18 @@ const KanbanBoard: React.FC = () => {
           if (!open) setNewOppColumn(null);
         }}
         columnId={newOppColumn?.id ?? 0}
-        columnName={newOppColumn?.name}
-      />
+        columnName={newOppColumn?.name} />
+      
 
       <OportunidadeDetailDialog
         oppId={detailOppId}
         open={!!detailOppId}
         onOpenChange={(open) => {
           if (!open) setDetailOppId(null);
-        }}
-      />
-    </div>
-  );
+        }} />
+      
+    </div>);
+
 };
 
 interface ColumnProps {
@@ -256,8 +256,8 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
     <div className="flex flex-col w-72 min-w-[18rem] flex-shrink-0 bg-muted/40 rounded-xl border">
       <div
         className="h-1.5 rounded-t-xl"
-        style={{ backgroundColor: column.cor || '#94a3b8' }}
-      />
+        style={{ backgroundColor: column.cor || '#94a3b8' }} />
+      
       <div className="px-3 py-2.5 flex items-center justify-between border-b">
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="text-sm font-semibold text-foreground truncate">
@@ -270,56 +270,56 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
         <button
           onClick={onAddOpp}
           className="flex-shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          title="Nova oportunidade"
-        >
+          title="Nova oportunidade">
+          
           <Plus size={16} />
         </button>
       </div>
 
       <Droppable droppableId={`col-${column.id}`}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className={`flex-1 p-2 space-y-2 transition-colors min-h-[120px] ${
-              snapshot.isDraggingOver ? 'bg-accent/40' : ''
-            }`}
-          >
-            {oportunidades.map((opp, index) => (
-              <Draggable key={opp.id} draggableId={`opp-${opp.id}`} index={index}>
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    onClick={() => onClickOpp(opp.id)}
-                    className={`bg-card rounded-lg border p-3 cursor-pointer transition-shadow ${
-                      snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'shadow-sm hover:shadow-md'
-                    }`}
-                  >
+        {(provided, snapshot) =>
+        <div
+          ref={provided.innerRef}
+          {...provided.droppableProps}
+          className={`flex-1 p-2 space-y-2 transition-colors min-h-[120px] ${
+          snapshot.isDraggingOver ? 'bg-accent/40' : ''}`
+          }>
+          
+            {oportunidades.map((opp, index) =>
+          <Draggable key={opp.id} draggableId={`opp-${opp.id}`} index={index}>
+                {(provided, snapshot) =>
+            <div
+              ref={provided.innerRef}
+              {...provided.draggableProps}
+              {...provided.dragHandleProps}
+              onClick={() => onClickOpp(opp.id)}
+              className={`bg-card rounded-lg border p-3 cursor-pointer transition-shadow ${
+              snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'shadow-sm hover:shadow-md'}`
+              }>
+              
                     <p className="text-sm font-medium text-foreground line-clamp-2">
                       {opp.titulo || `Oportunidade #${opp.id}`}
                     </p>
-                    {opp.valor && (
-                      <p className="text-xs text-muted-foreground mt-1">
+                    {opp.valor &&
+              <p className="text-xs text-muted-foreground mt-1">
                         R$ {opp.valor}
                       </p>
-                    )}
-                    {opp.resumo && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+              }
+                    {opp.resumo &&
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                         {opp.resumo}
                       </p>
-                    )}
+              }
                   </div>
-                )}
+            }
               </Draggable>
-            ))}
+          )}
             {provided.placeholder}
           </div>
-        )}
+        }
       </Droppable>
-    </div>
-  );
+    </div>);
+
 };
 
 export default KanbanBoard;
