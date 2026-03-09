@@ -511,6 +511,36 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
           {/* Seção de Dados do Usuário */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold border-b pb-2">Dados do Usuário</h3>
+            
+            {/* Foto do perfil */}
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className="relative cursor-pointer group"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Avatar className="h-24 w-24 border-2 border-muted">
+                  {(fotoPreview || fotoUrl) ? (
+                    <AvatarImage src={fotoPreview || fotoUrl || ''} alt="Foto do usuário" className="object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-muted">
+                      <User className="h-10 w-10 text-muted-foreground" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFotoChange}
+              />
+              <span className="text-xs text-muted-foreground">Clique para alterar a foto</span>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="nome">Nome *</Label>
