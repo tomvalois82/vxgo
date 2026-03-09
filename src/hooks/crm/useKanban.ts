@@ -60,6 +60,7 @@ export function useKanbanOportunidades() {
       return (data || []).map((d: any) => ({
         ...d,
         lead: Array.isArray(d.lead) ? d.lead[0] ?? null : d.lead,
+        usuario: Array.isArray(d.usuario) ? d.usuario[0] ?? null : d.usuario,
       })) as Oportunidade[];
     },
   });
