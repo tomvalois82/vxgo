@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -13,8 +13,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Camera, User } from 'lucide-react';
 
-interface User {
+interface UserType {
   id: number;
   uid: string | null;
   nome: string | null;
@@ -28,6 +30,7 @@ interface User {
   superadm: boolean;
   cargo: string | null;
   config: number | null;
+  foto: string | null;
 }
 
 interface Config {
@@ -48,7 +51,7 @@ interface Config {
 }
 
 interface UserDialogProps {
-  user: User | null;
+  user: UserType | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -85,6 +88,11 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
   });
 
   const [userEmail, setUserEmail] = useState('');
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
 
@@ -128,7 +136,7 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
     if (user) {
       setFormData({
         nome: user.nome || '',
-        email: userEmail || user.email || '', // Usar email da auth.users primeiro
+        email: userEmail || user.email || '',
         telefone: user.telefone || '',
         evo_instancia: user.evo_instancia || '',
         evo_key: user.evo_key || '',
@@ -139,6 +147,9 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
         superadm: user.superadm,
         password: '',
       });
+      setFotoUrl(user.foto || null);
+      setFotoPreview(null);
+      setFotoFile(null);
     } else {
       setFormData({
         nome: '',
@@ -153,6 +164,9 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
         superadm: false,
         password: '',
       });
+      setFotoUrl(null);
+      setFotoPreview(null);
+      setFotoFile(null);
     }
 
     if (config) {
@@ -190,6 +204,28 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
     }
   }, [user, config, open, userEmail]);
 
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Erro', description: 'Selecione um arquivo de imagem.', variant: 'destructive' });
+      return;
+    }
+    setFotoFile(file);
+    setFotoPreview(URL.createObjectURL(file));
+  };
+
+  const uploadFoto = async (userId: number): Promise<string | null> => {
+    if (!fotoFile) return fotoUrl;
+    const ext = fotoFile.name.split('.').pop() || 'jpg';
+    const filePath = `user-${userId}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('avatars').upload(filePath, fotoFile, { upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    return urlData.publicUrl;
+  };
+
+
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof formData) => {
       // Criar usuário no auth.users
@@ -221,6 +257,14 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
         .single();
 
       if (userError) throw userError;
+
+      // Upload foto se selecionada
+      if (fotoFile) {
+        const newFotoUrl = await uploadFoto(newUser.id);
+        if (newFotoUrl) {
+          await supabase.from('usuario').update({ foto: newFotoUrl }).eq('id', newUser.id);
+        }
+      }
 
       // Criar config associada ao usuário
       const { data: newConfig, error: configError } = await supabase
@@ -297,6 +341,12 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
     mutationFn: async (userData: typeof formData) => {
       if (!user) throw new Error('Usuário não encontrado');
 
+      // Upload foto se selecionada
+      let finalFotoUrl = fotoUrl;
+      if (fotoFile) {
+        finalFotoUrl = await uploadFoto(user.id);
+      }
+
       // Atualizar dados na tabela usuario (exceto senha)
       const { error: userError } = await supabase
         .from('usuario')
@@ -310,6 +360,7 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
           cargo: userData.cargo as any,
           ativo: userData.ativo,
           superadm: userData.superadm,
+          foto: finalFotoUrl,
         })
         .eq('id', user.id);
 
@@ -460,6 +511,36 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
           {/* Seção de Dados do Usuário */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold border-b pb-2">Dados do Usuário</h3>
+            
+            {/* Foto do perfil */}
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className="relative cursor-pointer group"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Avatar className="h-24 w-24 border-2 border-muted">
+                  {(fotoPreview || fotoUrl) ? (
+                    <AvatarImage src={fotoPreview || fotoUrl || ''} alt="Foto do usuário" className="object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-muted">
+                      <User className="h-10 w-10 text-muted-foreground" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFotoChange}
+              />
+              <span className="text-xs text-muted-foreground">Clique para alterar a foto</span>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="nome">Nome *</Label>

@@ -15,6 +15,7 @@ interface KanbanFilterBarProps {
   onColumnChange: (value: string) => void;
   searchText: string;
   onSearchChange: (value: string) => void;
+  className?: string;
 }
 
 const KanbanFilterBar: React.FC<KanbanFilterBarProps> = ({
