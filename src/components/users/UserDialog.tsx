@@ -51,7 +51,7 @@ interface Config {
 }
 
 interface UserDialogProps {
-  user: User | null;
+  user: UserType | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
