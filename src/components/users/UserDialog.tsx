@@ -88,6 +88,11 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
   });
 
   const [userEmail, setUserEmail] = useState('');
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
 
