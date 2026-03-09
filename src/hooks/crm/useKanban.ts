@@ -54,7 +54,7 @@ export function useKanbanOportunidades() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('opotunidade')
-        .select('*, lead:id_lead(nome, telefone)')
+        .select('*, lead:id_lead(nome, telefone), usuario:id_usuario(id, nome, foto)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || []).map((d: any) => ({
