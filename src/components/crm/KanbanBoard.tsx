@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Settings2, Plus, GitBranch, Users } from 'lucide-react';
+import { Settings2, Plus, GitBranch, Users, AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -309,7 +309,7 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
                       <p className="text-sm font-medium text-foreground line-clamp-2 flex-1">
                         {opp.titulo || `Oportunidade #${opp.id}`}
                       </p>
-                      {opp.usuario && (
+                      {opp.usuario ? (
                         <TooltipProvider delayDuration={200}>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -327,6 +327,19 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
                             </TooltipTrigger>
                             <TooltipContent side="top">
                               <p>{opp.usuario.nome || 'Sem nome'}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="h-8 w-8 flex-shrink-0 rounded-full bg-destructive/15 flex items-center justify-center">
+                                <AlertTriangle size={16} className="text-destructive" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p>Sem responsável</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
