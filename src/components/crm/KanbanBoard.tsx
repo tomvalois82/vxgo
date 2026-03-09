@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Settings2, Plus, GitBranch, Users } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -20,6 +22,12 @@ import OportunidadeDialog from './OportunidadeDialog';
 import OportunidadeDetailDialog from './OportunidadeDetailDialog';
 import FunilManageDialog from './FunilManageDialog';
 import KanbanFilterBar from './KanbanFilterBar';
+
+const USER_COLORS = [
+  '#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6',
+  '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#06b6d4',
+];
+const getUserColor = (userId: number) => USER_COLORS[userId % USER_COLORS.length];
 
 const KanbanBoard: React.FC = () => {
   const { data: activeFunis = [], isLoading: funisLoading } = useActiveFunis();
@@ -297,9 +305,33 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
               snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'shadow-sm hover:shadow-md'}`
               }>
               
-                    <p className="text-sm font-medium text-foreground line-clamp-2">
-                      {opp.titulo || `Oportunidade #${opp.id}`}
-                    </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium text-foreground line-clamp-2 flex-1">
+                        {opp.titulo || `Oportunidade #${opp.id}`}
+                      </p>
+                      {opp.usuario && (
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Avatar className="h-8 w-8 flex-shrink-0">
+                                {opp.usuario.foto ? (
+                                  <AvatarImage src={opp.usuario.foto} alt={opp.usuario.nome || ''} />
+                                ) : null}
+                                <AvatarFallback
+                                  className="text-xs font-semibold text-white"
+                                  style={{ backgroundColor: getUserColor(opp.usuario.id) }}
+                                >
+                                  {(opp.usuario.nome || '?').charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p>{opp.usuario.nome || 'Sem nome'}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                     {opp.valor &&
               <p className="text-xs text-muted-foreground mt-1">
                         R$ {opp.valor}
