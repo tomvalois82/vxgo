@@ -258,6 +258,14 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
 
       if (userError) throw userError;
 
+      // Upload foto se selecionada
+      if (fotoFile) {
+        const newFotoUrl = await uploadFoto(newUser.id);
+        if (newFotoUrl) {
+          await supabase.from('usuario').update({ foto: newFotoUrl }).eq('id', newUser.id);
+        }
+      }
+
       // Criar config associada ao usuário
       const { data: newConfig, error: configError } = await supabase
         .from('config')
