@@ -136,7 +136,7 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
     if (user) {
       setFormData({
         nome: user.nome || '',
-        email: userEmail || user.email || '', // Usar email da auth.users primeiro
+        email: userEmail || user.email || '',
         telefone: user.telefone || '',
         evo_instancia: user.evo_instancia || '',
         evo_key: user.evo_key || '',
@@ -147,6 +147,9 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
         superadm: user.superadm,
         password: '',
       });
+      setFotoUrl(user.foto || null);
+      setFotoPreview(null);
+      setFotoFile(null);
     } else {
       setFormData({
         nome: '',
@@ -161,6 +164,9 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
         superadm: false,
         password: '',
       });
+      setFotoUrl(null);
+      setFotoPreview(null);
+      setFotoFile(null);
     }
 
     if (config) {
@@ -197,6 +203,28 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
       });
     }
   }, [user, config, open, userEmail]);
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Erro', description: 'Selecione um arquivo de imagem.', variant: 'destructive' });
+      return;
+    }
+    setFotoFile(file);
+    setFotoPreview(URL.createObjectURL(file));
+  };
+
+  const uploadFoto = async (userId: number): Promise<string | null> => {
+    if (!fotoFile) return fotoUrl;
+    const ext = fotoFile.name.split('.').pop() || 'jpg';
+    const filePath = `user-${userId}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('avatars').upload(filePath, fotoFile, { upsert: true });
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    return urlData.publicUrl;
+  };
+
 
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof formData) => {
