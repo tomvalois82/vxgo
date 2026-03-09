@@ -1105,6 +1105,24 @@ export type Database = {
           },
         ]
       }
+      n: {
+        Row: {
+          id: number
+          message: Json
+          session_id: string
+        }
+        Insert: {
+          id?: number
+          message: Json
+          session_id: string
+        }
+        Update: {
+          id?: number
+          message?: Json
+          session_id?: string
+        }
+        Relationships: []
+      }
       n8n_chat_histories: {
         Row: {
           id: number
@@ -1326,6 +1344,7 @@ export type Database = {
           email: string | null
           evo_instancia: string | null
           evo_key: string | null
+          foto: string | null
           id: number
           idbubble: string | null
           n8nOlx: string | null
@@ -1350,6 +1369,7 @@ export type Database = {
           email?: string | null
           evo_instancia?: string | null
           evo_key?: string | null
+          foto?: string | null
           id?: number
           idbubble?: string | null
           n8nOlx?: string | null
@@ -1374,6 +1394,7 @@ export type Database = {
           email?: string | null
           evo_instancia?: string | null
           evo_key?: string | null
+          foto?: string | null
           id?: number
           idbubble?: string | null
           n8nOlx?: string | null
