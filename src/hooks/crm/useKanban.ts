@@ -28,6 +28,7 @@ export interface Oportunidade {
   outro_interesse: string[] | null;
   lead?: { nome: string | null; telefone: string | null } | null;
   estoque?: { modelo: string | null; fabricante: string | null } | null;
+  usuario?: { id: number; nome: string | null; foto: string | null } | null;
 }
 
 export function useKanbanColumns(funilId?: number | null) {
