@@ -28,6 +28,7 @@ interface User {
   superadm: boolean;
   cargo: string | null;
   config: number | null;
+  foto: string | null;
 }
 
 const Users = () => {

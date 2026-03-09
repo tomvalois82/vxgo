@@ -341,6 +341,12 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
     mutationFn: async (userData: typeof formData) => {
       if (!user) throw new Error('Usuário não encontrado');
 
+      // Upload foto se selecionada
+      let finalFotoUrl = fotoUrl;
+      if (fotoFile) {
+        finalFotoUrl = await uploadFoto(user.id);
+      }
+
       // Atualizar dados na tabela usuario (exceto senha)
       const { error: userError } = await supabase
         .from('usuario')
@@ -354,6 +360,7 @@ const UserDialog = ({ user, open, onOpenChange }: UserDialogProps) => {
           cargo: userData.cargo as any,
           ativo: userData.ativo,
           superadm: userData.superadm,
+          foto: finalFotoUrl,
         })
         .eq('id', user.id);
 
