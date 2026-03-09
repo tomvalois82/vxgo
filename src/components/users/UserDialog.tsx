@@ -16,7 +16,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Camera, User } from 'lucide-react';
 
-interface User {
+interface UserType {
   id: number;
   uid: string | null;
   nome: string | null;
@@ -30,6 +30,7 @@ interface User {
   superadm: boolean;
   cargo: string | null;
   config: number | null;
+  foto: string | null;
 }
 
 interface Config {
