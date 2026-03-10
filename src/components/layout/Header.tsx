@@ -59,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
 
       {/* Botões de ação - desktop */}
       <div className="hidden md:flex items-center gap-4">
-        <Link to="/add-car">
+        <Link to="/dashboard/add-car">
           <Button className="bg-carblue hover:bg-carblue-dark">
             Adicionar Carro
           </Button>
