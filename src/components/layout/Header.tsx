@@ -59,13 +59,13 @@ const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
 
       {/* Botões de ação - desktop */}
       <div className="hidden md:flex items-center gap-4">
-        <Link to="/add-car">
+        <Link to="/dashboard/add-car">
           <Button className="bg-carblue hover:bg-carblue-dark">
             Adicionar Carro
           </Button>
         </Link>
         <div className="flex items-center gap-2">
-          <Link to="/profile">
+          <Link to="/dashboard/profile">
             <Button variant="ghost" className="text-white hover:text-carblue">
               {profile?.nome || 'Perfil'}
             </Button>
@@ -78,7 +78,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
 
       {/* Botão adicionar carro - mobile */}
       <div className="md:hidden">
-        <Link to="/add-car">
+        <Link to="/dashboard/add-car">
           <Button size="sm" className="bg-carblue hover:bg-carblue-dark">
             + Carro
           </Button>

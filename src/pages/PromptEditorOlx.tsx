@@ -187,7 +187,7 @@ const PromptEditorOlx = () => {
       <div className="container mx-auto py-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600">Configuração não encontrada</h1>
-          <Button onClick={() => navigate('/users')} className="mt-4">
+          <Button onClick={() => navigate('/dashboard/users')} className="mt-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar para Usuários
           </Button>
@@ -203,7 +203,7 @@ const PromptEditorOlx = () => {
         <div className="flex items-center gap-4">
           <Button 
             variant="outline" 
-            onClick={() => navigate('/users')}
+            onClick={() => navigate('/dashboard/users')}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />

@@ -109,7 +109,7 @@ const Users = () => {
 
   const handleEditPrompt = (user: User) => {
     if (user.config) {
-      navigate(`/prompt-editor/${user.config}`);
+      navigate(`/dashboard/prompt-editor/${user.config}`);
     } else {
       toast({
         title: "Erro",
@@ -121,7 +121,7 @@ const Users = () => {
 
   const handleEditPromptOlx = (user: User) => {
     if (user.config) {
-      navigate(`/prompt-editor-olx/${user.config}`);
+      navigate(`/dashboard/prompt-editor-olx/${user.config}`);
     } else {
       toast({
         title: "Erro",

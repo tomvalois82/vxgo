@@ -51,7 +51,7 @@ const Connections = () => {
               variant: "default"
             });
             // Clear the code from URL
-            navigate('/connections', { replace: true });
+            navigate('/dashboard/connections', { replace: true });
             return;
           }
 
@@ -82,7 +82,7 @@ const Connections = () => {
           }
 
           // Clear the code from URL
-          navigate('/connections', { replace: true });
+          navigate('/dashboard/connections', { replace: true });
 
         } catch (error) {
           console.error('OLX integration error:', error);
@@ -93,7 +93,7 @@ const Connections = () => {
           });
           
           // Clear the code from URL
-          navigate('/connections', { replace: true });
+          navigate('/dashboard/connections', { replace: true });
         } finally {
           setIsProcessingOlx(false);
         }
