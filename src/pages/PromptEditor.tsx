@@ -187,7 +187,7 @@ const PromptEditor = () => {
       <div className="container mx-auto py-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600">Configuração não encontrada</h1>
-          <Button onClick={() => navigate('/users')} className="mt-4">
+          <Button onClick={() => navigate('/dashboard/users')} className="mt-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar para Usuários
           </Button>
