@@ -65,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           </Button>
         </Link>
         <div className="flex items-center gap-2">
-          <Link to="/profile">
+          <Link to="/dashboard/profile">
             <Button variant="ghost" className="text-white hover:text-carblue">
               {profile?.nome || 'Perfil'}
             </Button>
