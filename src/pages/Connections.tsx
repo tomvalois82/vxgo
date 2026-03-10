@@ -93,7 +93,7 @@ const Connections = () => {
           });
           
           // Clear the code from URL
-          navigate('/connections', { replace: true });
+          navigate('/dashboard/connections', { replace: true });
         } finally {
           setIsProcessingOlx(false);
         }

@@ -78,7 +78,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
 
       {/* Botão adicionar carro - mobile */}
       <div className="md:hidden">
-        <Link to="/add-car">
+        <Link to="/dashboard/add-car">
           <Button size="sm" className="bg-carblue hover:bg-carblue-dark">
             + Carro
           </Button>
