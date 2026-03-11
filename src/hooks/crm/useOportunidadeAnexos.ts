@@ -80,12 +80,13 @@ export function useOportunidadeAnexos(oppId: number | null) {
 
   const deleteAnexo = useMutation({
     mutationFn: async ({ id, url }: { id: number; url: string }) => {
-      // Extract file path from URL
-      const bucketUrl = supabase.storage.from('oportunidade-anexos').getPublicUrl('').data.publicUrl;
-      const filePath = url.replace(bucketUrl, '');
-      
+      // Extract file path from URL — remove the bucket base URL to get the storage path
+      const bucketBase = supabase.storage.from('oportunidade-anexos').getPublicUrl('').data.publicUrl.replace(/\/+$/, '');
+      const filePath = url.replace(bucketBase + '/', '').replace(/^\/+/, '');
+
       if (filePath) {
-        await supabase.storage.from('oportunidade-anexos').remove([filePath]);
+        const { error: storageError } = await supabase.storage.from('oportunidade-anexos').remove([filePath]);
+        if (storageError) console.warn('Erro ao remover arquivo do storage:', storageError.message);
       }
 
       const { error } = await supabase
