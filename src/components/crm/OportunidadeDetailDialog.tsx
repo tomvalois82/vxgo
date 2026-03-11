@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import AnexoGallery from './AnexoGallery';
 import { useOportunidadeDetail } from '@/hooks/crm/useOportunidadeDetail';
 import { useUpdateOportunidade } from '@/hooks/crm/useUpdateOportunidade';
 import { useKanbanColumns, useDeleteOportunidade } from '@/hooks/crm/useKanban';
@@ -703,6 +704,11 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                       multiline
                     />
                   </SidebarSection>
+
+                  <Separator />
+
+                  {/* Anexos */}
+                  <AnexoGallery oppId={opp.id} />
                 </div>
               </ScrollArea>
 

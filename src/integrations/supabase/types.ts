@@ -1252,6 +1252,41 @@ export type Database = {
         }
         Relationships: []
       }
+      oportunidade_anexo: {
+        Row: {
+          created_at: string
+          id: number
+          id_oportunidade: number | null
+          nome_arquivo: string | null
+          publico: boolean | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          id_oportunidade?: number | null
+          nome_arquivo?: string | null
+          publico?: boolean | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          id_oportunidade?: number | null
+          nome_arquivo?: string | null
+          publico?: boolean | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oportunidade_anexo_id_oportunidade_fkey"
+            columns: ["id_oportunidade"]
+            isOneToOne: false
+            referencedRelation: "opotunidade"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       opotunidade: {
         Row: {
           created_at: string
