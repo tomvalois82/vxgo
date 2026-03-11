@@ -187,6 +187,7 @@ const AnexoCard: React.FC<{
   onDelete: () => void;
   onPreview: () => void;
 }> = ({ anexo, onTogglePublico, onDelete, onPreview }) => {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const imgPreview = isImage(anexo.nome_arquivo);
   const icon = getFileIcon(anexo.nome_arquivo);
 
@@ -230,31 +231,33 @@ const AnexoCard: React.FC<{
             {anexo.publico ? 'Público' : 'Privado'}
           </span>
         </div>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <button className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-0.5">
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remover anexo?</AlertDialogTitle>
-              <AlertDialogDescription>
-                O arquivo será removido permanentemente.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={onDelete}
-              >
-                Remover
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <button
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-0.5"
+          onClick={() => setConfirmDelete(true)}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover anexo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O arquivo será removido permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={onDelete}
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
