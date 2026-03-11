@@ -5,7 +5,8 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useOportunidadeDetail } from '@/hooks/crm/useOportunidadeDetail';
 import { useUpdateOportunidade } from '@/hooks/crm/useUpdateOportunidade';
 import { useKanbanColumns, useDeleteOportunidade } from '@/hooks/crm/useKanban';
@@ -445,6 +446,7 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
   const queryClient = useQueryClient();
   const deleteOpp = useDeleteOportunidade();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [formOpen, setFormOpen] = useState(true);
 
   // Auto-detect funnel from opp's current kanban column
   useEffect(() => {
@@ -706,20 +708,27 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
 
               {/* ─── Central area: Atividades ─── */}
               <div className="flex-1 flex flex-col min-w-0">
-                {/* Floating form */}
-                <div className="px-4 py-3 border-b shrink-0">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-                    <CalendarClock className="h-4 w-4" />
-                    Atividades
-                  </h3>
-                  <AtividadeForm
-                    oppId={opp.id}
-                    leadId={opp.id_lead}
-                    userId={opp.id_usuario}
-                    onSubmit={ativCreate}
-                    isCreating={ativIsCreating}
-                  />
-                </div>
+                {/* Collapsible form */}
+                <Collapsible open={formOpen} onOpenChange={setFormOpen}>
+                  <div className="px-4 py-3 border-b shrink-0">
+                    <CollapsibleTrigger asChild>
+                      <button className="w-full text-sm font-semibold text-foreground flex items-center gap-2 hover:text-primary transition-colors">
+                        <CalendarClock className="h-4 w-4" />
+                        Atividades
+                        {formOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-3">
+                      <AtividadeForm
+                        oppId={opp.id}
+                        leadId={opp.id_lead}
+                        userId={opp.id_usuario}
+                        onSubmit={ativCreate}
+                        isCreating={ativIsCreating}
+                      />
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
                 {/* Timeline */}
                 <ScrollArea className="flex-1">
                   <div className="p-4">
