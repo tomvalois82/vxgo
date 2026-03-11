@@ -116,14 +116,14 @@ const EditableField: React.FC<EditableFieldProps> = ({
 
   return (
     <span
-      className={`group inline-flex items-center gap-1.5 cursor-pointer ${className}`}
+      className={`group inline-flex items-start gap-1.5 cursor-pointer ${className}`}
       onClick={() => setEditing(true)}
       title="Clique para editar"
     >
-      <span className={value ? '' : 'text-muted-foreground italic'}>
+      <span className={`${value ? 'whitespace-pre-wrap' : 'text-muted-foreground italic'}`}>
         {value || placeholder}
       </span>
-      <Pencil className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+      <Pencil className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0 mt-0.5" />
     </span>
   );
 };
