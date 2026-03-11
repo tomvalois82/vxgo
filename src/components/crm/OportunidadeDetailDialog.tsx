@@ -21,7 +21,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useUserStockVehicles, type Vehicle } from '@/hooks/crm/useUserStockVehicles';
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
