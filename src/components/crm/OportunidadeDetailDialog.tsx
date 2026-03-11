@@ -21,7 +21,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useUserStockVehicles, type Vehicle } from '@/hooks/crm/useUserStockVehicles';
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
@@ -545,15 +544,14 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
             </div>
 
             {/* Delete button aligned with close (X) */}
+            <button
+              className="absolute right-12 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              title="Excluir oportunidade"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
             <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-              <AlertDialogTrigger asChild>
-                <button
-                  className="absolute right-12 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  title="Excluir oportunidade"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Excluir oportunidade?</AlertDialogTitle>
