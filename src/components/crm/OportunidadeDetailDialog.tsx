@@ -521,7 +521,7 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
         ) : (
           <>
             {/* ─── Header ─── */}
-            <div className="px-6 py-4 border-b shrink-0 pr-20">
+            <div className="px-6 py-4 border-b shrink-0 pr-40">
               <EditableField
                 value={opp.titulo || ''}
                 onSave={(v) => save('titulo', v)}
