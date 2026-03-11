@@ -704,6 +704,11 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                       multiline
                     />
                   </SidebarSection>
+
+                  <Separator />
+
+                  {/* Anexos */}
+                  <AnexoGallery oppId={opp.id} />
                 </div>
               </ScrollArea>
 
