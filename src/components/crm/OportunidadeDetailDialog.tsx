@@ -5,7 +5,8 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useOportunidadeDetail } from '@/hooks/crm/useOportunidadeDetail';
 import { useUpdateOportunidade } from '@/hooks/crm/useUpdateOportunidade';
 import { useKanbanColumns, useDeleteOportunidade } from '@/hooks/crm/useKanban';
