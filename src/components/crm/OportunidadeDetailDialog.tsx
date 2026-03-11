@@ -543,14 +543,48 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
               </div>
             </div>
 
-            {/* Delete button aligned with close (X) */}
-            <button
-              className="absolute right-12 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              title="Excluir oportunidade"
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            {/* Quick-action stage buttons + Delete button (top-right) */}
+            <div className="absolute right-12 top-4 flex items-center gap-1.5">
+              {columns
+                .filter((c) => c.padrao === true)
+                .map((col) => {
+                  const isActive = col.id === opp.id_kanban;
+                  const color = col.cor || 'hsl(var(--primary))';
+                  return (
+                    <TooltipProvider key={col.id} delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => { if (!isActive) save('id_kanban', col.id); }}
+                            className={`rounded-md px-2.5 py-1 text-xs font-medium border transition-all ${
+                              isActive
+                                ? 'text-white shadow-sm'
+                                : 'opacity-60 hover:opacity-100 bg-background'
+                            }`}
+                            style={{
+                              backgroundColor: isActive ? color : undefined,
+                              borderColor: color,
+                              color: isActive ? 'white' : color,
+                            }}
+                          >
+                            {col.descricao || `#${col.id}`}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <p>{isActive ? 'Etapa atual' : `Mover para ${col.descricao}`}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })}
+              <button
+                className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ml-1"
+                title="Excluir oportunidade"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
             <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
               <AlertDialogContent>
                 <AlertDialogHeader>
