@@ -708,20 +708,27 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
 
               {/* ─── Central area: Atividades ─── */}
               <div className="flex-1 flex flex-col min-w-0">
-                {/* Floating form */}
-                <div className="px-4 py-3 border-b shrink-0">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-                    <CalendarClock className="h-4 w-4" />
-                    Atividades
-                  </h3>
-                  <AtividadeForm
-                    oppId={opp.id}
-                    leadId={opp.id_lead}
-                    userId={opp.id_usuario}
-                    onSubmit={ativCreate}
-                    isCreating={ativIsCreating}
-                  />
-                </div>
+                {/* Collapsible form */}
+                <Collapsible open={formOpen} onOpenChange={setFormOpen}>
+                  <div className="px-4 py-3 border-b shrink-0">
+                    <CollapsibleTrigger asChild>
+                      <button className="w-full text-sm font-semibold text-foreground flex items-center gap-2 hover:text-primary transition-colors">
+                        <CalendarClock className="h-4 w-4" />
+                        Atividades
+                        {formOpen ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-3">
+                      <AtividadeForm
+                        oppId={opp.id}
+                        leadId={opp.id_lead}
+                        userId={opp.id_usuario}
+                        onSubmit={ativCreate}
+                        isCreating={ativIsCreating}
+                      />
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
                 {/* Timeline */}
                 <ScrollArea className="flex-1">
                   <div className="p-4">
