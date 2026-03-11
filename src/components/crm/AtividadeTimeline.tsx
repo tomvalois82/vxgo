@@ -71,14 +71,14 @@ const InlineEdit: React.FC<{
 
   return (
     <span
-      className={`group inline-flex items-center gap-1 cursor-pointer ${className}`}
+      className={`group inline-flex items-start gap-1 cursor-pointer ${className}`}
       onClick={() => setEditing(true)}
       title="Clique para editar"
     >
-      <span className={value ? '' : 'text-muted-foreground italic text-xs'}>
+      <span className={value ? 'whitespace-pre-wrap' : 'text-muted-foreground italic text-xs'}>
         {value || placeholder}
       </span>
-      <Pencil className="h-2.5 w-2.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0" />
+      <Pencil className="h-2.5 w-2.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0 mt-0.5" />
     </span>
   );
 };
