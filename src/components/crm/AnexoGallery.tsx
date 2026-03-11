@@ -168,7 +168,7 @@ const AnexoGallery: React.FC<Props> = ({ oppId }) => {
                 <FileText className="h-16 w-16 text-muted-foreground mx-auto" />
                 <p className="text-sm text-muted-foreground">{previewName}</p>
                 <Button variant="outline" size="sm" asChild>
-                  <a href={previewUrl} target="_blank" rel="noopener noreferrer">Abrir arquivo</a>
+                  <a href={previewUrl} download={previewName || true}>Baixar arquivo</a>
                 </Button>
               </div>
             )}
