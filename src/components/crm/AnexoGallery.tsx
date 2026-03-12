@@ -45,10 +45,27 @@ function isVideo(name: string | null) {
 const AnexoGallery: React.FC<Props> = ({ oppId }) => {
   const { anexos, isLoading, uploadAnexo, togglePublico, deleteAnexo } = useOportunidadeAnexos(oppId);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewName, setPreviewName] = useState<string | null>(null);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter only image anexos for the image gallery navigation
+  const imageAnexos = useMemo(() => anexos.filter((a) => isImage(a.nome_arquivo)), [anexos]);
+
+  const openImagePreview = useCallback((anexo: OportunidadeAnexo) => {
+    const idx = imageAnexos.findIndex((a) => a.id === anexo.id);
+    if (idx !== -1) setPreviewIndex(idx);
+  }, [imageAnexos]);
+
+  const currentImage = previewIndex !== null ? imageAnexos[previewIndex] : null;
+
+  const goNext = useCallback(() => {
+    if (previewIndex !== null && previewIndex < imageAnexos.length - 1) setPreviewIndex(previewIndex + 1);
+  }, [previewIndex, imageAnexos.length]);
+
+  const goPrev = useCallback(() => {
+    if (previewIndex !== null && previewIndex > 0) setPreviewIndex(previewIndex - 1);
+  }, [previewIndex]);
 
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
