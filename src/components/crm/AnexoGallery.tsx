@@ -218,6 +218,7 @@ const AnexoCard: React.FC<{
             <Eye className="h-5 w-5 text-white" />
           </div>
         )}
+      </div>
 
       {/* Footer */}
       <div className="px-2 py-1.5 flex items-center justify-between gap-1">
