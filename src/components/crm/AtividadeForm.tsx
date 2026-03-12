@@ -13,6 +13,7 @@ import {
 import {
   PhoneCall,
   MessageSquare,
+  Bot,
   MapPin,
   CheckCircle2,
   Info,
