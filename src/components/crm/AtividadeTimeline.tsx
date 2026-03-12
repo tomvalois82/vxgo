@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Pencil, PhoneCall, MessageSquare, MapPin, CheckCircle2, Info, StickyNote, Trash2 } from 'lucide-react';
+import { Pencil, PhoneCall, MessageSquare, Bot, MapPin, CheckCircle2, Info, StickyNote, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
