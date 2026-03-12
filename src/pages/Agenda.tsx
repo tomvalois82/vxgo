@@ -5,7 +5,7 @@ import { useAgendaAtividades, type AgendaFilters, type AgendaAtividade } from '@
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
 import { useAuth } from '@/contexts/AuthContext';
 import AtividadeDetailDialog from '@/components/crm/AtividadeDetailDialog';
-import { PhoneCall, MessageSquare, MapPin, CheckCircle2, Info, StickyNote } from 'lucide-react';
+import { PhoneCall, MessageSquare, Bot, MapPin, CheckCircle2, Info, StickyNote } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
