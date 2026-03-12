@@ -18,7 +18,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Trash2, PhoneCall, MessageSquare, MapPin, CheckCircle2, Info, StickyNote, Pencil } from 'lucide-react';
+import { Trash2, PhoneCall, MessageSquare, Bot, MapPin, CheckCircle2, Info, StickyNote, Pencil } from 'lucide-react';
 import type { Atividade } from '@/hooks/crm/useAtividades';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
