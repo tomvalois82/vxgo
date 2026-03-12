@@ -239,7 +239,7 @@ const AnexoCard: React.FC<{
               download={anexo.nome_arquivo || true}
               target="_blank"
               rel="noopener noreferrer"
-              className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary p-0.5"
+              className="text-muted-foreground hover:text-primary p-0.5"
               onClick={(e) => e.stopPropagation()}
             >
               <Download className="h-3.5 w-3.5" />
