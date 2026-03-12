@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Paperclip, Upload, X, FileText, Film, Image as ImageIcon, Trash2, Eye, LoaderCircle } from 'lucide-react';
+import { Paperclip, Upload, X, FileText, Film, Image as ImageIcon, Trash2, Eye, LoaderCircle, Download } from 'lucide-react';
 import { useOportunidadeAnexos, type OportunidadeAnexo } from '@/hooks/crm/useOportunidadeAnexos';
 import {
   AlertDialog,
