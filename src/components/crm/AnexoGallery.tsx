@@ -117,7 +117,7 @@ const AnexoGallery: React.FC<Props> = ({ oppId }) => {
               anexo={anexo}
               onTogglePublico={(pub) => togglePublico.mutate({ id: anexo.id, publico: pub })}
               onDelete={() => deleteAnexo.mutate({ id: anexo.id, url: anexo.url || '' })}
-              onPreview={() => { setPreviewUrl(anexo.url); setPreviewName(anexo.nome_arquivo); }}
+              onPreview={() => openImagePreview(anexo)}
             />
           ))}
         </div>
