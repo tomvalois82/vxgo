@@ -1,9 +1,9 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Paperclip, Upload, X, FileText, Film, Image as ImageIcon, Trash2, Eye, LoaderCircle, Download } from 'lucide-react';
+import { Paperclip, Upload, X, FileText, Film, Image as ImageIcon, Trash2, Eye, LoaderCircle, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useOportunidadeAnexos, type OportunidadeAnexo } from '@/hooks/crm/useOportunidadeAnexos';
 import {
   AlertDialog,
@@ -45,10 +45,27 @@ function isVideo(name: string | null) {
 const AnexoGallery: React.FC<Props> = ({ oppId }) => {
   const { anexos, isLoading, uploadAnexo, togglePublico, deleteAnexo } = useOportunidadeAnexos(oppId);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewName, setPreviewName] = useState<string | null>(null);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter only image anexos for the image gallery navigation
+  const imageAnexos = useMemo(() => anexos.filter((a) => isImage(a.nome_arquivo)), [anexos]);
+
+  const openImagePreview = useCallback((anexo: OportunidadeAnexo) => {
+    const idx = imageAnexos.findIndex((a) => a.id === anexo.id);
+    if (idx !== -1) setPreviewIndex(idx);
+  }, [imageAnexos]);
+
+  const currentImage = previewIndex !== null ? imageAnexos[previewIndex] : null;
+
+  const goNext = useCallback(() => {
+    if (previewIndex !== null && previewIndex < imageAnexos.length - 1) setPreviewIndex(previewIndex + 1);
+  }, [previewIndex, imageAnexos.length]);
+
+  const goPrev = useCallback(() => {
+    if (previewIndex !== null && previewIndex > 0) setPreviewIndex(previewIndex - 1);
+  }, [previewIndex]);
 
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -100,7 +117,7 @@ const AnexoGallery: React.FC<Props> = ({ oppId }) => {
               anexo={anexo}
               onTogglePublico={(pub) => togglePublico.mutate({ id: anexo.id, publico: pub })}
               onDelete={() => deleteAnexo.mutate({ id: anexo.id, url: anexo.url || '' })}
-              onPreview={() => { setPreviewUrl(anexo.url); setPreviewName(anexo.nome_arquivo); }}
+              onPreview={() => openImagePreview(anexo)}
             />
           ))}
         </div>
@@ -149,30 +166,70 @@ const AnexoGallery: React.FC<Props> = ({ oppId }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Preview Dialog */}
-      <Dialog open={!!previewUrl} onOpenChange={() => { setPreviewUrl(null); setPreviewName(null); }}>
-        <DialogContent className="sm:max-w-3xl max-h-[85vh]">
-          <DialogHeader>
-            <DialogTitle className="truncate text-sm">{previewName || 'Pré-visualização'}</DialogTitle>
+      {/* Image Preview Dialog with navigation */}
+      <Dialog open={previewIndex !== null} onOpenChange={() => setPreviewIndex(null)}>
+        <DialogContent className="sm:max-w-fit max-w-[95vw] max-h-[95vh] p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-4 pt-4 pb-2">
+            <DialogTitle className="truncate text-sm">{currentImage?.nome_arquivo || 'Pré-visualização'}</DialogTitle>
             <DialogDescription className="sr-only">Pré-visualização do arquivo anexo</DialogDescription>
           </DialogHeader>
-          <div className="flex justify-center items-center max-h-[70vh] overflow-auto">
-            {previewUrl && isImage(previewName) && (
-              <img src={previewUrl} alt={previewName || ''} className="max-w-full max-h-[65vh] object-contain rounded-lg" />
+
+          {/* Main image area with nav buttons */}
+          <div className="relative flex items-center justify-center px-4 min-h-[200px]">
+            {/* Previous button */}
+            {previewIndex !== null && previewIndex > 0 && (
+              <button
+                onClick={goPrev}
+                className="absolute left-2 z-10 rounded-full bg-background/80 border border-border p-1.5 hover:bg-muted transition-colors shadow-sm"
+              >
+                <ChevronLeft className="h-5 w-5 text-foreground" />
+              </button>
             )}
-            {previewUrl && isVideo(previewName) && (
-              <video src={previewUrl} controls className="max-w-full max-h-[65vh] rounded-lg" />
+
+            {currentImage?.url && (
+              <img
+                src={currentImage.url}
+                alt={currentImage.nome_arquivo || ''}
+                className="max-w-[85vw] sm:max-w-[75vw] max-h-[65vh] object-contain rounded-lg"
+              />
             )}
-            {previewUrl && !isImage(previewName) && !isVideo(previewName) && (
-              <div className="text-center space-y-3 py-8">
-                <FileText className="h-16 w-16 text-muted-foreground mx-auto" />
-                <p className="text-sm text-muted-foreground">{previewName}</p>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={previewUrl} target="_blank" rel="noopener noreferrer">Abrir arquivo</a>
-                </Button>
-              </div>
+
+            {/* Next button */}
+            {previewIndex !== null && previewIndex < imageAnexos.length - 1 && (
+              <button
+                onClick={goNext}
+                className="absolute right-2 z-10 rounded-full bg-background/80 border border-border p-1.5 hover:bg-muted transition-colors shadow-sm"
+              >
+                <ChevronRight className="h-5 w-5 text-foreground" />
+              </button>
             )}
           </div>
+
+          {/* Thumbnail strip */}
+          {imageAnexos.length > 1 && (
+            <div className="px-4 pb-4 pt-3">
+              <div className="flex gap-2 overflow-x-auto pb-1 justify-center">
+                {imageAnexos.map((img, idx) => (
+                  <button
+                    key={img.id}
+                    onClick={() => setPreviewIndex(idx)}
+                    className={`flex-shrink-0 w-14 h-14 rounded-md overflow-hidden border-2 transition-all ${
+                      idx === previewIndex
+                        ? 'border-primary ring-1 ring-primary/30 scale-105'
+                        : 'border-border opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={img.url || ''}
+                      alt={img.nome_arquivo || ''}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
