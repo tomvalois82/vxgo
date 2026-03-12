@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const TIPO_ICONS: Record<string, React.FC<{ className?: string }>> = {
   'Ligação': PhoneCall,
   'Mensagem': MessageSquare,
+  'Mensagem Automática': Bot,
   'Visita': MapPin,
   'Confirmar': CheckCircle2,
   'Informação': Info,
@@ -24,13 +25,14 @@ const TIPO_ICONS: Record<string, React.FC<{ className?: string }>> = {
 const TIPO_COLORS: Record<string, string> = {
   'Ligação': 'border-l-blue-500 bg-blue-50 dark:bg-blue-950/30',
   'Mensagem': 'border-l-green-500 bg-green-50 dark:bg-green-950/30',
+  'Mensagem Automática': 'border-l-teal-500 bg-teal-50 dark:bg-teal-950/30',
   'Visita': 'border-l-orange-500 bg-orange-50 dark:bg-orange-950/30',
   'Confirmar': 'border-l-purple-500 bg-purple-50 dark:bg-purple-950/30',
   'Informação': 'border-l-cyan-500 bg-cyan-50 dark:bg-cyan-950/30',
   'Observação': 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/30',
 };
 
-const TIPOS = ['Ligação', 'Mensagem', 'Visita', 'Confirmar', 'Informação', 'Observação'];
+const TIPOS = ['Ligação', 'Mensagem', 'Mensagem Automática', 'Visita', 'Confirmar', 'Informação', 'Observação'];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 function formatPhoneBR(phone: string | null | undefined): string {

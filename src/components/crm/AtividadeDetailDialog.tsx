@@ -26,6 +26,7 @@ import { ptBR } from 'date-fns/locale';
 const TIPO_ICONS: Record<string, React.FC<{ className?: string }>> = {
   'Ligação': PhoneCall,
   'Mensagem': MessageSquare,
+  'Mensagem Automática': Bot,
   'Visita': MapPin,
   'Confirmar': CheckCircle2,
   'Informação': Info,
@@ -35,6 +36,7 @@ const TIPO_ICONS: Record<string, React.FC<{ className?: string }>> = {
 const TIPO_COLORS: Record<string, string> = {
   'Ligação': 'bg-blue-500',
   'Mensagem': 'bg-green-500',
+  'Mensagem Automática': 'bg-teal-500',
   'Visita': 'bg-orange-500',
   'Confirmar': 'bg-purple-500',
   'Informação': 'bg-cyan-500',
