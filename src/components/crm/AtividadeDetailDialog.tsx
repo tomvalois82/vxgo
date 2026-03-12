@@ -18,7 +18,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Trash2, PhoneCall, MessageSquare, MapPin, CheckCircle2, Info, StickyNote, Pencil } from 'lucide-react';
+import { Trash2, PhoneCall, MessageSquare, Bot, MapPin, CheckCircle2, Info, StickyNote, Pencil } from 'lucide-react';
 import type { Atividade } from '@/hooks/crm/useAtividades';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -26,6 +26,7 @@ import { ptBR } from 'date-fns/locale';
 const TIPO_ICONS: Record<string, React.FC<{ className?: string }>> = {
   'Ligação': PhoneCall,
   'Mensagem': MessageSquare,
+  'Mensagem Automática': Bot,
   'Visita': MapPin,
   'Confirmar': CheckCircle2,
   'Informação': Info,
@@ -35,6 +36,7 @@ const TIPO_ICONS: Record<string, React.FC<{ className?: string }>> = {
 const TIPO_COLORS: Record<string, string> = {
   'Ligação': 'bg-blue-500',
   'Mensagem': 'bg-green-500',
+  'Mensagem Automática': 'bg-teal-500',
   'Visita': 'bg-orange-500',
   'Confirmar': 'bg-purple-500',
   'Informação': 'bg-cyan-500',
