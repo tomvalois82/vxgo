@@ -1,9 +1,9 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Paperclip, Upload, X, FileText, Film, Image as ImageIcon, Trash2, Eye, LoaderCircle, Download } from 'lucide-react';
+import { Paperclip, Upload, X, FileText, Film, Image as ImageIcon, Trash2, Eye, LoaderCircle, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useOportunidadeAnexos, type OportunidadeAnexo } from '@/hooks/crm/useOportunidadeAnexos';
 import {
   AlertDialog,
