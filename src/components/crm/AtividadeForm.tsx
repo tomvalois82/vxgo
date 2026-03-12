@@ -24,6 +24,7 @@ import type { AtividadeInsert } from '@/hooks/crm/useAtividades';
 const TIPOS = [
   { value: 'Ligação', icon: PhoneCall, label: 'Ligação' },
   { value: 'Mensagem', icon: MessageSquare, label: 'Mensagem' },
+  { value: 'Mensagem Automática', icon: Bot, label: 'Msg Automática' },
   { value: 'Visita', icon: MapPin, label: 'Visita' },
   { value: 'Confirmar', icon: CheckCircle2, label: 'Confirmar' },
   { value: 'Informação', icon: Info, label: 'Informação' },
