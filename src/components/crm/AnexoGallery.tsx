@@ -194,8 +194,8 @@ const AnexoCard: React.FC<{
     <div className="group relative rounded-lg border border-border overflow-hidden bg-muted/30 hover:bg-muted/50 transition-colors">
       {/* Thumbnail / Icon */}
       <div
-        className="aspect-square flex items-center justify-center cursor-pointer relative overflow-hidden"
-        onClick={onPreview}
+        className={`aspect-square flex items-center justify-center relative overflow-hidden ${imgPreview ? 'cursor-pointer' : ''}`}
+        onClick={imgPreview ? onPreview : undefined}
       >
         {imgPreview && anexo.url ? (
           <img
@@ -212,10 +212,12 @@ const AnexoCard: React.FC<{
             </span>
           </div>
         )}
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Eye className="h-5 w-5 text-white" />
-        </div>
+        {/* Hover overlay - only for images */}
+        {imgPreview && (
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Eye className="h-5 w-5 text-white" />
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -237,7 +239,7 @@ const AnexoCard: React.FC<{
               download={anexo.nome_arquivo || true}
               target="_blank"
               rel="noopener noreferrer"
-              className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary p-0.5"
+              className="text-muted-foreground hover:text-primary p-0.5"
               onClick={(e) => e.stopPropagation()}
             >
               <Download className="h-3.5 w-3.5" />
