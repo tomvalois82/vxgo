@@ -575,7 +575,7 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                     size="sm"
                     variant="outline"
                     className="h-7 text-xs gap-1 text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
-                    onClick={() => { setMotivoPerda(''); setShowLossDialog(true); }}
+                    onClick={() => { setMotivoPerda(opp.motivo_perda || ''); setShowLossDialog(true); }}
                   >
                     <ThumbsDown className="h-3 w-3" />
                     Perdeu
