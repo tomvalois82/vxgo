@@ -588,43 +588,6 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
               </button>
             </div>
 
-            {/* Loss reason dialog */}
-            <AlertDialog open={showLossDialog} onOpenChange={setShowLossDialog}>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Motivo da perda</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Descreva o motivo pelo qual esta oportunidade foi perdida.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <Textarea
-                  value={motivoPerda}
-                  onChange={(e) => setMotivoPerda(e.target.value)}
-                  placeholder="Ex: Cliente optou pela concorrência..."
-                  className="min-h-[80px]"
-                />
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => {
-                      if (!opp) return;
-                      updateOpp.mutate(
-                        { id: opp.id, status: 'perdeu', motivo_perda: motivoPerda || null },
-                        {
-                          onSuccess: () => {
-                            queryClient.invalidateQueries({ queryKey: ['oportunidade-detail', opp.id] });
-                          },
-                        }
-                      );
-                    }}
-                  >
-                    Ok
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
             <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
               <AlertDialogContent>
                 <AlertDialogHeader>
