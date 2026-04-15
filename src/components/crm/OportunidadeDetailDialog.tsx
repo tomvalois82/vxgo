@@ -526,6 +526,22 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
           <>
             {/* ─── Header ─── */}
             <div className="px-6 py-4 border-b shrink-0 pr-40">
+              {/* Timestamps */}
+              {(opp.data_criacao || opp.ultima_interacao) && (
+                <div className="text-xs text-muted-foreground/60 italic mb-1.5">
+                  {opp.data_criacao && (
+                    <span>
+                      Criado em {new Date(opp.data_criacao).toLocaleDateString('pt-BR')}
+                    </span>
+                  )}
+                  {opp.data_criacao && opp.ultima_interacao && <span> • </span>}
+                  {opp.ultima_interacao && (
+                    <span>
+                      Última interação em {new Date(opp.ultima_interacao).toLocaleDateString('pt-BR')}
+                    </span>
+                  )}
+                </div>
+              )}
               <EditableField
                 value={opp.titulo || ''}
                 onSave={(v) => save('titulo', v)}
