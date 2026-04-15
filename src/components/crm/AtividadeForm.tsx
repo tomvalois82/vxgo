@@ -89,7 +89,10 @@ const AtividadeForm: React.FC<Props> = ({ oppId, leadId, userId, onSubmit, isCre
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  onClick={() => setTipo(value)}
+                  onClick={() => {
+                    setTipo(value);
+                    setDescricao(value);
+                  }}
                   className={`p-2 rounded-md transition-colors ${
                     tipo === value
                       ? 'bg-primary text-primary-foreground shadow-sm'
