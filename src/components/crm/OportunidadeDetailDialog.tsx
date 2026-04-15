@@ -448,6 +448,8 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
   const deleteOpp = useDeleteOportunidade();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formOpen, setFormOpen] = useState(true);
+  const [showLossDialog, setShowLossDialog] = useState(false);
+  const [motivoPerda, setMotivoPerda] = useState('');
 
   // Auto-detect funnel from opp's current kanban column
   useEffect(() => {
