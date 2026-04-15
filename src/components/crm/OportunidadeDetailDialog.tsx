@@ -618,6 +618,43 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
               </AlertDialogContent>
             </AlertDialog>
 
+            {/* Loss reason dialog */}
+            <AlertDialog open={showLossDialog} onOpenChange={setShowLossDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Motivo da perda</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Descreva o motivo pelo qual esta oportunidade foi perdida.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <Textarea
+                  value={motivoPerda}
+                  onChange={(e) => setMotivoPerda(e.target.value)}
+                  placeholder="Ex: Cliente optou pela concorrência..."
+                  rows={3}
+                />
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      if (!opp) return;
+                      updateOpp.mutate(
+                        { id: opp.id, status: 'perdeu', motivo_perda: motivoPerda.trim() || null },
+                        {
+                          onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: ['oportunidade-detail', opp.id] });
+                            setShowLossDialog(false);
+                          },
+                        }
+                      );
+                    }}
+                  >
+                    Ok
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             {/* ─── Body ─── */}
             <div className="flex flex-1 min-h-0">
               {/* ─── Left sidebar ─── */}
