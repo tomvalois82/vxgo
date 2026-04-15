@@ -18,7 +18,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Trash2, PhoneCall, MessageSquare, Bot, MapPin, CheckCircle2, Info, StickyNote, Pencil } from 'lucide-react';
+import { Trash2, PhoneCall, MessageSquare, Bot, MapPin, CheckCircle2, Info, StickyNote, Pencil, ExternalLink } from 'lucide-react';
 import type { Atividade } from '@/hooks/crm/useAtividades';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -147,9 +147,10 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   onUpdate: (data: { id: number; [key: string]: any }) => void;
   onDelete: (id: number) => void;
+  onViewOportunidade?: (id: number) => void;
 }
 
-const AtividadeDetailDialog: React.FC<Props> = ({ atividade, open, onOpenChange, onUpdate, onDelete }) => {
+const AtividadeDetailDialog: React.FC<Props> = ({ atividade, open, onOpenChange, onUpdate, onDelete, onViewOportunidade }) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (!atividade) return null;
@@ -215,8 +216,24 @@ const AtividadeDetailDialog: React.FC<Props> = ({ atividade, open, onOpenChange,
               </Label>
             </div>
 
-            {/* Excluir */}
-            <div className="flex justify-end pt-2 border-t">
+            {/* Actions */}
+            <div className="flex justify-between items-center pt-2 border-t">
+              {onViewOportunidade && atividade.id_oportunidade ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    onOpenChange(false);
+                    onViewOportunidade(atividade.id_oportunidade!);
+                  }}
+                >
+                  <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                  Ver oportunidade
+                </Button>
+              ) : (
+                <div />
+              )}
               <Button
                 variant="destructive"
                 size="sm"
