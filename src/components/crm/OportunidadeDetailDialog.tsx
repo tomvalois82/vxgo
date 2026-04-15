@@ -6,8 +6,9 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2, ChevronDown, ChevronUp, Trophy, ThumbsDown, RotateCcw } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import AnexoGallery from './AnexoGallery';
 import { useOportunidadeDetail } from '@/hooks/crm/useOportunidadeDetail';
 import { useUpdateOportunidade } from '@/hooks/crm/useUpdateOportunidade';
@@ -447,6 +448,8 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
   const queryClient = useQueryClient();
   const deleteOpp = useDeleteOportunidade();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showLossDialog, setShowLossDialog] = useState(false);
+  const [motivoPerda, setMotivoPerda] = useState('');
   const [formOpen, setFormOpen] = useState(true);
 
   // Auto-detect funnel from opp's current kanban column
@@ -546,6 +549,39 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
 
             {/* Quick-action stage buttons + Delete button (top-right) */}
             <div className="absolute right-12 top-4 flex items-center gap-1.5">
+              {/* Status buttons: Ganhou / Perdeu / Reabrir */}
+              {opp.status === 'ganhou' || opp.status === 'perdeu' ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => save('status', 'aberta')}
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Reabrir
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1 text-emerald-600 border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                    onClick={() => save('status', 'ganhou')}
+                  >
+                    <Trophy className="h-3 w-3" />
+                    Ganhou
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1 text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => { setMotivoPerda(''); setShowLossDialog(true); }}
+                  >
+                    <ThumbsDown className="h-3 w-3" />
+                    Perdeu
+                  </Button>
+                </>
+              )}
               <button
                 className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 title="Excluir oportunidade"
@@ -577,6 +613,43 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                     }}
                   >
                     Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Loss reason dialog */}
+            <AlertDialog open={showLossDialog} onOpenChange={setShowLossDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Motivo da perda</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Descreva o motivo pelo qual esta oportunidade foi perdida.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <Textarea
+                  value={motivoPerda}
+                  onChange={(e) => setMotivoPerda(e.target.value)}
+                  placeholder="Ex: Cliente optou pela concorrência..."
+                  rows={3}
+                />
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      if (!opp) return;
+                      updateOpp.mutate(
+                        { id: opp.id, status: 'perdeu', motivo_perda: motivoPerda.trim() || null },
+                        {
+                          onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: ['oportunidade-detail', opp.id] });
+                            setShowLossDialog(false);
+                          },
+                        }
+                      );
+                    }}
+                  >
+                    Ok
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
