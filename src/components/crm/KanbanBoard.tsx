@@ -39,6 +39,7 @@ const KanbanBoard: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterColumnId, setFilterColumnId] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterSearch, setFilterSearch] = useState<string>('');
   const { data: configUsers = [] } = useConfigUsers();
   // Auto-select first funnel when loaded
@@ -73,6 +74,8 @@ const KanbanBoard: React.FC = () => {
         if (selectedUserId !== 'all' && selectedUserId !== 'unassigned' && opp.id_usuario !== Number(selectedUserId)) return;
         // Column filter
         if (filterColumnId !== 'all' && opp.id_kanban !== Number(filterColumnId)) return;
+        // Status filter
+        if (filterStatus !== 'all' && opp.status !== filterStatus) return;
         // Text search filter
         if (searchLower) {
           const leadNome = opp.lead?.nome?.toLowerCase() || '';
@@ -90,7 +93,7 @@ const KanbanBoard: React.FC = () => {
       }
     });
     return map;
-  }, [visibleColumns, oportunidades, selectedUserId, filterColumnId, searchLower]);
+  }, [visibleColumns, oportunidades, selectedUserId, filterColumnId, filterStatus, searchLower]);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -186,8 +189,11 @@ const KanbanBoard: React.FC = () => {
         columns={visibleColumns}
         selectedColumnId={filterColumnId}
         onColumnChange={setFilterColumnId}
+        selectedStatus={filterStatus}
+        onStatusChange={setFilterStatus}
         searchText={filterSearch}
-        onSearchChange={setFilterSearch} className="my-[4px] mt-0 mb-[5px] py-[4px]" />
+        onSearchChange={setFilterSearch} 
+        className="my-[4px] mt-0 mb-[5px] py-[4px]" />
       
 
       {!currentFunilId ?

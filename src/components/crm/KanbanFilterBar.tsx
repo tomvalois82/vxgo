@@ -13,6 +13,8 @@ interface KanbanFilterBarProps {
   columns: KanbanColumn[];
   selectedColumnId: string;
   onColumnChange: (value: string) => void;
+  selectedStatus: string;
+  onStatusChange: (value: string) => void;
   searchText: string;
   onSearchChange: (value: string) => void;
   className?: string;
@@ -24,6 +26,8 @@ const KanbanFilterBar: React.FC<KanbanFilterBarProps> = ({
   columns,
   selectedColumnId,
   onColumnChange,
+  selectedStatus,
+  onStatusChange,
   searchText,
   onSearchChange,
 }) => {
@@ -50,6 +54,18 @@ const KanbanFilterBar: React.FC<KanbanFilterBarProps> = ({
                 {col.descricao || `Coluna #${col.id}`}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedStatus} onValueChange={onStatusChange}>
+          <SelectTrigger className="w-36 h-8 text-xs">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="aberta">Aberta</SelectItem>
+            <SelectItem value="ganhou">Ganhou</SelectItem>
+            <SelectItem value="perdeu">Perdeu</SelectItem>
           </SelectContent>
         </Select>
 
