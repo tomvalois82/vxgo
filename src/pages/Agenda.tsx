@@ -5,6 +5,7 @@ import { useAgendaAtividades, type AgendaFilters, type AgendaAtividade } from '@
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
 import { useAuth } from '@/contexts/AuthContext';
 import AtividadeDetailDialog from '@/components/crm/AtividadeDetailDialog';
+import OportunidadeDetailDialog from '@/components/crm/OportunidadeDetailDialog';
 import { PhoneCall, MessageSquare, Bot, MapPin, CheckCircle2, Info, StickyNote } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -52,6 +53,8 @@ const Agenda: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedAtividade, setSelectedAtividade] = useState<AgendaAtividade | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [oppDialogId, setOppDialogId] = useState<number | null>(null);
+  const [oppDialogOpen, setOppDialogOpen] = useState(false);
 
   // Filters
   const isManager = profile?.cargo === 'Gerente' || profile?.cargo === 'Supervisor';
@@ -274,6 +277,16 @@ const Agenda: React.FC = () => {
         onOpenChange={setDialogOpen}
         onUpdate={handleUpdate}
         onDelete={remove}
+        onViewOportunidade={(id) => {
+          setOppDialogId(id);
+          setOppDialogOpen(true);
+        }}
+      />
+
+      <OportunidadeDetailDialog
+        oppId={oppDialogId}
+        open={oppDialogOpen}
+        onOpenChange={setOppDialogOpen}
       />
     </div>
   );
