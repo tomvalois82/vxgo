@@ -211,7 +211,7 @@ const AtividadeTimeline: React.FC<Props> = ({ atividades, onUpdate, onDelete }) 
   <InlineEdit
     value={a.obs || ''}
     onSave={(v) => onUpdate({ id: a.id, obs: v })}
-    className="text-sm text-black"
+    className="text-base text-black"
     multiline
     placeholder="Adicionar observação..."
   />
