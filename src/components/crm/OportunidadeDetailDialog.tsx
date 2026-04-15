@@ -6,7 +6,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2, ChevronDown, ChevronUp, RotateCcw, Trophy, ThumbsDown } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import AnexoGallery from './AnexoGallery';
 import { useOportunidadeDetail } from '@/hooks/crm/useOportunidadeDetail';
 import { useUpdateOportunidade } from '@/hooks/crm/useUpdateOportunidade';
@@ -447,6 +448,8 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
   const deleteOpp = useDeleteOportunidade();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formOpen, setFormOpen] = useState(true);
+  const [showLossDialog, setShowLossDialog] = useState(false);
+  const [motivoPerda, setMotivoPerda] = useState('');
 
   // Auto-detect funnel from opp's current kanban column
   useEffect(() => {
@@ -545,6 +548,56 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
 
             {/* Quick-action stage buttons + Delete button (top-right) */}
             <div className="absolute right-12 top-4 flex items-center gap-1.5">
+              {/* Status buttons: Ganhou / Perdeu / Reabrir */}
+              {opp.status === 'ganhou' || opp.status === 'perdeu' ? (
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => save('status', 'aberta')}
+                        className="rounded-md px-2.5 py-1 text-xs font-medium border border-blue-500 text-blue-500 bg-background hover:bg-blue-500 hover:text-white transition-all flex items-center gap-1"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Reabrir
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Reabrir oportunidade</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <>
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => save('status', 'ganhou')}
+                          className="rounded-md px-2.5 py-1 text-xs font-medium border border-green-500 text-green-500 bg-background hover:bg-green-500 hover:text-white transition-all flex items-center gap-1"
+                        >
+                          <Trophy className="h-3 w-3" />
+                          Ganhou
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">Marcar como ganha</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => { setMotivoPerda(''); setShowLossDialog(true); }}
+                          className="rounded-md px-2.5 py-1 text-xs font-medium border border-red-500 text-red-500 bg-background hover:bg-red-500 hover:text-white transition-all flex items-center gap-1"
+                        >
+                          <ThumbsDown className="h-3 w-3" />
+                          Perdeu
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">Marcar como perdida</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
+              )}
+
+              {/* Kanban stage buttons */}
               {columns
                 .filter((c) => c.padrao === true)
                 .map((col) => {
@@ -585,6 +638,44 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
+
+            {/* Loss reason dialog */}
+            <AlertDialog open={showLossDialog} onOpenChange={setShowLossDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Motivo da perda</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Descreva o motivo pelo qual esta oportunidade foi perdida.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <Textarea
+                  value={motivoPerda}
+                  onChange={(e) => setMotivoPerda(e.target.value)}
+                  placeholder="Ex: Cliente optou pela concorrência..."
+                  className="min-h-[80px]"
+                />
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => {
+                      if (!opp) return;
+                      updateOpp.mutate(
+                        { id: opp.id, status: 'perdeu', motivo_perda: motivoPerda || null },
+                        {
+                          onSuccess: () => {
+                            queryClient.invalidateQueries({ queryKey: ['oportunidade-detail', opp.id] });
+                          },
+                        }
+                      );
+                    }}
+                  >
+                    Ok
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
               <AlertDialogContent>
                 <AlertDialogHeader>
