@@ -1296,6 +1296,7 @@ export type Database = {
           id_lead: number | null
           id_usuario: number | null
           idEstoque: number | null
+          motivo_perda: string | null
           obs: string | null
           outro_interesse: string[] | null
           resumo: string | null
@@ -1314,6 +1315,7 @@ export type Database = {
           id_lead?: number | null
           id_usuario?: number | null
           idEstoque?: number | null
+          motivo_perda?: string | null
           obs?: string | null
           outro_interesse?: string[] | null
           resumo?: string | null
@@ -1332,6 +1334,7 @@ export type Database = {
           id_lead?: number | null
           id_usuario?: number | null
           idEstoque?: number | null
+          motivo_perda?: string | null
           obs?: string | null
           outro_interesse?: string[] | null
           resumo?: string | null
