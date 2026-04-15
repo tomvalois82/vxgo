@@ -207,15 +207,15 @@ const AtividadeTimeline: React.FC<Props> = ({ atividades, onUpdate, onDelete }) 
               </div>
 
               {/* Obs */}
-              {(a.obs || true) && (
-                <InlineEdit
-                  value={a.obs || ''}
-                  onSave={(v) => onUpdate({ id: a.id, obs: v })}
-                  className="text-xs text-muted-foreground"
-                  multiline
-                  placeholder="Adicionar observação..."
-                />
-              )}
+{(a.obs || true) && (
+  <InlineEdit
+    value={a.obs || ''}
+    onSave={(v) => onUpdate({ id: a.id, obs: v })}
+    className="text-sm text-black"
+    multiline
+    placeholder="Adicionar observação..."
+  />
+)}
 
               {/* Date */}
               <div className="mt-1.5">
