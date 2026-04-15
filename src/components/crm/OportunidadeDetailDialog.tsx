@@ -548,55 +548,6 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
 
             {/* Quick-action stage buttons + Delete button (top-right) */}
             <div className="absolute right-12 top-4 flex items-center gap-1.5">
-              {/* Status buttons: Ganhou / Perdeu / Reabrir */}
-              {opp.status === 'ganhou' || opp.status === 'perdeu' ? (
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => save('status', 'aberta')}
-                        className="rounded-md px-2.5 py-1 text-xs font-medium border border-blue-500 text-blue-500 bg-background hover:bg-blue-500 hover:text-white transition-all flex items-center gap-1"
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                        Reabrir
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">Reabrir oportunidade</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ) : (
-                <>
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => save('status', 'ganhou')}
-                          className="rounded-md px-2.5 py-1 text-xs font-medium border border-green-500 text-green-500 bg-background hover:bg-green-500 hover:text-white transition-all flex items-center gap-1"
-                        >
-                          <Trophy className="h-3 w-3" />
-                          Ganhou
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">Marcar como ganha</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => { setMotivoPerda(''); setShowLossDialog(true); }}
-                          className="rounded-md px-2.5 py-1 text-xs font-medium border border-red-500 text-red-500 bg-background hover:bg-red-500 hover:text-white transition-all flex items-center gap-1"
-                        >
-                          <ThumbsDown className="h-3 w-3" />
-                          Perdeu
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">Marcar como perdida</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </>
-              )}
-
               {/* Kanban stage buttons */}
               {columns
                 .filter((c) => c.padrao === true)
