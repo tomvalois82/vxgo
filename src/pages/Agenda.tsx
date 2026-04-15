@@ -277,6 +277,16 @@ const Agenda: React.FC = () => {
         onOpenChange={setDialogOpen}
         onUpdate={handleUpdate}
         onDelete={remove}
+        onViewOportunidade={(id) => {
+          setOppDialogId(id);
+          setOppDialogOpen(true);
+        }}
+      />
+
+      <OportunidadeDetailDialog
+        oppId={oppDialogId}
+        open={oppDialogOpen}
+        onOpenChange={setOppDialogOpen}
       />
     </div>
   );
