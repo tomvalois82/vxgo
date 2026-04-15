@@ -53,6 +53,8 @@ const Agenda: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedAtividade, setSelectedAtividade] = useState<AgendaAtividade | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [oppDialogId, setOppDialogId] = useState<number | null>(null);
+  const [oppDialogOpen, setOppDialogOpen] = useState(false);
 
   // Filters
   const isManager = profile?.cargo === 'Gerente' || profile?.cargo === 'Supervisor';
