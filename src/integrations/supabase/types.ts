@@ -1291,6 +1291,7 @@ export type Database = {
         Row: {
           created_at: string
           data_criacao: string | null
+          data_finalizado: string | null
           id: number
           id_kanban: number | null
           id_lead: number | null
@@ -1310,6 +1311,7 @@ export type Database = {
         Insert: {
           created_at?: string
           data_criacao?: string | null
+          data_finalizado?: string | null
           id?: number
           id_kanban?: number | null
           id_lead?: number | null
@@ -1329,6 +1331,7 @@ export type Database = {
         Update: {
           created_at?: string
           data_criacao?: string | null
+          data_finalizado?: string | null
           id?: number
           id_kanban?: number | null
           id_lead?: number | null
