@@ -805,6 +805,35 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
 
               {/* ─── Central area: Atividades ─── */}
               <div className="flex-1 flex flex-col min-w-0">
+                {/* Status result box */}
+                {opp.status === 'perdeu' && (
+                  <div className="mx-4 mt-4 mb-2 rounded-md border border-red-300 bg-red-50 p-3">
+                    <p className="text-sm font-semibold text-red-600 mb-1">Perdeu</p>
+                    <EditableField
+                      value={opp.motivo_perda || ''}
+                      onSave={(v) => save('motivo_perda', v)}
+                      placeholder="Adicionar motivo da perda..."
+                      multiline
+                      className="text-sm text-red-900"
+                    />
+                    {opp.data_finalizado && (
+                      <p className="text-xs text-red-400 mt-2">
+                        Finalizado em {new Date(opp.data_finalizado).toLocaleString('pt-BR')}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {opp.status === 'ganhou' && (
+                  <div className="mx-4 mt-4 mb-2 rounded-md border border-green-300 bg-green-50 p-3">
+                    <p className="text-sm font-semibold text-green-600 mb-1">Ganhou</p>
+                    {opp.data_finalizado && (
+                      <p className="text-xs text-green-500">
+                        Finalizado em {new Date(opp.data_finalizado).toLocaleString('pt-BR')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Collapsible form */}
                 <Collapsible open={formOpen} onOpenChange={setFormOpen}>
                   <div className="px-4 py-3 border-b shrink-0">

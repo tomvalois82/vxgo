@@ -13,6 +13,7 @@ export interface OportunidadeDetail {
   id_usuario: number | null;
   idEstoque: number | null;
   motivo_perda: string | null;
+  data_finalizado: string | null;
   created_at: string;
   data_criacao: string | null;
   ultima_interacao: string | null;
