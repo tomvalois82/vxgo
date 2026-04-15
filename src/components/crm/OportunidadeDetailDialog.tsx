@@ -549,6 +549,39 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
 
             {/* Quick-action stage buttons + Delete button (top-right) */}
             <div className="absolute right-12 top-4 flex items-center gap-1.5">
+              {/* Status buttons: Ganhou / Perdeu / Reabrir */}
+              {opp.status === 'ganhou' || opp.status === 'perdeu' ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => save('status', 'aberta')}
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Reabrir
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1 text-emerald-600 border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                    onClick={() => save('status', 'ganhou')}
+                  >
+                    <Trophy className="h-3 w-3" />
+                    Ganhou
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs gap-1 text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => { setMotivoPerda(''); setShowLossDialog(true); }}
+                  >
+                    <ThumbsDown className="h-3 w-3" />
+                    Perdeu
+                  </Button>
+                </>
+              )}
               <button
                 className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 title="Excluir oportunidade"
