@@ -17,6 +17,7 @@ import {
 '@/hooks/crm/useKanban';
 import { useActiveFunis } from '@/hooks/crm/useFunis';
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
+import { useAtividadesStatusByOportunidade, AtividadeStatusKanban } from '@/hooks/crm/useAtividades';
 import KanbanEditDialog from './KanbanEditDialog';
 import OportunidadeDialog from './OportunidadeDialog';
 import OportunidadeDetailDialog from './OportunidadeDetailDialog';
@@ -94,6 +95,13 @@ const KanbanBoard: React.FC = () => {
     });
     return map;
   }, [visibleColumns, oportunidades, selectedUserId, filterColumnId, filterStatus, searchLower]);
+
+  const visibleOppIds = useMemo(() => {
+    const ids: number[] = [];
+    Object.values(oppsByColumn).forEach((list) => list.forEach((o) => ids.push(o.id)));
+    return ids;
+  }, [oppsByColumn]);
+  const { data: atividadeStatusMap = {} } = useAtividadesStatusByOportunidade(visibleOppIds);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -209,6 +217,7 @@ const KanbanBoard: React.FC = () => {
               key={column.id}
               column={column}
               oportunidades={oppsByColumn[column.id] || []}
+              atividadeStatusMap={atividadeStatusMap}
               onAddOpp={() =>
               setNewOppColumn({ id: column.id, name: column.descricao || 'Sem nome' })
               }
@@ -261,11 +270,12 @@ const KanbanBoard: React.FC = () => {
 interface ColumnProps {
   column: KanbanColumn;
   oportunidades: Oportunidade[];
+  atividadeStatusMap: Record<number, AtividadeStatusKanban>;
   onAddOpp: () => void;
   onClickOpp: (id: number) => void;
 }
 
-const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddOpp, onClickOpp }) => {
+const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, atividadeStatusMap, onAddOpp, onClickOpp }) => {
   return (
     <div className="flex flex-col w-72 min-w-[18rem] flex-shrink-0 bg-muted/40 rounded-xl border">
       <div
@@ -302,6 +312,22 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
             {oportunidades.map((opp, index) =>
           <Draggable key={opp.id} draggableId={`opp-${opp.id}`} index={index}>
                 {(provided, snapshot) =>
+              (() => {
+                const statusAtv = atividadeStatusMap[opp.id] ?? 'sem';
+                // Mapeia status -> classes de contorno e cor do ponto
+                const ringClass =
+                  statusAtv === 'sem'
+                    ? 'ring-2 ring-red-500'
+                    : statusAtv === 'atrasada'
+                    ? 'ring-2 ring-yellow-400'
+                    : 'ring-2 ring-green-500';
+                const dotClass =
+                  statusAtv === 'sem'
+                    ? 'bg-red-500'
+                    : statusAtv === 'atrasada'
+                    ? 'bg-yellow-400'
+                    : null;
+                return (
             <div
               ref={provided.innerRef}
               {...provided.draggableProps}
@@ -319,7 +345,8 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
                         <TooltipProvider delayDuration={200}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Avatar className="h-8 w-8 flex-shrink-0">
+                              <div className="relative flex-shrink-0">
+                              <Avatar className={`h-8 w-8 ${ringClass}`}>
                                 {opp.usuario.foto ? (
                                   <AvatarImage src={opp.usuario.foto} alt={opp.usuario.nome || ''} />
                                 ) : null}
@@ -330,6 +357,10 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
                                   {(opp.usuario.nome || '?').charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
+                              {dotClass && (
+                                <span className={`absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-card ${dotClass}`} />
+                              )}
+                              </div>
                             </TooltipTrigger>
                             <TooltipContent side="top">
                               <p>{opp.usuario.nome || 'Sem nome'}</p>
@@ -362,6 +393,8 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, onAddO
                       </p>
               }
                   </div>
+                );
+              })()
             }
               </Draggable>
           )}
