@@ -84,3 +84,44 @@ export function useAtividades(oppId: number | null) {
     isCreating: createMutation.isPending,
   };
 }
+
+export type AtividadeStatusKanban = 'sem' | 'atrasada' | 'em-dia';
+
+// Busca todas as atividades pendentes (concluida=false) e agrupa por id_oportunidade
+export function useAtividadesStatusByOportunidade(oppIds: number[]) {
+  return useQuery<Record<number, AtividadeStatusKanban>>({
+    queryKey: ['atividades-status-kanban', oppIds.slice().sort((a, b) => a - b)],
+    queryFn: async () => {
+      const result: Record<number, AtividadeStatusKanban> = {};
+      if (oppIds.length === 0) return result;
+      const { data, error } = await supabase
+        .from('atividade')
+        .select('id_oportunidade, data_hora, concluida')
+        .in('id_oportunidade', oppIds)
+        .eq('concluida', false);
+      if (error) throw error;
+      const agora = Date.now();
+      const porOpp: Record<number, { temAtrasada: boolean; temFutura: boolean }> = {};
+      (data || []).forEach((a: { id_oportunidade: number | null; data_hora: string | null }) => {
+        if (!a.id_oportunidade) return;
+        const entry = porOpp[a.id_oportunidade] || { temAtrasada: false, temFutura: false };
+        if (a.data_hora) {
+          const ts = new Date(a.data_hora).getTime();
+          if (ts < agora) entry.temAtrasada = true;
+          else entry.temFutura = true;
+        } else {
+          entry.temFutura = true;
+        }
+        porOpp[a.id_oportunidade] = entry;
+      });
+      oppIds.forEach((id) => {
+        const entry = porOpp[id];
+        if (!entry) result[id] = 'sem';
+        else if (entry.temAtrasada) result[id] = 'atrasada';
+        else result[id] = 'em-dia';
+      });
+      return result;
+    },
+    enabled: oppIds.length > 0,
+  });
+}
