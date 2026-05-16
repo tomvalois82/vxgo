@@ -18,8 +18,6 @@ import { currentYear, years, engineSizes, colors, categories } from './formConst
 import { carFormSchema, type CarFormSchema } from './carFormSchema';
 import ImageUploadGrid from './ImageUploadGrid';
 import { OlxIdTagInput } from './OlxIdTagInput';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Image as ImageIcon, Trash2 } from 'lucide-react';
 
 interface CarFormProps {
   initialData?: Partial<CarFormData & { fotos?: string[] }>; // fotos will be URLs
@@ -78,14 +76,6 @@ const CarForm: React.FC<CarFormProps> = ({
   const [orderedPreviewUrls, setOrderedPreviewUrls] = useState<string[]>(initialPhotoUrlsFromProps);
   const [localFilesData, setLocalFilesData] = useState<LocalFileData[]>([]);
   const [uploading, setUploading] = useState(false);
-
-  // Página (pg_capa) image handling state
-  const initialPgCapaUrls = initialData?.pgCapa || [];
-  const [pgCapaPreviewUrls, setPgCapaPreviewUrls] = useState<string[]>(initialPgCapaUrls);
-  const [pgCapaLocalFiles, setPgCapaLocalFiles] = useState<LocalFileData[]>([]);
-
-  // Aba ativa para atualização parcial por aba
-  const [activeTab, setActiveTab] = useState<'dados' | 'pagina'>('dados');
   
   // State for price in words
   const [priceInWords, setPriceInWords] = useState<string>('');
@@ -108,12 +98,6 @@ const CarForm: React.FC<CarFormProps> = ({
       localFilesData.forEach(item => URL.revokeObjectURL(item.blobUrl));
     };
   }, [localFilesData]);
-
-  useEffect(() => {
-    return () => {
-      pgCapaLocalFiles.forEach(item => URL.revokeObjectURL(item.blobUrl));
-    };
-  }, [pgCapaLocalFiles]);
 
   const vehicleType = form.watch('vehicleType') as VehicleType;
   const selectedYear = form.watch('year');
@@ -180,133 +164,53 @@ const CarForm: React.FC<CarFormProps> = ({
     // to their corresponding File objects from localFilesData for upload.
   };
 
-  const handlePgCapaFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const newFilesArray = Array.from(files);
-      const newLocalFiles: LocalFileData[] = newFilesArray.map(file => ({
-        file,
-        blobUrl: URL.createObjectURL(file),
-      }));
-      setPgCapaLocalFiles(prev => [...prev, ...newLocalFiles]);
-      setPgCapaPreviewUrls(prev => [...prev, ...newLocalFiles.map(item => item.blobUrl)]);
-      e.target.value = "";
-    }
-  };
-
-  const handleDeletePgCapa = (indexToDelete: number) => {
-    const urlToDelete = pgCapaPreviewUrls[indexToDelete];
-    setPgCapaPreviewUrls(prev => prev.filter((_, i) => i !== indexToDelete));
-    const match = pgCapaLocalFiles.find(item => item.blobUrl === urlToDelete);
-    if (match) {
-      URL.revokeObjectURL(match.blobUrl);
-      setPgCapaLocalFiles(prev => prev.filter(item => item.blobUrl !== urlToDelete));
-    }
-  };
-
   const characteristicsValue = form.watch('characteristics') || '';
 
   async function handleSubmit(values: CarFormSchema) {
     setUploading(true);
 
-    // Quando editando, atualiza apenas os campos da aba ativa
-    const shouldProcessDados = !isEditing || activeTab === 'dados';
-    const shouldProcessPagina = !isEditing || activeTab === 'pagina';
-
-    let finalPhotoUrlsToSubmit: string[] | undefined;
-    let blobUrlsPresentInOrder: string[] = [];
-
-    if (shouldProcessDados) {
-      const filesToUpload: File[] = [];
-      orderedPreviewUrls.forEach(url => {
-        const localFile = localFilesData.find(item => item.blobUrl === url);
-        if (localFile) {
-          filesToUpload.push(localFile.file);
-          blobUrlsPresentInOrder.push(localFile.blobUrl);
-        }
-      });
-
-      let newlyUploadedPublicUrls: string[] = [];
-      if (filesToUpload.length > 0) {
-        try {
-          newlyUploadedPublicUrls = await uploadCarImages(filesToUpload);
-        } catch (err: any) {
-          toast({
-            title: "Erro ao enviar imagens",
-            description: err.message || "Ocorreu um erro ao enviar as imagens",
-            variant: "destructive"
-          });
-          setUploading(false);
-          return;
-        }
+    // Upload das fotos novas (apenas blobs locais)
+    const filesToUpload: File[] = [];
+    const blobUrlsPresentInOrder: string[] = [];
+    orderedPreviewUrls.forEach(url => {
+      const localFile = localFilesData.find(item => item.blobUrl === url);
+      if (localFile) {
+        filesToUpload.push(localFile.file);
+        blobUrlsPresentInOrder.push(localFile.blobUrl);
       }
+    });
 
-      const blobToPublicUrlMap = new Map<string, string>();
-      blobUrlsPresentInOrder.forEach((blobUrl, index) => {
-        blobToPublicUrlMap.set(blobUrl, newlyUploadedPublicUrls[index]);
-      });
-
-      finalPhotoUrlsToSubmit = orderedPreviewUrls.map(previewUrl =>
-        blobToPublicUrlMap.has(previewUrl) ? blobToPublicUrlMap.get(previewUrl)! : previewUrl
-      );
+    let newlyUploadedPublicUrls: string[] = [];
+    if (filesToUpload.length > 0) {
+      try {
+        newlyUploadedPublicUrls = await uploadCarImages(filesToUpload);
+      } catch (err: any) {
+        toast({
+          title: "Erro ao enviar imagens",
+          description: err.message || "Ocorreu um erro ao enviar as imagens",
+          variant: "destructive"
+        });
+        setUploading(false);
+        return;
+      }
     }
 
-    let finalPgCapaUrls: string[] | undefined;
-    let pgCapaBlobUrlsInOrder: string[] = [];
+    const blobToPublicUrlMap = new Map<string, string>();
+    blobUrlsPresentInOrder.forEach((blobUrl, index) => {
+      blobToPublicUrlMap.set(blobUrl, newlyUploadedPublicUrls[index]);
+    });
 
-    if (shouldProcessPagina) {
-      const pgCapaFilesToUpload: File[] = [];
-      pgCapaPreviewUrls.forEach(url => {
-        const localFile = pgCapaLocalFiles.find(item => item.blobUrl === url);
-        if (localFile) {
-          pgCapaFilesToUpload.push(localFile.file);
-          pgCapaBlobUrlsInOrder.push(localFile.blobUrl);
-        }
-      });
-      let pgCapaUploadedUrls: string[] = [];
-      if (pgCapaFilesToUpload.length > 0) {
-        try {
-          pgCapaUploadedUrls = await uploadCarImages(pgCapaFilesToUpload);
-        } catch (err: any) {
-          toast({
-            title: "Erro ao enviar imagens da página",
-            description: err.message || "Ocorreu um erro ao enviar as imagens",
-            variant: "destructive"
-          });
-          setUploading(false);
-          return;
-        }
-      }
-      const pgCapaBlobMap = new Map<string, string>();
-      pgCapaBlobUrlsInOrder.forEach((b, idx) => pgCapaBlobMap.set(b, pgCapaUploadedUrls[idx]));
-      finalPgCapaUrls = pgCapaPreviewUrls.map(u => pgCapaBlobMap.has(u) ? pgCapaBlobMap.get(u)! : u);
-    }
+    const finalPhotoUrlsToSubmit = orderedPreviewUrls.map(previewUrl =>
+      blobToPublicUrlMap.has(previewUrl) ? blobToPublicUrlMap.get(previewUrl)! : previewUrl
+    );
 
     setUploading(false);
     blobUrlsPresentInOrder.forEach(blobUrl => URL.revokeObjectURL(blobUrl));
     setLocalFilesData(prev => prev.filter(item => !blobUrlsPresentInOrder.includes(item.blobUrl)));
-    pgCapaBlobUrlsInOrder.forEach(b => URL.revokeObjectURL(b));
-    setPgCapaLocalFiles(prev => prev.filter(item => !pgCapaBlobUrlsInOrder.includes(item.blobUrl)));
 
-    if (!isEditing) {
-      // Criação: envia todos os campos
-      onSubmit({ ...values, fotos: finalPhotoUrlsToSubmit, pgCapa: finalPgCapaUrls });
-      return;
-    }
-
-    // Edição: envia apenas os campos da aba ativa
-    if (activeTab === 'dados') {
-      const { pgCapa, pgCaixa1, pgCaixa2, pgCaixa3, pgCaixa4, ...dadosValues } = values;
-      onSubmit({ ...dadosValues, fotos: finalPhotoUrlsToSubmit });
-    } else {
-      onSubmit({
-        pgCapa: finalPgCapaUrls,
-        pgCaixa1: values.pgCaixa1,
-        pgCaixa2: values.pgCaixa2,
-        pgCaixa3: values.pgCaixa3,
-        pgCaixa4: values.pgCaixa4,
-      });
-    }
+    // Envia apenas campos da "aba Dados" — campos pg_* são editados em página dedicada
+    const { pgCapa, pgCaixa1, pgCaixa2, pgCaixa3, pgCaixa4, ...dadosValues } = values;
+    onSubmit({ ...dadosValues, fotos: finalPhotoUrlsToSubmit });
   }
 
   return (
