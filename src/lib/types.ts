@@ -24,6 +24,11 @@ export interface Car {
   manufacturingYear?: number; // ano_fabricacao
   fotos?: string[];
   idanuncioolx?: string[]; // Novo campo array
+  pgCapa?: string[];
+  pgCaixa1?: string;
+  pgCaixa2?: string;
+  pgCaixa3?: string;
+  pgCaixa4?: string;
   createdAt: Date;
   updatedAt: Date;
 }
