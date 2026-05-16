@@ -5,7 +5,7 @@ import { useCars } from '@/contexts/CarContext';
 import CarForm from '@/components/cars/CarForm';
 import { CarFormData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FileText } from 'lucide-react';
 
 const EditCar = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,14 +32,24 @@ const EditCar = () => {
 
   return (
     <div>
-      <div className="flex items-center space-x-4 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft size={16} className="mr-1" />
-          Voltar
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft size={16} className="mr-1" />
+            Voltar
+          </Button>
+          <h1 className="text-2xl font-bold">
+            Editar {car.brand} {car.model}
+          </h1>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(`/dashboard/edit-car-pagina/${id}`)}
+        >
+          <FileText size={16} className="mr-1" />
+          Editar Página
         </Button>
-        <h1 className="text-2xl font-bold">
-          Editar {car.brand} {car.model}
-        </h1>
       </div>
       <div className="bg-white rounded-lg shadow-sm p-6">
         <CarForm initialData={car} onSubmit={handleUpdateCar} isEditing />
