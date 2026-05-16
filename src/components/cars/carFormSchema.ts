@@ -22,6 +22,11 @@ export const carFormSchema = z.object({
   warranty: z.string().optional(),
   category: z.string().min(1, 'Categoria é obrigatória'),
   image: z.string().optional(),
+  pgCapa: z.array(z.string()).optional(),
+  pgCaixa1: z.string().optional(),
+  pgCaixa2: z.string().optional(),
+  pgCaixa3: z.string().optional(),
+  pgCaixa4: z.string().optional(),
 });
 
 export type CarFormSchema = z.infer<typeof carFormSchema>;
