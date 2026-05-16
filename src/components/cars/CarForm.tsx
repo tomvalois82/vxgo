@@ -216,12 +216,6 @@ const CarForm: React.FC<CarFormProps> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'dados' | 'pagina')} className="w-full">
-          <TabsList>
-            <TabsTrigger value="dados">Dados</TabsTrigger>
-            <TabsTrigger value="pagina">Página</TabsTrigger>
-          </TabsList>
-          <TabsContent value="dados" className="space-y-6 mt-4">
         {/* Tipo de Veículo e Marca */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
@@ -654,95 +648,6 @@ const CarForm: React.FC<CarFormProps> = ({
             </FormItem>
           )}
         />
-
-          </TabsContent>
-
-          <TabsContent value="pagina" className="space-y-6 mt-4">
-            <div>
-              <label className="block font-medium mb-1 flex gap-2 items-center">
-                <ImageIcon size={16} /> Capa da página (múltiplas imagens)
-              </label>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handlePgCapaFilesChange}
-                className="file-input file-input-bordered w-full"
-                disabled={uploading}
-              />
-              {pgCapaPreviewUrls.length > 0 && (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 mt-3">
-                  {pgCapaPreviewUrls.map((url, i) => (
-                    <div key={i} className="relative group border rounded aspect-square">
-                      <img src={url} alt={`Capa ${i + 1}`} className="w-full h-full object-cover rounded" />
-                      <button
-                        type="button"
-                        onClick={() => handleDeletePgCapa(i)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label="Excluir"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <FormField
-              control={form.control}
-              name="pgCaixa1"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Caixa 1</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Texto da caixa 1" className="min-h-[100px] whitespace-pre-wrap" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="pgCaixa2"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Caixa 2</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Texto da caixa 2" className="min-h-[100px] whitespace-pre-wrap" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="pgCaixa3"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Caixa 3</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Texto da caixa 3" className="min-h-[100px] whitespace-pre-wrap" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="pgCaixa4"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Caixa 4</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Texto da caixa 4" className="min-h-[100px] whitespace-pre-wrap" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </TabsContent>
-        </Tabs>
 
         <Button type="submit" className="bg-carblue hover:bg-carblue-dark" loading={uploading || form.formState.isSubmitting} disabled={uploading || form.formState.isSubmitting}>
           { (uploading || form.formState.isSubmitting) ? <LoaderCircle className="animate-spin mr-2" size={16} /> : null}
