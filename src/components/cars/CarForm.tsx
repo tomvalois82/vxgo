@@ -23,7 +23,7 @@ import { Image as ImageIcon, Trash2 } from 'lucide-react';
 
 interface CarFormProps {
   initialData?: Partial<CarFormData & { fotos?: string[] }>; // fotos will be URLs
-  onSubmit: (data: CarFormData & { fotos?: string[] }) => void;
+  onSubmit: (data: Partial<CarFormData & { fotos?: string[] }>) => void;
   isEditing?: boolean;
 }
 
@@ -83,6 +83,9 @@ const CarForm: React.FC<CarFormProps> = ({
   const initialPgCapaUrls = initialData?.pgCapa || [];
   const [pgCapaPreviewUrls, setPgCapaPreviewUrls] = useState<string[]>(initialPgCapaUrls);
   const [pgCapaLocalFiles, setPgCapaLocalFiles] = useState<LocalFileData[]>([]);
+
+  // Aba ativa para atualização parcial por aba
+  const [activeTab, setActiveTab] = useState<'dados' | 'pagina'>('dados');
   
   // State for price in words
   const [priceInWords, setPriceInWords] = useState<string>('');
@@ -206,88 +209,110 @@ const CarForm: React.FC<CarFormProps> = ({
   async function handleSubmit(values: CarFormSchema) {
     setUploading(true);
 
-    const filesToUpload: File[] = [];
-    const blobUrlsPresentInOrder: string[] = [];
+    // Quando editando, atualiza apenas os campos da aba ativa
+    const shouldProcessDados = !isEditing || activeTab === 'dados';
+    const shouldProcessPagina = !isEditing || activeTab === 'pagina';
 
-    // Collect files that are new (blob URLs) in their current display order
-    orderedPreviewUrls.forEach(url => {
-      const localFile = localFilesData.find(item => item.blobUrl === url);
-      if (localFile) {
-        filesToUpload.push(localFile.file);
-        blobUrlsPresentInOrder.push(localFile.blobUrl);
+    let finalPhotoUrlsToSubmit: string[] | undefined;
+    let blobUrlsPresentInOrder: string[] = [];
+
+    if (shouldProcessDados) {
+      const filesToUpload: File[] = [];
+      orderedPreviewUrls.forEach(url => {
+        const localFile = localFilesData.find(item => item.blobUrl === url);
+        if (localFile) {
+          filesToUpload.push(localFile.file);
+          blobUrlsPresentInOrder.push(localFile.blobUrl);
+        }
+      });
+
+      let newlyUploadedPublicUrls: string[] = [];
+      if (filesToUpload.length > 0) {
+        try {
+          newlyUploadedPublicUrls = await uploadCarImages(filesToUpload);
+        } catch (err: any) {
+          toast({
+            title: "Erro ao enviar imagens",
+            description: err.message || "Ocorreu um erro ao enviar as imagens",
+            variant: "destructive"
+          });
+          setUploading(false);
+          return;
+        }
       }
-    });
-    
-    let newlyUploadedPublicUrls: string[] = [];
-    if (filesToUpload.length > 0) {
-      try {
-        newlyUploadedPublicUrls = await uploadCarImages(filesToUpload);
-      } catch (err: any) {
-        toast({
-          title: "Erro ao enviar imagens",
-          description: err.message || "Ocorreu um erro ao enviar as imagens",
-          variant: "destructive"
-        });
-        setUploading(false);
-        return;
-      }
+
+      const blobToPublicUrlMap = new Map<string, string>();
+      blobUrlsPresentInOrder.forEach((blobUrl, index) => {
+        blobToPublicUrlMap.set(blobUrl, newlyUploadedPublicUrls[index]);
+      });
+
+      finalPhotoUrlsToSubmit = orderedPreviewUrls.map(previewUrl =>
+        blobToPublicUrlMap.has(previewUrl) ? blobToPublicUrlMap.get(previewUrl)! : previewUrl
+      );
     }
 
-    const blobToPublicUrlMap = new Map<string, string>();
-    blobUrlsPresentInOrder.forEach((blobUrl, index) => {
-      blobToPublicUrlMap.set(blobUrl, newlyUploadedPublicUrls[index]);
-    });
+    let finalPgCapaUrls: string[] | undefined;
+    let pgCapaBlobUrlsInOrder: string[] = [];
 
-    const finalPhotoUrlsToSubmit: string[] = orderedPreviewUrls.map(previewUrl => {
-      if (blobToPublicUrlMap.has(previewUrl)) {
-        return blobToPublicUrlMap.get(previewUrl)!; // It's a newly uploaded file
+    if (shouldProcessPagina) {
+      const pgCapaFilesToUpload: File[] = [];
+      pgCapaPreviewUrls.forEach(url => {
+        const localFile = pgCapaLocalFiles.find(item => item.blobUrl === url);
+        if (localFile) {
+          pgCapaFilesToUpload.push(localFile.file);
+          pgCapaBlobUrlsInOrder.push(localFile.blobUrl);
+        }
+      });
+      let pgCapaUploadedUrls: string[] = [];
+      if (pgCapaFilesToUpload.length > 0) {
+        try {
+          pgCapaUploadedUrls = await uploadCarImages(pgCapaFilesToUpload);
+        } catch (err: any) {
+          toast({
+            title: "Erro ao enviar imagens da página",
+            description: err.message || "Ocorreu um erro ao enviar as imagens",
+            variant: "destructive"
+          });
+          setUploading(false);
+          return;
+        }
       }
-      return previewUrl; // It's an existing DB photo URL (or was passed as such)
-    });
-
-    // Upload pgCapa files
-    const pgCapaFilesToUpload: File[] = [];
-    const pgCapaBlobUrlsInOrder: string[] = [];
-    pgCapaPreviewUrls.forEach(url => {
-      const localFile = pgCapaLocalFiles.find(item => item.blobUrl === url);
-      if (localFile) {
-        pgCapaFilesToUpload.push(localFile.file);
-        pgCapaBlobUrlsInOrder.push(localFile.blobUrl);
-      }
-    });
-    let pgCapaUploadedUrls: string[] = [];
-    if (pgCapaFilesToUpload.length > 0) {
-      try {
-        pgCapaUploadedUrls = await uploadCarImages(pgCapaFilesToUpload);
-      } catch (err: any) {
-        toast({
-          title: "Erro ao enviar imagens da página",
-          description: err.message || "Ocorreu um erro ao enviar as imagens",
-          variant: "destructive"
-        });
-        setUploading(false);
-        return;
-      }
+      const pgCapaBlobMap = new Map<string, string>();
+      pgCapaBlobUrlsInOrder.forEach((b, idx) => pgCapaBlobMap.set(b, pgCapaUploadedUrls[idx]));
+      finalPgCapaUrls = pgCapaPreviewUrls.map(u => pgCapaBlobMap.has(u) ? pgCapaBlobMap.get(u)! : u);
     }
-    const pgCapaBlobMap = new Map<string, string>();
-    pgCapaBlobUrlsInOrder.forEach((b, idx) => pgCapaBlobMap.set(b, pgCapaUploadedUrls[idx]));
-    const finalPgCapaUrls: string[] = pgCapaPreviewUrls.map(u => pgCapaBlobMap.has(u) ? pgCapaBlobMap.get(u)! : u);
 
     setUploading(false);
-    // Clean up local blob URLs that are now uploaded
     blobUrlsPresentInOrder.forEach(blobUrl => URL.revokeObjectURL(blobUrl));
     setLocalFilesData(prev => prev.filter(item => !blobUrlsPresentInOrder.includes(item.blobUrl)));
     pgCapaBlobUrlsInOrder.forEach(b => URL.revokeObjectURL(b));
     setPgCapaLocalFiles(prev => prev.filter(item => !pgCapaBlobUrlsInOrder.includes(item.blobUrl)));
 
-    const dataToSubmit = { ...values, fotos: finalPhotoUrlsToSubmit, pgCapa: finalPgCapaUrls };
-    onSubmit(dataToSubmit as CarFormData);
+    if (!isEditing) {
+      // Criação: envia todos os campos
+      onSubmit({ ...values, fotos: finalPhotoUrlsToSubmit, pgCapa: finalPgCapaUrls });
+      return;
+    }
+
+    // Edição: envia apenas os campos da aba ativa
+    if (activeTab === 'dados') {
+      const { pgCapa, pgCaixa1, pgCaixa2, pgCaixa3, pgCaixa4, ...dadosValues } = values;
+      onSubmit({ ...dadosValues, fotos: finalPhotoUrlsToSubmit });
+    } else {
+      onSubmit({
+        pgCapa: finalPgCapaUrls,
+        pgCaixa1: values.pgCaixa1,
+        pgCaixa2: values.pgCaixa2,
+        pgCaixa3: values.pgCaixa3,
+        pgCaixa4: values.pgCaixa4,
+      });
+    }
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <Tabs defaultValue="dados" className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'dados' | 'pagina')} className="w-full">
           <TabsList>
             <TabsTrigger value="dados">Dados</TabsTrigger>
             <TabsTrigger value="pagina">Página</TabsTrigger>
