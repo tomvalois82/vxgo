@@ -287,6 +287,12 @@ const CarForm: React.FC<CarFormProps> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <Tabs defaultValue="dados" className="w-full">
+          <TabsList>
+            <TabsTrigger value="dados">Dados</TabsTrigger>
+            <TabsTrigger value="pagina">Página</TabsTrigger>
+          </TabsList>
+          <TabsContent value="dados" className="space-y-6 mt-4">
         {/* Tipo de Veículo e Marca */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
