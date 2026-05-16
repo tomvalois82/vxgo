@@ -124,38 +124,44 @@ function mapSupabaseToCar(row: any): Car {
 }
 
 function mapCarFormDataToSupabase(car: CarFormData & { fotos?: string[] }) {
-  const formattedPrice = car.price ? formatCurrency(car.price).replace('R$', 'R$ ').trim() : 'R$ 0,00';
-  
-  const fotosToSave = car.fotos || [];
+  const payload: Record<string, unknown> = {};
 
-  return {
-    tipo_veiculo: car.vehicleType,
-    fabricante: car.brand,
-    modelo: car.model,
-    ano: String(car.year),
-    ano_fabricacao: String(car.manufacturingYear || car.year),
-    valor: formattedPrice,
-    cor: car.color,
-    km: car.mileage ? car.mileage.toLocaleString('pt-BR') : '0',
-    motor: car.fuelType,
-    cambio: car.transmission,
-    categoria: car.category || null,
-    observacao: car.description || null,
-    caracteristicas: car.characteristics || null,
-    video: car.video || null,
-    cautelar: car.cautionReport || null,
-    ficha_tecnica: car.technicalSheet || null,
-    garantia: car.warranty || null,
-    status: car.inStock ? 'Em estoque' : 'Fora de estoque',
-    foto: fotosToSave.length > 0 ? fotosToSave[0] : null,
-    idanuncioolx: car.idanuncioolx || null,
-    fotos: fotosToSave,
-    pg_capa: car.pgCapa || null,
-    pg_caixa1: car.pgCaixa1 || null,
-    pg_caixa2: car.pgCaixa2 || null,
-    pg_caixa3: car.pgCaixa3 || null,
-    pg_caixa4: car.pgCaixa4 || null,
-  };
+  if (car.vehicleType !== undefined) payload.tipo_veiculo = car.vehicleType;
+  if (car.brand !== undefined) payload.fabricante = car.brand;
+  if (car.model !== undefined) payload.modelo = car.model;
+  if (car.year !== undefined) payload.ano = String(car.year);
+  if (car.manufacturingYear !== undefined || car.year !== undefined) {
+    if (car.manufacturingYear !== undefined) {
+      payload.ano_fabricacao = String(car.manufacturingYear);
+    }
+  }
+  if (car.price !== undefined) {
+    payload.valor = car.price ? formatCurrency(car.price).replace('R$', 'R$ ').trim() : 'R$ 0,00';
+  }
+  if (car.color !== undefined) payload.cor = car.color;
+  if (car.mileage !== undefined) payload.km = car.mileage ? car.mileage.toLocaleString('pt-BR') : '0';
+  if (car.fuelType !== undefined) payload.motor = car.fuelType;
+  if (car.transmission !== undefined) payload.cambio = car.transmission;
+  if (car.category !== undefined) payload.categoria = car.category || null;
+  if (car.description !== undefined) payload.observacao = car.description || null;
+  if (car.characteristics !== undefined) payload.caracteristicas = car.characteristics || null;
+  if (car.video !== undefined) payload.video = car.video || null;
+  if (car.cautionReport !== undefined) payload.cautelar = car.cautionReport || null;
+  if (car.technicalSheet !== undefined) payload.ficha_tecnica = car.technicalSheet || null;
+  if (car.warranty !== undefined) payload.garantia = car.warranty || null;
+  if (car.inStock !== undefined) payload.status = car.inStock ? 'Em estoque' : 'Fora de estoque';
+  if (car.idanuncioolx !== undefined) payload.idanuncioolx = car.idanuncioolx || null;
+  if (car.fotos !== undefined) {
+    payload.fotos = car.fotos;
+    payload.foto = car.fotos && car.fotos.length > 0 ? car.fotos[0] : null;
+  }
+  if (car.pgCapa !== undefined) payload.pg_capa = car.pgCapa || null;
+  if (car.pgCaixa1 !== undefined) payload.pg_caixa1 = car.pgCaixa1 || null;
+  if (car.pgCaixa2 !== undefined) payload.pg_caixa2 = car.pgCaixa2 || null;
+  if (car.pgCaixa3 !== undefined) payload.pg_caixa3 = car.pgCaixa3 || null;
+  if (car.pgCaixa4 !== undefined) payload.pg_caixa4 = car.pgCaixa4 || null;
+
+  return payload as any;
 }
 
 export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -281,15 +287,7 @@ export const CarProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const numericId = parseInt(id, 10);
-    const mappedPayload = mapCarFormDataToSupabase(carData as CarFormData & { fotos?: string[] });
-    
-    if (carData.fotos !== undefined) {
-      mappedPayload.foto = carData.fotos && carData.fotos.length > 0 ? carData.fotos[0] : null;
-    }
-    
-    const updatePayload = {
-      ...mappedPayload
-    };
+    const updatePayload = mapCarFormDataToSupabase(carData as CarFormData & { fotos?: string[] });
 
     const { error } = await supabase.from(stockTable as any).update(updatePayload as any).eq('id', numericId); // Cast stockTable to any
 
