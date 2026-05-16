@@ -469,6 +469,11 @@ export type Database = {
           modelo: string | null
           motor: string | null
           observacao: string | null
+          pg_caixa1: string | null
+          pg_caixa2: string | null
+          pg_caixa3: string | null
+          pg_caixa4: string | null
+          pg_capa: string[] | null
           placa: string | null
           renavan: number | null
           status: string | null
@@ -507,6 +512,11 @@ export type Database = {
           modelo?: string | null
           motor?: string | null
           observacao?: string | null
+          pg_caixa1?: string | null
+          pg_caixa2?: string | null
+          pg_caixa3?: string | null
+          pg_caixa4?: string | null
+          pg_capa?: string[] | null
           placa?: string | null
           renavan?: number | null
           status?: string | null
@@ -545,6 +555,11 @@ export type Database = {
           modelo?: string | null
           motor?: string | null
           observacao?: string | null
+          pg_caixa1?: string | null
+          pg_caixa2?: string | null
+          pg_caixa3?: string | null
+          pg_caixa4?: string | null
+          pg_capa?: string[] | null
           placa?: string | null
           renavan?: number | null
           status?: string | null
