@@ -10,6 +10,7 @@ import Index from "@/pages/Index";
 import Dashboard from "@/pages/Dashboard";
 import AddCar from "@/pages/AddCar";
 import EditCar from "@/pages/EditCar";
+import EditCarPagina from "@/pages/EditCarPagina";
 import CarDetails from "@/pages/CarDetails";
 import Connections from "@/pages/Connections";
 import Settings from "@/pages/Settings";
@@ -56,6 +57,7 @@ const App = () => (
                   <Route path="estoque" element={<Index />} />
                   <Route path="add-car" element={<AddCar />} />
                   <Route path="edit-car/:id" element={<EditCar />} />
+                  <Route path="edit-car-pagina/:id" element={<EditCarPagina />} />
                   <Route path="car/:id" element={<CarDetails />} />
                   <Route path="atendimentos" element={<Atendimentos />} />
                   <Route path="followup" element={<Followup />} />
