@@ -11,8 +11,8 @@ const AddCar = () => {
   const { addCar } = useCars();
   const navigate = useNavigate();
 
-  const handleAddCar = async (data: CarFormData) => {
-    await addCar(data);
+  const handleAddCar = async (data: Partial<CarFormData>) => {
+    await addCar(data as CarFormData);
     navigate('/');
   };
 
