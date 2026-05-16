@@ -113,6 +113,11 @@ function mapSupabaseToCar(row: any): Car {
     category: row.categoria || '',
     fotos: carFotos,
     idanuncioolx: row.idanuncioolx || [],
+    pgCapa: row.pg_capa || [],
+    pgCaixa1: row.pg_caixa1 || '',
+    pgCaixa2: row.pg_caixa2 || '',
+    pgCaixa3: row.pg_caixa3 || '',
+    pgCaixa4: row.pg_caixa4 || '',
     createdAt: row.created_at ? new Date(row.created_at) : new Date(),
     updatedAt: row.created_at ? new Date(row.created_at) : new Date()
   };
@@ -145,6 +150,11 @@ function mapCarFormDataToSupabase(car: CarFormData & { fotos?: string[] }) {
     foto: fotosToSave.length > 0 ? fotosToSave[0] : null,
     idanuncioolx: car.idanuncioolx || null,
     fotos: fotosToSave,
+    pg_capa: car.pgCapa || null,
+    pg_caixa1: car.pgCaixa1 || null,
+    pg_caixa2: car.pgCaixa2 || null,
+    pg_caixa3: car.pgCaixa3 || null,
+    pg_caixa4: car.pgCaixa4 || null,
   };
 }
 
