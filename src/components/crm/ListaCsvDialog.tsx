@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Oportunidade } from '@/hooks/crm/useKanban';
+import { formatarTelefoneBR, TelefoneInvalidoError } from '@/lib/phoneUtils';
 
 interface ListaCsvDialogProps {
   open: boolean;
