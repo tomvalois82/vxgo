@@ -163,6 +163,7 @@ export type Database = {
         Row: {
           access_token_olx: string | null
           alertaNovo: boolean | null
+          api3cplus: string | null
           apikeyvoice: string | null
           ativo: boolean | null
           ativoolx: boolean | null
@@ -202,6 +203,7 @@ export type Database = {
         Insert: {
           access_token_olx?: string | null
           alertaNovo?: boolean | null
+          api3cplus?: string | null
           apikeyvoice?: string | null
           ativo?: boolean | null
           ativoolx?: boolean | null
@@ -241,6 +243,7 @@ export type Database = {
         Update: {
           access_token_olx?: string | null
           alertaNovo?: boolean | null
+          api3cplus?: string | null
           apikeyvoice?: string | null
           ativo?: boolean | null
           ativoolx?: boolean | null
@@ -474,6 +477,7 @@ export type Database = {
           pg_caixa3: string | null
           pg_caixa4: string | null
           pg_capa: string[] | null
+          pixel_meta: string | null
           placa: string | null
           renavan: number | null
           status: string | null
@@ -517,6 +521,7 @@ export type Database = {
           pg_caixa3?: string | null
           pg_caixa4?: string | null
           pg_capa?: string[] | null
+          pixel_meta?: string | null
           placa?: string | null
           renavan?: number | null
           status?: string | null
@@ -560,6 +565,7 @@ export type Database = {
           pg_caixa3?: string | null
           pg_caixa4?: string | null
           pg_capa?: string[] | null
+          pixel_meta?: string | null
           placa?: string | null
           renavan?: number | null
           status?: string | null
@@ -2115,7 +2121,9 @@ export type Database = {
           email: string | null
           estado: string | null
           id: string
+          id_categoria: string | null
           id_empresa: string
+          id_forma_pagamento: string | null
           logradouro: string | null
           municipio: string | null
           nome: string
@@ -2143,7 +2151,9 @@ export type Database = {
           email?: string | null
           estado?: string | null
           id?: string
+          id_categoria?: string | null
           id_empresa: string
+          id_forma_pagamento?: string | null
           logradouro?: string | null
           municipio?: string | null
           nome: string
@@ -2171,7 +2181,9 @@ export type Database = {
           email?: string | null
           estado?: string | null
           id?: string
+          id_categoria?: string | null
           id_empresa?: string
+          id_forma_pagamento?: string | null
           logradouro?: string | null
           municipio?: string | null
           nome?: string

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Settings2, Plus, GitBranch, Users, AlertTriangle } from 'lucide-react';
+import { Settings2, Plus, GitBranch, Users, AlertTriangle, FileText } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import OportunidadeDialog from './OportunidadeDialog';
 import OportunidadeDetailDialog from './OportunidadeDetailDialog';
 import FunilManageDialog from './FunilManageDialog';
 import KanbanFilterBar from './KanbanFilterBar';
+import ListaCsvDialog from './ListaCsvDialog';
 
 const USER_COLORS = [
   '#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6',
@@ -37,6 +38,7 @@ const KanbanBoard: React.FC = () => {
   const [funilManageOpen, setFunilManageOpen] = useState(false);
   const [newOppColumn, setNewOppColumn] = useState<{id: number;name: string;} | null>(null);
   const [detailOppId, setDetailOppId] = useState<number | null>(null);
+  const [listaColumn, setListaColumn] = useState<{id: number;name: string;} | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterColumnId, setFilterColumnId] = useState<string>('all');
@@ -221,6 +223,9 @@ const KanbanBoard: React.FC = () => {
               onAddOpp={() =>
               setNewOppColumn({ id: column.id, name: column.descricao || 'Sem nome' })
               }
+              onGerarLista={() =>
+              setListaColumn({ id: column.id, name: column.descricao || 'Sem nome' })
+              }
               onClickOpp={(id) => setDetailOppId(id)} />
 
             )}
@@ -263,6 +268,14 @@ const KanbanBoard: React.FC = () => {
           if (!open) setDetailOppId(null);
         }} />
       
+      <ListaCsvDialog
+        open={!!listaColumn}
+        onOpenChange={(open) => {
+          if (!open) setListaColumn(null);
+        }}
+        columnName={listaColumn?.name ?? ''}
+        oportunidades={listaColumn ? oppsByColumn[listaColumn.id] || [] : []} />
+
     </div>);
 
 };
@@ -272,10 +285,11 @@ interface ColumnProps {
   oportunidades: Oportunidade[];
   atividadeStatusMap: Record<number, AtividadeStatusKanban>;
   onAddOpp: () => void;
+  onGerarLista: () => void;
   onClickOpp: (id: number) => void;
 }
 
-const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, atividadeStatusMap, onAddOpp, onClickOpp }) => {
+const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, atividadeStatusMap, onAddOpp, onGerarLista, onClickOpp }) => {
   return (
     <div className="flex flex-col w-72 min-w-[18rem] flex-shrink-0 bg-muted/40 rounded-xl border">
       <div
@@ -291,13 +305,22 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, ativid
             {oportunidades.length}
           </Badge>
         </div>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+        <button
+          onClick={onGerarLista}
+          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          title="Gerar lista (.csv)">
+
+          <FileText size={16} />
+        </button>
         <button
           onClick={onAddOpp}
-          className="flex-shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           title="Nova oportunidade">
           
           <Plus size={16} />
         </button>
+        </div>
       </div>
 
       <Droppable droppableId={`col-${column.id}`}>
