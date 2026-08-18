@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'bun:test'; // @ts-ignore tipos do bun:test não estão no projeto, mas bun os fornece em runtime
+// @ts-ignore tipos do bun:test não estão no projeto, mas bun os fornece em runtime
+import { describe, expect, it } from 'bun:test';
 import { formatarTelefoneBR, TelefoneInvalidoError } from './phoneUtils';
 
 describe('formatarTelefoneBR', () => {
