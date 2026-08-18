@@ -37,15 +37,13 @@ export function formatarTelefoneBR(telefone?: string | null): string | null {
 
   let digitos = telefone.replace(/\D/g, '');
 
+  // Remove zeros iniciais (prefixo de discagem), pois o DDD nunca inicia com 0.
+  digitos = digitos.replace(/^0+/, '');
+
   // Remove código do país (55) apenas quando sobra mais de 11 dígitos.
   if (digitos.startsWith('55') && digitos.length > 11) {
     digitos = digitos.slice(2);
-  }
-
-  // Remove 0 inicial apenas quando ainda há mais de 11 dígitos.
-  // Se já estiver com 11 dígitos e começar com 0, o DDD será inválido e cairá no erro.
-  if (digitos.startsWith('0') && digitos.length > 11) {
-    digitos = digitos.slice(1);
+    digitos = digitos.replace(/^0+/, '');
   }
 
   // Se sobrarem 10 dígitos, insere o 9 obrigatório após o DDD.
