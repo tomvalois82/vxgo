@@ -19,9 +19,11 @@ describe('formatarTelefoneBR', () => {
       expect(formatarTelefoneBR('42 9 9650-5552')).toBe('42996505552');
     });
 
-    it('remove 0 inicial quando ainda sobra mais de 11 dígitos', () => {
+    it('remove 0 inicial de prefixo de discagem', () => {
       expect(formatarTelefoneBR('082996505552')).toBe('82996505552');
       expect(formatarTelefoneBR('081996505552')).toBe('81996505552');
+      expect(formatarTelefoneBR('08196505552')).toBe('81996505552');
+      expect(formatarTelefoneBR('01196505552')).toBe('11996505552');
     });
 
     it('remove código do país 55 quando sobra mais de 11 dígitos', () => {
@@ -43,13 +45,7 @@ describe('formatarTelefoneBR', () => {
   });
 
   describe('erros', () => {
-    it('rejeita DDD iniciado com 0 quando já tem 11 dígitos', () => {
-      expect(() => formatarTelefoneBR('01196505552')).toThrow(TelefoneInvalidoError);
-      expect(() => formatarTelefoneBR('01196505552')).toThrow('DDD não pode iniciar com 0');
-    });
-
     it('rejeita quando 3º dígito não é 9', () => {
-      expect(() => formatarTelefoneBR('05196505552')).toThrow(TelefoneInvalidoError);
       expect(() => formatarTelefoneBR('84896505552')).toThrow(TelefoneInvalidoError);
     });
 
