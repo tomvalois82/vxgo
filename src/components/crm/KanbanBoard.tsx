@@ -42,7 +42,7 @@ const KanbanBoard: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterColumnId, setFilterColumnId] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('aberta');
   const [filterSearch, setFilterSearch] = useState<string>('');
   const { data: configUsers = [] } = useConfigUsers();
   // Auto-select first funnel when loaded
