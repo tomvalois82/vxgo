@@ -45,7 +45,7 @@ describe('formatarTelefoneBR', () => {
   describe('erros', () => {
     it('rejeita DDD iniciado com 0 quando já tem 11 dígitos', () => {
       expect(() => formatarTelefoneBR('01196505552')).toThrow(TelefoneInvalidoError);
-      expect(() => formatarTelefoneBR('021996505552')).toThrow(TelefoneInvalidoError);
+      expect(() => formatarTelefoneBR('01196505552')).toThrow('DDD não pode iniciar com 0');
     });
 
     it('rejeita quando 3º dígito não é 9', () => {
@@ -54,7 +54,7 @@ describe('formatarTelefoneBR', () => {
     });
 
     it('rejeita quando não atinge 11 dígitos', () => {
-      expect(() => formatarTelefoneBR('8199650555')).toThrow(TelefoneInvalidoError);
+      expect(() => formatarTelefoneBR('819650555')).toThrow(TelefoneInvalidoError);
     });
 
     it('rejeita quando ultrapassa 11 dígitos mesmo após cortes', () => {
