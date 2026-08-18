@@ -1,14 +1,25 @@
-import React, { useState } from 'react';
-import { Download, Save, FileText } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Download, Save, FileText, Send } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from
 '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from
+'@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Oportunidade } from '@/hooks/crm/useKanban';
 import { formatarTelefoneBR, TelefoneInvalidoError } from '@/lib/phoneUtils';
+import { useAuth } from '@/contexts/AuthContext';
+import logo3cPlus from '@/assets/3cplus-logo.png';
+
+interface Campanha3c {
+  id: number;
+  name: string;
+}
 
 interface ListaCsvDialogProps {
   open: boolean;
@@ -36,14 +47,44 @@ const ListaCsvDialog: React.FC<ListaCsvDialogProps> = ({
   columnName,
   oportunidades
 }) => {
+  const { profile } = useAuth();
   const [csv, setCsv] = useState<string>('');
   const [csvOriginal, setCsvOriginal] = useState<string>('');
   const [gerando, setGerando] = useState(false);
+  const [campanhas, setCampanhas] = useState<Campanha3c[]>([]);
+  const [campanhaId, setCampanhaId] = useState<string>('');
+  const [carregandoCampanhas, setCarregandoCampanhas] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+
+  // Busca as campanhas da 3C Plus ao abrir o dialog.
+  useEffect(() => {
+    if (!open || !profile?.config) return;
+    let ativo = true;
+    const buscarCampanhas = async () => {
+      setCarregandoCampanhas(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('tresc-plus', {
+          body: { action: 'campaigns', configId: profile.config }
+        });
+        if (error) throw error;
+        if (ativo) setCampanhas((data?.campanhas as Campanha3c[]) || []);
+      } catch (erro) {
+        if (ativo) setCampanhas([]);
+      } finally {
+        if (ativo) setCarregandoCampanhas(false);
+      }
+    };
+    buscarCampanhas();
+    return () => {
+      ativo = false;
+    };
+  }, [open, profile?.config]);
 
   const handleClose = (aberto: boolean) => {
     if (!aberto) {
       setCsv('');
       setCsvOriginal('');
+      setCampanhaId('');
     }
     onOpenChange(aberto);
   };
@@ -118,6 +159,31 @@ const ListaCsvDialog: React.FC<ListaCsvDialogProps> = ({
     toast({ title: 'Alterações salvas' });
   };
 
+  const enviarLista = async () => {
+    if (!campanhaId || !profile?.config) return;
+    setEnviando(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('tresc-plus', {
+        body: {
+          action: 'send-list',
+          configId: profile.config,
+          campaignId: Number(campanhaId),
+          csv,
+          listName: `CRM - ${columnName}`,
+          fileName: nomeArquivo
+        }
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(typeof data.error === 'string' ? data.error : 'Falha ao enviar lista.');
+      toast({ title: 'Lista enviada para a 3C Plus' });
+    } catch (erro) {
+      const mensagem = erro instanceof Error ? erro.message : 'Erro desconhecido';
+      toast({ title: 'Erro ao enviar lista', description: mensagem, variant: 'destructive' });
+    } finally {
+      setEnviando(false);
+    }
+  };
+
   const foiAlterado = csv !== csvOriginal;
   const jaGerado = csvOriginal !== '';
 
@@ -148,6 +214,39 @@ const ListaCsvDialog: React.FC<ListaCsvDialogProps> = ({
             onChange={(e) => setCsv(e.target.value)}
             className="font-mono text-xs h-64 whitespace-pre-wrap" />
 
+          </div>
+        }
+
+        {jaGerado &&
+        <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+            <img src={logo3cPlus} alt="Logomarca 3C Plus" className="h-6 w-auto object-contain" />
+            <div className="space-y-2">
+              <Label htmlFor="campanha-3c">Campanha</Label>
+              <Select value={campanhaId} onValueChange={setCampanhaId} disabled={carregandoCampanhas}>
+                <SelectTrigger id="campanha-3c">
+                  <SelectValue placeholder={carregandoCampanhas ? 'Carregando campanhas...' : 'Selecione a campanha'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {campanhas.map((campanha) =>
+                <SelectItem key={campanha.id} value={String(campanha.id)}>
+                      {campanha.name}
+                    </SelectItem>
+                )}
+                </SelectContent>
+              </Select>
+              {!carregandoCampanhas && campanhas.length === 0 &&
+            <p className="text-xs text-muted-foreground">
+                  Nenhuma campanha encontrada. Verifique o token da 3C Plus nas configurações.
+                </p>
+            }
+            </div>
+            <Button
+            onClick={enviarLista}
+            disabled={!campanhaId || enviando || !csv.trim()}
+            className="gap-1.5 w-full sm:w-auto">
+              <Send size={16} />
+              {enviando ? 'Enviando...' : 'Enviar lista'}
+            </Button>
           </div>
         }
 
