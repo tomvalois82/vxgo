@@ -14,7 +14,8 @@ import { toast } from '@/hooks/use-toast';
 import { Oportunidade } from '@/hooks/crm/useKanban';
 import { formatarTelefoneBR, TelefoneInvalidoError } from '@/lib/phoneUtils';
 import { useAuth } from '@/contexts/AuthContext';
-import logo3cPlus from '@/assets/3cplus-logo.png';
+// Logomarca da 3C Plus hospedada nos assets do projeto.
+const logo3cPlus = '/__l5e/assets-v1/7187b0f5-cfd1-4a24-ad54-bdda5f22e5ff/3cplus-logo.png';
 
 interface Campanha3c {
   id: number;
