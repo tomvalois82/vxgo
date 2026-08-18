@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Oportunidade } from '@/hooks/crm/useKanban';
+import { formatarTelefoneBR, TelefoneInvalidoError } from '@/lib/phoneUtils';
 
 interface ListaCsvDialogProps {
   open: boolean;
@@ -16,32 +17,11 @@ interface ListaCsvDialogProps {
   oportunidades: Oportunidade[];
 }
 
-/**
- * Formata o telefone no padrão exigido pela 3C Plus:
- * DDD + 9 + telefone, totalizando 11 dígitos, sem caracteres especiais ou espaços.
- * A lógica lê o número de trás para frente, eliminando código do país (1 ou 2 dígitos
- * a mais no início) e garantindo o 9 obrigatório após o DDD.
- */
-const formatarTelefone = (telefone?: string | null): string => {
-  if (!telefone) return '';
-  let digitos = telefone.replace(/\D/g, '');
-
-  // Remove código do país, mantendo apenas os últimos 11 dígitos quando houver excesso.
-  if (digitos.length > 11) {
-    digitos = digitos.slice(-11);
-  }
-
-  // Se após o corte sobrarem 10 dígitos, insere o 9 obrigatório após o DDD.
-  if (digitos.length === 10) {
-    return `${digitos.slice(0, 2)}9${digitos.slice(2)}`;
-  }
-
-  // Se após o corte sobrarem 11 dígitos, mas o 3º caractere não for 9, corrige.
-  if (digitos.length === 11 && digitos[2] !== '9') {
-    return `${digitos.slice(0, 2)}9${digitos.slice(3)}`;
-  }
-
-  return digitos;
+/** Exibe mensagem de erro amigável quando o telefone não atende ao padrão brasileiro. */
+const mensagemErroTelefone = (erro: unknown): string => {
+  if (erro instanceof TelefoneInvalidoError) return erro.message;
+  if (erro instanceof Error) return erro.message;
+  return 'Telefone inválido para exportação CSV.';
 };
 
 /** Escapa o valor entre aspas duplas (delimiter=quotes) */
@@ -88,12 +68,21 @@ const ListaCsvDialog: React.FC<ListaCsvDialogProps> = ({
       }
 
       const linhas = oportunidades.map((opp) => {
+        let telefoneCsv = '';
+        try {
+          telefoneCsv = formatarTelefoneBR(opp.lead?.telefone) || '';
+        } catch (erro) {
+          telefoneCsv = '';
+          // Não interrompe a geração: registra o telefone inválido e continua.
+          console.warn(`Telefone inválido para oportunidade ${opp.id}:`, mensagemErroTelefone(erro));
+        }
+
         const veiculo = opp.idEstoque ? mapaEstoque.get(opp.idEstoque) : null;
         const interesse = veiculo ?
         `${veiculo.modelo || ''} ${veiculo.ano || ''} -${veiculo.cor || ''}`.trim() :
         (opp.outro_interesse || []).join(', ');
         return [
-        formatarTelefone(opp.lead?.telefone),
+        telefoneCsv,
         opp.lead?.nome || '',
         interesse,
         opp.resumo || '',
