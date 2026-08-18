@@ -16,21 +16,31 @@ interface ListaCsvDialogProps {
   oportunidades: Oportunidade[];
 }
 
-/** Formata o telefone no padrão brasileiro: DDD + 9 + 8 dígitos (11 dígitos) */
+/**
+ * Formata o telefone no padrão exigido pela 3C Plus:
+ * DDD + 9 + telefone, totalizando 11 dígitos, sem caracteres especiais ou espaços.
+ * A lógica lê o número de trás para frente, eliminando código do país (1 ou 2 dígitos
+ * a mais no início) e garantindo o 9 obrigatório após o DDD.
+ */
 const formatarTelefone = (telefone?: string | null): string => {
   if (!telefone) return '';
   let digitos = telefone.replace(/\D/g, '');
-  // Remove código do país
-  if (digitos.length > 11 && digitos.startsWith('55')) {
-    digitos = digitos.slice(2);
-  }
+
+  // Remove código do país, mantendo apenas os últimos 11 dígitos quando houver excesso.
   if (digitos.length > 11) {
     digitos = digitos.slice(-11);
   }
+
+  // Se após o corte sobrarem 10 dígitos, insere o 9 obrigatório após o DDD.
   if (digitos.length === 10) {
-    // Insere o nono dígito após o DDD
     return `${digitos.slice(0, 2)}9${digitos.slice(2)}`;
   }
+
+  // Se após o corte sobrarem 11 dígitos, mas o 3º caractere não for 9, corrige.
+  if (digitos.length === 11 && digitos[2] !== '9') {
+    return `${digitos.slice(0, 2)}9${digitos.slice(3)}`;
+  }
+
   return digitos;
 };
 
