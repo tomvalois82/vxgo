@@ -68,12 +68,21 @@ const ListaCsvDialog: React.FC<ListaCsvDialogProps> = ({
       }
 
       const linhas = oportunidades.map((opp) => {
+        let telefoneCsv = '';
+        try {
+          telefoneCsv = formatarTelefoneBR(opp.lead?.telefone) || '';
+        } catch (erro) {
+          telefoneCsv = '';
+          // Não interrompe a geração: registra o telefone inválido e continua.
+          console.warn(`Telefone inválido para oportunidade ${opp.id}:`, mensagemErroTelefone(erro));
+        }
+
         const veiculo = opp.idEstoque ? mapaEstoque.get(opp.idEstoque) : null;
         const interesse = veiculo ?
         `${veiculo.modelo || ''} ${veiculo.ano || ''} -${veiculo.cor || ''}`.trim() :
         (opp.outro_interesse || []).join(', ');
         return [
-        formatarTelefone(opp.lead?.telefone),
+        telefoneCsv,
         opp.lead?.nome || '',
         interesse,
         opp.resumo || '',
