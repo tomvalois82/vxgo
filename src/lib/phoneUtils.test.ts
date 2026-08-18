@@ -31,7 +31,7 @@ describe('formatarTelefoneBR', () => {
 
     it('insere 9 obrigatório quando faltam 11 dígitos', () => {
       expect(formatarTelefoneBR('8196505552')).toBe('81996505552');
-      expect(formatarTelefoneBR('42396505552')).toBe('42996505552');
+      expect(formatarTelefoneBR('4236505552')).toBe('42936505552');
     });
 
     it('retorna null para entrada vazia', () => {
