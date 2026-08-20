@@ -344,6 +344,8 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, ativid
                     : statusAtv === 'atrasada'
                     ? 'ring-2 ring-yellow-400'
                     : 'ring-2 ring-green-500';
+                // Cor discreta da borda conforme a origem do lead
+                const corOrigem = getCorOrigem(opp.lead?.Origem);
                 const dotClass =
                   statusAtv === 'sem'
                     ? 'bg-red-500'
@@ -356,6 +358,7 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, ativid
               {...provided.draggableProps}
               {...provided.dragHandleProps}
               onClick={() => onClickOpp(opp.id)}
+              style={corOrigem ? { borderColor: corOrigem } : undefined}
               className={`bg-card rounded-lg border p-3 cursor-pointer transition-shadow ${
               snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'shadow-sm hover:shadow-md'}`
               }>
