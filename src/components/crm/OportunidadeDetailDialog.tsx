@@ -788,6 +788,50 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
 
                   <Separator />
 
+                  {/* Origem do lead */}
+                  <SidebarSection title="Origem do lead">
+                    {opp.lead ? (
+                      <Select
+                        value={opp.lead.Origem || 'Outros'}
+                        onValueChange={(v) => saveLead('Origem', v)}
+                      >
+                        <SelectTrigger className="w-full h-8 text-sm">
+                          <SelectValue placeholder="Selecionar origem">
+                            {(() => {
+                              const origem = ORIGENS.find(o => o.value === (opp.lead?.Origem || 'Outros')) || ORIGENS[ORIGENS.length - 1];
+                              return (
+                                <span className="flex items-center gap-2">
+                                  <span
+                                    className="inline-block rounded-full"
+                                    style={{ width: 10, height: 10, backgroundColor: origem.cor }}
+                                  />
+                                  {origem.label}
+                                </span>
+                              );
+                            })()}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ORIGENS.map(o => (
+                            <SelectItem key={o.value} value={o.value}>
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className="inline-block rounded-full"
+                                  style={{ width: 10, height: 10, backgroundColor: o.cor }}
+                                />
+                                {o.label}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Nenhum lead vinculado</p>
+                    )}
+                  </SidebarSection>
+
+                  <Separator />
+
                   {/* Resumo */}
                   <SidebarSection title="Resumo">
                     <EditableField
