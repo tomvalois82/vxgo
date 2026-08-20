@@ -16,6 +16,7 @@ import {
   KanbanColumn } from
 '@/hooks/crm/useKanban';
 import { useActiveFunis } from '@/hooks/crm/useFunis';
+import { getCorOrigem } from '@/lib/origem-utils';
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
 import { useAtividadesStatusByOportunidade, AtividadeStatusKanban } from '@/hooks/crm/useAtividades';
 import KanbanEditDialog from './KanbanEditDialog';
