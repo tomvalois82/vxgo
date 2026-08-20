@@ -791,28 +791,34 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                   {/* Origem do lead */}
                   <SidebarSection title="Origem do lead">
                     {opp.lead ? (
-                      <Select
-                        value={opp.lead.Origem || 'Outros'}
-                        onValueChange={(v) => saveLead('Origem', v)}
-                      >
-                        <SelectTrigger className="w-full h-8 text-sm">
-                          <SelectValue placeholder="Selecionar origem">
-                            <span className="flex items-center gap-2">
-                              <span
-                                className="inline-block rounded-full"
-                                style={{
-                                  width: 10,
-                                  height: 10,
-                                  backgroundColor:
-                                    ORIGENS.find(o => o.value === (opp.lead?.Origem || 'Outros'))?.cor ||
-                                    ORIGENS[ORIGENS.length - 1].cor,
-                                }}
-                              />
-                              {ORIGENS.find(o => o.value === (opp.lead?.Origem || 'Outros'))?.label ||
-                                ORIGENS[ORIGENS.length - 1].label}
-                            </span>
-                          </SelectValue>
-                        </SelectTrigger>
+                      (() => {
+                        // Encontra a origem correspondente ignorando maiúsculas/minúsculas
+                        const origemBruta = opp.lead.Origem?.trim() ?? '';
+                        const origemAtual = ORIGENS.find(
+                          o => o.value.toLowerCase() === origemBruta.toLowerCase()
+                        );
+                        return (
+                       <Select
+                         value={origemAtual?.value ?? ''}
+                         onValueChange={(v) => saveLead('Origem', v)}
+                       >
+                         <SelectTrigger className="w-full h-8 text-sm">
+                           <SelectValue placeholder="Selecionar origem">
+                             {origemBruta ? (
+                               <span className="flex items-center gap-2">
+                                 <span
+                                   className="inline-block rounded-full"
+                                   style={{
+                                     width: 10,
+                                     height: 10,
+                                     backgroundColor: origemAtual?.cor ?? '#cbd5e1',
+                                   }}
+                                 />
+                                 {origemAtual?.label ?? origemBruta}
+                               </span>
+                             ) : null}
+                           </SelectValue>
+                         </SelectTrigger>
                         <SelectContent>
                           {ORIGENS.map(o => (
                             <SelectItem key={o.value} value={o.value}>
@@ -826,7 +832,9 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                             </SelectItem>
                           ))}
                         </SelectContent>
-                      </Select>
+                       </Select>
+                        );
+                      })()
                     ) : (
                       <p className="text-sm text-muted-foreground italic">Nenhum lead vinculado</p>
                     )}
