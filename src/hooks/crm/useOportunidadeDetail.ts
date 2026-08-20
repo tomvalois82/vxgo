@@ -23,6 +23,7 @@ export interface OportunidadeDetail {
     nome: string | null;
     telefone: string | null;
     email: string | null;
+    Origem: string | null;
   } | null;
   usuario?: {
     id: number;

@@ -434,6 +434,18 @@ const KanbanStageSelector: React.FC<{
   );
 };
 
+/* ─── Origem options ─── */
+const ORIGENS = [
+  { value: 'Whatsapp', label: 'Whatsapp', cor: '#22c55e' },
+  { value: 'Olx', label: 'Olx', cor: '#7c3aed' },
+  { value: 'Webmotors', label: 'Webmotors', cor: '#dc2626' },
+  { value: 'Instagram', label: 'Instagram', cor: '#ec4899' },
+  { value: 'Facebook', label: 'Facebook', cor: '#2563eb' },
+  { value: 'Indicação', label: 'Indicação', cor: '#eab308' },
+  { value: 'Carteira', label: 'Carteira', cor: '#9ca3af' },
+  { value: 'Outros', label: 'Outros', cor: '#92400e' },
+] as const;
+
 /* ─── Main Dialog ─── */
 const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }) => {
   const { data: opp, isLoading } = useOportunidadeDetail(oppId);
@@ -772,6 +784,52 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                       currentId={opp.idEstoque}
                       onSelect={(id) => save('idEstoque', id)}
                     />
+                  </SidebarSection>
+
+                  <Separator />
+
+                  {/* Origem do lead */}
+                  <SidebarSection title="Origem do lead">
+                    {opp.lead ? (
+                      <Select
+                        value={opp.lead.Origem || 'Outros'}
+                        onValueChange={(v) => saveLead('Origem', v)}
+                      >
+                        <SelectTrigger className="w-full h-8 text-sm">
+                          <SelectValue placeholder="Selecionar origem">
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="inline-block rounded-full"
+                                style={{
+                                  width: 10,
+                                  height: 10,
+                                  backgroundColor:
+                                    ORIGENS.find(o => o.value === (opp.lead?.Origem || 'Outros'))?.cor ||
+                                    ORIGENS[ORIGENS.length - 1].cor,
+                                }}
+                              />
+                              {ORIGENS.find(o => o.value === (opp.lead?.Origem || 'Outros'))?.label ||
+                                ORIGENS[ORIGENS.length - 1].label}
+                            </span>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ORIGENS.map(o => (
+                            <SelectItem key={o.value} value={o.value}>
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className="inline-block rounded-full"
+                                  style={{ width: 10, height: 10, backgroundColor: o.cor }}
+                                />
+                                {o.label}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Nenhum lead vinculado</p>
+                    )}
                   </SidebarSection>
 
                   <Separator />
