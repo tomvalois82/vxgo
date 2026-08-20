@@ -14,6 +14,7 @@ export interface OportunidadeDetail {
   idEstoque: number | null;
   motivo_perda: string | null;
   data_finalizado: string | null;
+  origem: string | null;
   created_at: string;
   data_criacao: string | null;
   ultima_interacao: string | null;
