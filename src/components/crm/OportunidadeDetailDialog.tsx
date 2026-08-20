@@ -434,6 +434,18 @@ const KanbanStageSelector: React.FC<{
   );
 };
 
+/* ─── Origem options ─── */
+const ORIGENS = [
+  { value: 'Whatsapp', label: 'Whatsapp', cor: '#22c55e' },
+  { value: 'Olx', label: 'Olx', cor: '#7c3aed' },
+  { value: 'Webmotors', label: 'Webmotors', cor: '#dc2626' },
+  { value: 'Instagram', label: 'Instagram', cor: '#ec4899' },
+  { value: 'Facebook', label: 'Facebook', cor: '#2563eb' },
+  { value: 'Indicação', label: 'Indicação', cor: '#eab308' },
+  { value: 'Carteira', label: 'Carteira', cor: '#9ca3af' },
+  { value: 'Outros', label: 'Outros', cor: '#92400e' },
+] as const;
+
 /* ─── Main Dialog ─── */
 const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }) => {
   const { data: opp, isLoading } = useOportunidadeDetail(oppId);
