@@ -797,18 +797,20 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                       >
                         <SelectTrigger className="w-full h-8 text-sm">
                           <SelectValue placeholder="Selecionar origem">
-                            {(() => {
-                              const origem = ORIGENS.find(o => o.value === (opp.lead?.Origem || 'Outros')) || ORIGENS[ORIGENS.length - 1];
-                              return (
-                                <span className="flex items-center gap-2">
-                                  <span
-                                    className="inline-block rounded-full"
-                                    style={{ width: 10, height: 10, backgroundColor: origem.cor }}
-                                  />
-                                  {origem.label}
-                                </span>
-                              );
-                            })()}
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="inline-block rounded-full"
+                                style={{
+                                  width: 10,
+                                  height: 10,
+                                  backgroundColor:
+                                    ORIGENS.find(o => o.value === (opp.lead?.Origem || 'Outros'))?.cor ||
+                                    ORIGENS[ORIGENS.length - 1].cor,
+                                }}
+                              />
+                              {ORIGENS.find(o => o.value === (opp.lead?.Origem || 'Outros'))?.label ||
+                                ORIGENS[ORIGENS.length - 1].label}
+                            </span>
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
