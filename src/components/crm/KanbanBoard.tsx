@@ -290,7 +290,83 @@ interface ColumnProps {
   onClickOpp: (id: number) => void;
 }
 
-const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, atividadeStatusMap, onAddOpp, onGerarLista, onClickOpp }) => {
+// Card memoizado: evita re-render de todos os cards durante o arraste
+interface CardContentProps {
+  opp: Oportunidade;
+  statusAtv: AtividadeStatusKanban;
+  onClickOpp: (id: number) => void;
+}
+
+const OportunidadeCardContent: React.FC<CardContentProps> = React.memo(({ opp, statusAtv }) => {
+  const ringClass =
+  statusAtv === 'sem' ?
+  'ring-2 ring-red-500' :
+  statusAtv === 'atrasada' ?
+  'ring-2 ring-yellow-400' :
+  'ring-2 ring-green-500';
+  const dotClass =
+  statusAtv === 'sem' ?
+  'bg-red-500' :
+  statusAtv === 'atrasada' ?
+  'bg-yellow-400' :
+  null;
+
+  return (
+    <>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium text-foreground line-clamp-2 flex-1">
+          {opp.titulo || `Oportunidade #${opp.id}`}
+        </p>
+        {opp.usuario ?
+        <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="relative flex-shrink-0">
+                  <Avatar className={`h-8 w-8 ${ringClass}`}>
+                    {opp.usuario.foto ? <AvatarImage src={opp.usuario.foto} alt={opp.usuario.nome || ''} /> : null}
+                    <AvatarFallback
+                    className="text-xs font-semibold text-white"
+                    style={{ backgroundColor: getUserColor(opp.usuario.id) }}>
+                      {(opp.usuario.nome || '?').charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  {dotClass &&
+                <span className={`absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-card ${dotClass}`} />
+                }
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p>{opp.usuario.nome || 'Sem nome'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider> :
+
+        <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-destructive/15 flex items-center justify-center">
+                  <AlertTriangle size={16} className="text-destructive" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p>Sem responsável</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        }
+      </div>
+      {opp.valor &&
+      <p className="text-xs text-muted-foreground mt-1">R$ {opp.valor}</p>
+      }
+      {opp.resumo &&
+      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{opp.resumo}</p>
+      }
+    </>);
+
+});
+OportunidadeCardContent.displayName = 'OportunidadeCardContent';
+
+const KanbanColumnView: React.FC<ColumnProps> = React.memo(({ column, oportunidades, atividadeStatusMap, onAddOpp, onGerarLista, onClickOpp }) => {
   return (
     <div className="flex flex-col w-72 min-w-[18rem] flex-shrink-0 bg-muted/40 rounded-xl border">
       <div
@@ -329,100 +405,34 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, ativid
         <div
           ref={provided.innerRef}
           {...provided.droppableProps}
-          className={`flex-1 p-2 space-y-2 transition-colors min-h-[120px] ${
+          className={`flex-1 p-2 space-y-2 min-h-[120px] ${
           snapshot.isDraggingOver ? 'bg-accent/40' : ''}`
           }>
           
             {oportunidades.map((opp, index) =>
           <Draggable key={opp.id} draggableId={`opp-${opp.id}`} index={index}>
-                {(provided, snapshot) =>
-              (() => {
-                const statusAtv = atividadeStatusMap[opp.id] ?? 'sem';
-                // Mapeia status -> classes de contorno e cor do ponto
-                const ringClass =
-                  statusAtv === 'sem'
-                    ? 'ring-2 ring-red-500'
-                    : statusAtv === 'atrasada'
-                    ? 'ring-2 ring-yellow-400'
-                    : 'ring-2 ring-green-500';
-                // Cor discreta da borda conforme a origem do lead
-                const corOrigem = getCorOrigem(opp.lead?.Origem);
-                const dotClass =
-                  statusAtv === 'sem'
-                    ? 'bg-red-500'
-                    : statusAtv === 'atrasada'
-                    ? 'bg-yellow-400'
-                    : null;
-                return (
-            <div
-              ref={provided.innerRef}
-              {...provided.draggableProps}
-              {...provided.dragHandleProps}
-              onClick={() => onClickOpp(opp.id)}
-              style={corOrigem ? { borderColor: corOrigem } : undefined}
-              className={`bg-card rounded-lg border p-3 cursor-pointer transition-shadow ${
-              snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'shadow-sm hover:shadow-md'}`
-              }>
-              
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium text-foreground line-clamp-2 flex-1">
-                        {opp.titulo || `Oportunidade #${opp.id}`}
-                      </p>
-                      {opp.usuario ? (
-                        <TooltipProvider delayDuration={200}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="relative flex-shrink-0">
-                              <Avatar className={`h-8 w-8 ${ringClass}`}>
-                                {opp.usuario.foto ? (
-                                  <AvatarImage src={opp.usuario.foto} alt={opp.usuario.nome || ''} />
-                                ) : null}
-                                <AvatarFallback
-                                  className="text-xs font-semibold text-white"
-                                  style={{ backgroundColor: getUserColor(opp.usuario.id) }}
-                                >
-                                  {(opp.usuario.nome || '?').charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              {dotClass && (
-                                <span className={`absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full ring-2 ring-card ${dotClass}`} />
-                              )}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p>{opp.usuario.nome || 'Sem nome'}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <TooltipProvider delayDuration={200}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="h-8 w-8 flex-shrink-0 rounded-full bg-destructive/15 flex items-center justify-center">
-                                <AlertTriangle size={16} className="text-destructive" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p>Sem responsável</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                    </div>
-                    {opp.valor &&
-              <p className="text-xs text-muted-foreground mt-1">
-                        R$ {opp.valor}
-                      </p>
-              }
-                    {opp.resumo &&
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {opp.resumo}
-                      </p>
-              }
-                  </div>
-                );
-              })()
-            }
+                {(dragProvided, dragSnapshot) => {
+              const corOrigem = getCorOrigem(opp.lead?.Origem);
+              return (
+                <div
+                  ref={dragProvided.innerRef}
+                  {...dragProvided.draggableProps}
+                  {...dragProvided.dragHandleProps}
+                  onClick={() => onClickOpp(opp.id)}
+                  style={{
+                    ...dragProvided.draggableProps.style,
+                    ...(corOrigem ? { borderColor: corOrigem } : {})
+                  }}
+                  className={`bg-card rounded-lg border p-3 cursor-pointer ${
+                  dragSnapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'shadow-sm hover:shadow-md'}`
+                  }>
+                      <OportunidadeCardContent
+                    opp={opp}
+                    statusAtv={atividadeStatusMap[opp.id] ?? 'sem'}
+                    onClickOpp={onClickOpp} />
+                    </div>);
+
+            }}
               </Draggable>
           )}
             {provided.placeholder}
@@ -431,6 +441,7 @@ const KanbanColumnView: React.FC<ColumnProps> = ({ column, oportunidades, ativid
       </Droppable>
     </div>);
 
-};
+});
+KanbanColumnView.displayName = 'KanbanColumnView';
 
 export default KanbanBoard;
