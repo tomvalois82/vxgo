@@ -892,7 +892,25 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                   <Separator />
 
                   {/* Resumo */}
-                  <SidebarSection title="Resumo">
+                  <SidebarSection
+                    title="Resumo"
+                    action={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-primary"
+                        title="Gerar resumo com IA"
+                        disabled={!opp.lead || resumoLoading}
+                        onClick={gerarResumo}
+                      >
+                        {resumoLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    }
+                  >
                     <EditableField
                       value={opp.resumo || ''}
                       onSave={(v) => save('resumo', v)}
