@@ -1003,6 +1003,66 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
           </>
         )}
       </DialogContent>
+
+      {/* Dialog do resumo gerado pela IA */}
+      <Dialog open={resumoOpen} onOpenChange={setResumoOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Resumo gerado
+            </DialogTitle>
+          </DialogHeader>
+
+          {resumoLoading ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Gerando resumo...</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <RadioGroup
+                value={resumoModo}
+                onValueChange={(v) => alterarModoResumo(v as 'substituir' | 'somar')}
+                className="flex gap-6"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="substituir" id="modo-substituir" />
+                  <Label htmlFor="modo-substituir" className="text-sm font-normal">
+                    Substituir o resumo atual
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="somar" id="modo-somar" />
+                  <Label htmlFor="modo-somar" className="text-sm font-normal">
+                    Somar ao resumo atual
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              <Textarea
+                value={resumoDraft}
+                onChange={(e) => setResumoDraft(e.target.value)}
+                className="min-h-[260px] text-sm whitespace-pre-wrap"
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setResumoOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => {
+                    save('resumo', resumoDraft);
+                    setResumoOpen(false);
+                  }}
+                >
+                  Salvar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
