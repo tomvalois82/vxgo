@@ -24,6 +24,8 @@ export interface OportunidadeDetail {
     telefone: string | null;
     email: string | null;
     Origem: string | null;
+    session_id_whatsaap: string | null;
+    session_id_olx: string | null;
   } | null;
   usuario?: {
     id: number;
