@@ -24,6 +24,8 @@ export interface OportunidadeDetail {
     telefone: string | null;
     email: string | null;
     Origem: string | null;
+    session_id_whatsaap: string | null;
+    session_id_olx: string | null;
   } | null;
   usuario?: {
     id: number;
@@ -40,7 +42,7 @@ export function useOportunidadeDetail(oppId: number | null) {
         .from('opotunidade')
         .select(`
           *,
-          lead:id_lead (id, nome, telefone, email, Origem),
+          lead:id_lead (id, nome, telefone, email, Origem, session_id_whatsaap, session_id_olx),
           usuario:id_usuario (id, nome)
         `)
         .eq('id', oppId)

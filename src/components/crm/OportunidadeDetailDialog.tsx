@@ -2,11 +2,15 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2, ChevronDown, ChevronUp, Trophy, ThumbsDown, RotateCcw } from 'lucide-react';
+import { Pencil, User, Phone, Mail, Car, CalendarClock, Check, Search, X, Trash2, ChevronDown, ChevronUp, Trophy, ThumbsDown, RotateCcw, Sparkles, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import AnexoGallery from './AnexoGallery';
@@ -33,6 +37,7 @@ import AtividadeForm from './AtividadeForm';
 import AtividadeTimeline from './AtividadeTimeline';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -463,6 +468,11 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
   const [showLossDialog, setShowLossDialog] = useState(false);
   const [motivoPerda, setMotivoPerda] = useState('');
   const [formOpen, setFormOpen] = useState(true);
+  const [resumoOpen, setResumoOpen] = useState(false);
+  const [resumoLoading, setResumoLoading] = useState(false);
+  const [resumoGerado, setResumoGerado] = useState('');
+  const [resumoDraft, setResumoDraft] = useState('');
+  const [resumoModo, setResumoModo] = useState<'substituir' | 'somar'>('substituir');
 
   // Auto-detect funnel from opp's current kanban column
   useEffect(() => {
@@ -519,6 +529,49 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
       queryClient.invalidateQueries({ queryKey: ['oportunidade-detail', opp.id] });
     },
     [opp, queryClient]
+  );
+
+  // ─── Geração de resumo via fluxo N8N ───
+  const gerarResumo = useCallback(async () => {
+    if (!opp?.lead) return;
+    setResumoOpen(true);
+    setResumoLoading(true);
+    setResumoGerado('');
+    setResumoModo('substituir');
+    setResumoDraft('');
+    try {
+      const { data, error } = await supabase.functions.invoke('resumo-oportunidade', {
+        body: {
+          session_id_whasaap: opp.lead.session_id_whatsaap || '',
+          session_id_olx: opp.lead.session_id_olx || '',
+        },
+      });
+      if (error) throw error;
+      const texto: string = data?.resumo || '';
+      setResumoGerado(texto);
+      setResumoDraft(texto);
+    } catch (erro: any) {
+      toast({
+        title: 'Erro ao gerar resumo',
+        description: erro?.message || 'Não foi possível acionar o fluxo.',
+        variant: 'destructive',
+      });
+      setResumoOpen(false);
+    } finally {
+      setResumoLoading(false);
+    }
+  }, [opp]);
+
+  // Atualiza o textarea conforme o modo selecionado
+  const alterarModoResumo = useCallback(
+    (modo: 'substituir' | 'somar') => {
+      setResumoModo(modo);
+      const atual = opp?.resumo || '';
+      setResumoDraft(
+        modo === 'somar' && atual ? `${atual}\n\n${resumoGerado}` : resumoGerado
+      );
+    },
+    [opp?.resumo, resumoGerado]
   );
 
   const subtitleParts: string[] = [];
@@ -843,7 +896,25 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
                   <Separator />
 
                   {/* Resumo */}
-                  <SidebarSection title="Resumo">
+                  <SidebarSection
+                    title="Resumo"
+                    action={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-primary"
+                        title="Gerar resumo com IA"
+                        disabled={!opp.lead || resumoLoading}
+                        onClick={gerarResumo}
+                      >
+                        {resumoLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    }
+                  >
                     <EditableField
                       value={opp.resumo || ''}
                       onSave={(v) => save('resumo', v)}
@@ -936,19 +1007,83 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
           </>
         )}
       </DialogContent>
+
+      {/* Dialog do resumo gerado pela IA */}
+      <Dialog open={resumoOpen} onOpenChange={setResumoOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Resumo gerado
+            </DialogTitle>
+          </DialogHeader>
+
+          {resumoLoading ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Gerando resumo...</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <RadioGroup
+                value={resumoModo}
+                onValueChange={(v) => alterarModoResumo(v as 'substituir' | 'somar')}
+                className="flex gap-6"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="substituir" id="modo-substituir" />
+                  <Label htmlFor="modo-substituir" className="text-sm font-normal">
+                    Substituir o resumo atual
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="somar" id="modo-somar" />
+                  <Label htmlFor="modo-somar" className="text-sm font-normal">
+                    Somar ao resumo atual
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              <Textarea
+                value={resumoDraft}
+                onChange={(e) => setResumoDraft(e.target.value)}
+                className="min-h-[260px] text-sm whitespace-pre-wrap"
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setResumoOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => {
+                    save('resumo', resumoDraft);
+                    setResumoOpen(false);
+                  }}
+                >
+                  Salvar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
 
 /* ─── Sidebar helper ─── */
-const SidebarSection: React.FC<{ title: string; children: React.ReactNode }> = ({
+const SidebarSection: React.FC<{ title: string; children: React.ReactNode; action?: React.ReactNode }> = ({
   title,
   children,
+  action,
 }) => (
   <div>
-    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
-      {title}
-    </p>
+    <div className="flex items-center justify-between gap-2 mb-1.5">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        {title}
+      </p>
+      {action}
+    </div>
     {children}
   </div>
 );
