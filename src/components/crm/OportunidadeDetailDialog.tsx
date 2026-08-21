@@ -463,6 +463,11 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
   const [showLossDialog, setShowLossDialog] = useState(false);
   const [motivoPerda, setMotivoPerda] = useState('');
   const [formOpen, setFormOpen] = useState(true);
+  const [resumoOpen, setResumoOpen] = useState(false);
+  const [resumoLoading, setResumoLoading] = useState(false);
+  const [resumoGerado, setResumoGerado] = useState('');
+  const [resumoDraft, setResumoDraft] = useState('');
+  const [resumoModo, setResumoModo] = useState<'substituir' | 'somar'>('substituir');
 
   // Auto-detect funnel from opp's current kanban column
   useEffect(() => {
