@@ -33,6 +33,7 @@ import AtividadeForm from './AtividadeForm';
 import AtividadeTimeline from './AtividadeTimeline';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
