@@ -42,7 +42,7 @@ export function useOportunidadeDetail(oppId: number | null) {
         .from('opotunidade')
         .select(`
           *,
-          lead:id_lead (id, nome, telefone, email, Origem),
+          lead:id_lead (id, nome, telefone, email, Origem, session_id_whatsaap, session_id_olx),
           usuario:id_usuario (id, nome)
         `)
         .eq('id', oppId)
