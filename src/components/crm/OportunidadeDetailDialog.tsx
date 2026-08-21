@@ -521,6 +521,49 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
     [opp, queryClient]
   );
 
+  // ─── Geração de resumo via fluxo N8N ───
+  const gerarResumo = useCallback(async () => {
+    if (!opp?.lead) return;
+    setResumoOpen(true);
+    setResumoLoading(true);
+    setResumoGerado('');
+    setResumoModo('substituir');
+    setResumoDraft('');
+    try {
+      const { data, error } = await supabase.functions.invoke('resumo-oportunidade', {
+        body: {
+          session_id_whasaap: opp.lead.session_id_whatsaap || '',
+          session_id_olx: opp.lead.session_id_olx || '',
+        },
+      });
+      if (error) throw error;
+      const texto: string = data?.resumo || '';
+      setResumoGerado(texto);
+      setResumoDraft(texto);
+    } catch (erro: any) {
+      toast({
+        title: 'Erro ao gerar resumo',
+        description: erro?.message || 'Não foi possível acionar o fluxo.',
+        variant: 'destructive',
+      });
+      setResumoOpen(false);
+    } finally {
+      setResumoLoading(false);
+    }
+  }, [opp]);
+
+  // Atualiza o textarea conforme o modo selecionado
+  const alterarModoResumo = useCallback(
+    (modo: 'substituir' | 'somar') => {
+      setResumoModo(modo);
+      const atual = opp?.resumo || '';
+      setResumoDraft(
+        modo === 'somar' && atual ? `${atual}\n\n${resumoGerado}` : resumoGerado
+      );
+    },
+    [opp?.resumo, resumoGerado]
+  );
+
   const subtitleParts: string[] = [];
   if (opp?.valor) subtitleParts.push(formatCurrency(opp.valor));
   if (vehicleLabel) subtitleParts.push(vehicleLabel);
