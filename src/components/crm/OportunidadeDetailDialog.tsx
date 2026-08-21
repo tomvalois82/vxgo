@@ -941,14 +941,18 @@ const OportunidadeDetailDialog: React.FC<Props> = ({ oppId, open, onOpenChange }
 };
 
 /* ─── Sidebar helper ─── */
-const SidebarSection: React.FC<{ title: string; children: React.ReactNode }> = ({
+const SidebarSection: React.FC<{ title: string; children: React.ReactNode; action?: React.ReactNode }> = ({
   title,
   children,
+  action,
 }) => (
   <div>
-    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
-      {title}
-    </p>
+    <div className="flex items-center justify-between gap-2 mb-1.5">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        {title}
+      </p>
+      {action}
+    </div>
     {children}
   </div>
 );
