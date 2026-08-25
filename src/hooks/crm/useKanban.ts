@@ -168,16 +168,33 @@ export function useMoveOportunidade() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, id_kanban }: { id: number; id_kanban: number }) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('opotunidade')
         .update({ id_kanban })
-        .eq('id', id);
+        .eq('id', id)
+        .select('id, id_kanban')
+        .maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error('Oportunidade não encontrada para mover.');
+      return data;
+    },
+    onMutate: async ({ id, id_kanban }) => {
+      await queryClient.cancelQueries({ queryKey: ['kanban-oportunidades'] });
+      const oportunidadesAnteriores = queryClient.getQueryData<Oportunidade[]>(['kanban-oportunidades']);
+
+      queryClient.setQueryData<Oportunidade[]>(['kanban-oportunidades'], (current) =>
+        current?.map((opp) => (opp.id === id ? { ...opp, id_kanban } : opp)) ?? current,
+      );
+
+      return { oportunidadesAnteriores };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kanban-oportunidades'] });
     },
-    onError: (error: any) => {
+    onError: (error: Error, _variables, context) => {
+      if (context?.oportunidadesAnteriores) {
+        queryClient.setQueryData(['kanban-oportunidades'], context.oportunidadesAnteriores);
+      }
       toast({ title: 'Erro ao mover oportunidade', description: error.message, variant: 'destructive' });
     },
   });
