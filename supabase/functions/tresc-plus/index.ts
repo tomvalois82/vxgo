@@ -3,6 +3,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 // Integração com a API 3C Plus (Fluxoti).
 // Ações: "campaigns" (lista campanhas) e "send-list" (envia lista .csv).
+// Lê a resposta com segurança: a API pode devolver HTML em caso de erro.
+const lerJson = async (resposta: Response): Promise<unknown> => {
+  const texto = await resposta.text();
+  try {
+    return JSON.parse(texto);
+  } catch {
+    return { message: texto.slice(0, 300) };
+  }
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -42,10 +52,10 @@ Deno.serve(async (req) => {
 
     if (acao === 'campaigns') {
       const resposta = await fetch(
-        `https://3c.fluxoti.com/api/v1/campaigns?api_token=${encodeURIComponent(token)}`,
+        `https://app.3c.plus/api/v1/campaigns?api_token=${encodeURIComponent(token)}`,
         { headers: { accept: 'application/json' } }
       );
-      const dados = await resposta.json();
+      const dados = await lerJson(resposta);
       if (!resposta.ok) {
         return new Response(JSON.stringify({ error: dados }), {
           status: resposta.status,
@@ -86,10 +96,10 @@ Deno.serve(async (req) => {
       form.append('has_header', '1');
 
       const resposta = await fetch(
-        `https://3c.fluxoti.com/api/v1/campaigns/${campaignId}/lists/csv?api_token=${encodeURIComponent(token)}`,
+        `https://app.3c.plus/api/v1/campaigns/${campaignId}/lists/csv?api_token=${encodeURIComponent(token)}`,
         { method: 'POST', body: form }
       );
-      const dados = await resposta.json();
+      const dados = await lerJson(resposta);
       if (!resposta.ok) {
         return new Response(JSON.stringify({ error: dados }), {
           status: resposta.status,
