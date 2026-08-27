@@ -19,6 +19,8 @@ import { useActiveFunis } from '@/hooks/crm/useFunis';
 import { getCorOrigem } from '@/lib/origem-utils';
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
 import { useAtividadesStatusByOportunidade, AtividadeStatusKanban } from '@/hooks/crm/useAtividades';
+import { useVeiculosPorIds } from '@/hooks/crm/useVeiculosPorIds';
+
 import KanbanEditDialog from './KanbanEditDialog';
 import OportunidadeDialog from './OportunidadeDialog';
 import OportunidadeDetailDialog from './OportunidadeDetailDialog';
