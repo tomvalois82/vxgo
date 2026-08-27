@@ -235,6 +235,10 @@ const KanbanBoard: React.FC = () => {
         onColumnChange={setFilterColumnId}
         selectedStatus={filterStatus}
         onStatusChange={setFilterStatus}
+        interesseOptions={opcoesInteresse}
+        selectedInteresse={filterInteresse}
+        onInteresseChange={setFilterInteresse}
+
         searchText={filterSearch}
         onSearchChange={setFilterSearch} 
         className="my-[4px] mt-0 mb-[5px] py-[4px]" />
