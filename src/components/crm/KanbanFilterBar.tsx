@@ -7,6 +7,11 @@ import {
 } from '@/components/ui/select';
 import { KanbanColumn } from '@/hooks/crm/useKanban';
 
+interface InteresseOption {
+  id: number;
+  label: string;
+}
+
 interface KanbanFilterBarProps {
   open: boolean;
   onToggle: () => void;
@@ -15,6 +20,9 @@ interface KanbanFilterBarProps {
   onColumnChange: (value: string) => void;
   selectedStatus: string;
   onStatusChange: (value: string) => void;
+  interesseOptions: InteresseOption[];
+  selectedInteresse: string;
+  onInteresseChange: (value: string) => void;
   searchText: string;
   onSearchChange: (value: string) => void;
   className?: string;
@@ -28,9 +36,13 @@ const KanbanFilterBar: React.FC<KanbanFilterBarProps> = ({
   onColumnChange,
   selectedStatus,
   onStatusChange,
+  interesseOptions,
+  selectedInteresse,
+  onInteresseChange,
   searchText,
   onSearchChange,
 }) => {
+
   if (!open) {
     return (
       <Button variant="outline" size="sm" onClick={onToggle} className="gap-1.5">
