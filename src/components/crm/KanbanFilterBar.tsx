@@ -81,6 +81,21 @@ const KanbanFilterBar: React.FC<KanbanFilterBarProps> = ({
           </SelectContent>
         </Select>
 
+        <Select value={selectedInteresse} onValueChange={onInteresseChange}>
+          <SelectTrigger className="w-56 h-8 text-xs">
+            <SelectValue placeholder="Interesse" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os interesses</SelectItem>
+            {interesseOptions.map((opt) => (
+              <SelectItem key={opt.id} value={String(opt.id)}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
