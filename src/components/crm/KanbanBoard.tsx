@@ -19,6 +19,8 @@ import { useActiveFunis } from '@/hooks/crm/useFunis';
 import { getCorOrigem } from '@/lib/origem-utils';
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
 import { useAtividadesStatusByOportunidade, AtividadeStatusKanban } from '@/hooks/crm/useAtividades';
+import { useVeiculosPorIds } from '@/hooks/crm/useVeiculosPorIds';
+
 import KanbanEditDialog from './KanbanEditDialog';
 import OportunidadeDialog from './OportunidadeDialog';
 import OportunidadeDetailDialog from './OportunidadeDetailDialog';
@@ -44,7 +46,9 @@ const KanbanBoard: React.FC = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterColumnId, setFilterColumnId] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('aberta');
+  const [filterInteresse, setFilterInteresse] = useState<string>('all');
   const [filterSearch, setFilterSearch] = useState<string>('');
+
   const { data: configUsers = [] } = useConfigUsers();
   // Auto-select first funnel when loaded
   const currentFunilId = useMemo(() => {
@@ -66,6 +70,32 @@ const KanbanBoard: React.FC = () => {
 
   const searchLower = useMemo(() => filterSearch.toLowerCase().trim(), [filterSearch]);
 
+  // Contagem de oportunidades por veículo de interesse, respeitando o filtro de status
+  const contagemPorInteresse = useMemo(() => {
+    const contagem: Record<number, number> = {};
+    oportunidades.forEach((opp) => {
+      if (!opp.idEstoque) return;
+      if (filterStatus !== 'all' && opp.status !== filterStatus) return;
+      contagem[opp.idEstoque] = (contagem[opp.idEstoque] || 0) + 1;
+    });
+    return contagem;
+  }, [oportunidades, filterStatus]);
+
+  const idsInteresse = useMemo(
+    () => Object.keys(contagemPorInteresse).map(Number),
+    [contagemPorInteresse]
+  );
+  const { data: veiculosInteresse = [] } = useVeiculosPorIds(idsInteresse);
+
+  const opcoesInteresse = useMemo(() => {
+    return veiculosInteresse.
+    map((v) => ({
+      id: v.id,
+      label: `${[v.fabricante, v.modelo, v.ano].filter(Boolean).join(' ')} (${contagemPorInteresse[v.id] || 0})`
+    })).
+    sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  }, [veiculosInteresse, contagemPorInteresse]);
+
   const oppsByColumn = useMemo(() => {
     const map: Record<number, Oportunidade[]> = {};
     visibleColumns.forEach((col) => {
@@ -80,6 +110,8 @@ const KanbanBoard: React.FC = () => {
         if (filterColumnId !== 'all' && opp.id_kanban !== Number(filterColumnId)) return;
         // Status filter
         if (filterStatus !== 'all' && opp.status !== filterStatus) return;
+        // Filtro de interesse (veículo)
+        if (filterInteresse !== 'all' && opp.idEstoque !== Number(filterInteresse)) return;
         // Text search filter
         if (searchLower) {
           const leadNome = opp.lead?.nome?.toLowerCase() || '';
@@ -97,7 +129,8 @@ const KanbanBoard: React.FC = () => {
       }
     });
     return map;
-  }, [visibleColumns, oportunidades, selectedUserId, filterColumnId, filterStatus, searchLower]);
+  }, [visibleColumns, oportunidades, selectedUserId, filterColumnId, filterStatus, filterInteresse, searchLower]);
+
 
   const visibleOppIds = useMemo(() => {
     const ids: number[] = [];
@@ -202,6 +235,10 @@ const KanbanBoard: React.FC = () => {
         onColumnChange={setFilterColumnId}
         selectedStatus={filterStatus}
         onStatusChange={setFilterStatus}
+        interesseOptions={opcoesInteresse}
+        selectedInteresse={filterInteresse}
+        onInteresseChange={setFilterInteresse}
+
         searchText={filterSearch}
         onSearchChange={setFilterSearch} 
         className="my-[4px] mt-0 mb-[5px] py-[4px]" />

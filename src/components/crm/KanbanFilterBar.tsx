@@ -7,6 +7,11 @@ import {
 } from '@/components/ui/select';
 import { KanbanColumn } from '@/hooks/crm/useKanban';
 
+interface InteresseOption {
+  id: number;
+  label: string;
+}
+
 interface KanbanFilterBarProps {
   open: boolean;
   onToggle: () => void;
@@ -15,6 +20,9 @@ interface KanbanFilterBarProps {
   onColumnChange: (value: string) => void;
   selectedStatus: string;
   onStatusChange: (value: string) => void;
+  interesseOptions: InteresseOption[];
+  selectedInteresse: string;
+  onInteresseChange: (value: string) => void;
   searchText: string;
   onSearchChange: (value: string) => void;
   className?: string;
@@ -28,9 +36,13 @@ const KanbanFilterBar: React.FC<KanbanFilterBarProps> = ({
   onColumnChange,
   selectedStatus,
   onStatusChange,
+  interesseOptions,
+  selectedInteresse,
+  onInteresseChange,
   searchText,
   onSearchChange,
 }) => {
+
   if (!open) {
     return (
       <Button variant="outline" size="sm" onClick={onToggle} className="gap-1.5">
@@ -68,6 +80,21 @@ const KanbanFilterBar: React.FC<KanbanFilterBarProps> = ({
             <SelectItem value="perdeu">Perdeu</SelectItem>
           </SelectContent>
         </Select>
+
+        <Select value={selectedInteresse} onValueChange={onInteresseChange}>
+          <SelectTrigger className="w-56 h-8 text-xs">
+            <SelectValue placeholder="Interesse" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os interesses</SelectItem>
+            {interesseOptions.map((opt) => (
+              <SelectItem key={opt.id} value={String(opt.id)}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
 
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
