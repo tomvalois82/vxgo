@@ -392,6 +392,11 @@ const OportunidadeCardContent: React.FC<CardContentProps> = React.memo(({ opp, s
           </TooltipProvider>
         }
       </div>
+      {opp.estoque && (opp.estoque.modelo || opp.estoque.ano) &&
+      <p className="text-sm font-semibold text-muted-foreground mt-1">
+            {[opp.estoque.modelo, opp.estoque.ano].filter(Boolean).join(' ')}
+          </p>
+      }
       {opp.valor &&
       <p className="text-xs text-muted-foreground mt-1">R$ {opp.valor}</p>
       }

@@ -27,7 +27,7 @@ export interface Oportunidade {
   ultima_interacao: string | null;
   outro_interesse: string[] | null;
   lead?: { nome: string | null; telefone: string | null; Origem?: string | null } | null;
-  estoque?: { modelo: string | null; fabricante: string | null } | null;
+  estoque?: { modelo: string | null; ano: string | null; fabricante: string | null } | null;
   usuario?: { id: number; nome: string | null; foto: string | null } | null;
 }
 
@@ -54,13 +54,14 @@ export function useKanbanOportunidades() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('opotunidade')
-        .select('*, lead:id_lead(nome, telefone, Origem), usuario:id_usuario(id, nome, foto)')
+        .select('*, lead:id_lead(nome, telefone, Origem), usuario:id_usuario(id, nome, foto), estoque:idEstoque(modelo, ano)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || []).map((d: any) => ({
         ...d,
         lead: Array.isArray(d.lead) ? d.lead[0] ?? null : d.lead,
         usuario: Array.isArray(d.usuario) ? d.usuario[0] ?? null : d.usuario,
+        estoque: Array.isArray(d.estoque) ? d.estoque[0] ?? null : d.estoque,
       })) as Oportunidade[];
     },
   });
