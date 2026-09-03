@@ -54,15 +54,30 @@ export function useKanbanOportunidades() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('opotunidade')
-        .select('*, lead:id_lead(nome, telefone, Origem), usuario:id_usuario(id, nome, foto), estoque:idEstoque(modelo, ano)')
+        .select('*, lead:id_lead(nome, telefone, Origem), usuario:id_usuario(id, nome, foto)')
         .order('created_at', { ascending: false });
       if (error) throw error;
+
+      // Busca os veículos de interesse separadamente (não existe FK para embed)
+      const idsEstoque = Array.from(
+        new Set((data || []).map((d: any) => d.idEstoque).filter((id: number | null): id is number => !!id))
+      );
+      const mapaEstoque = new Map<number, { modelo: string | null; ano: string | null; fabricante: string | null }>();
+      if (idsEstoque.length > 0) {
+        const { data: veiculos } = await supabase
+          .from('estoque')
+          .select('id, modelo, ano, fabricante')
+          .in('id', idsEstoque);
+        (veiculos || []).forEach((v: any) => mapaEstoque.set(v.id, { modelo: v.modelo, ano: v.ano, fabricante: v.fabricante }));
+      }
+
       return (data || []).map((d: any) => ({
         ...d,
         lead: Array.isArray(d.lead) ? d.lead[0] ?? null : d.lead,
         usuario: Array.isArray(d.usuario) ? d.usuario[0] ?? null : d.usuario,
-        estoque: Array.isArray(d.estoque) ? d.estoque[0] ?? null : d.estoque,
+        estoque: d.idEstoque ? mapaEstoque.get(d.idEstoque) ?? null : null,
       })) as Oportunidade[];
+
     },
   });
 }
