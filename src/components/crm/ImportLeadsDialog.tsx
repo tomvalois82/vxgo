@@ -98,6 +98,7 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
       email: SEM_MAPEAMENTO,
       interesse: [],
     });
+    setInteresseAberto(false);
     if (inputRef.current) inputRef.current.value = '';
   };
 
