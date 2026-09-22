@@ -127,11 +127,33 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
     return valor && valor.trim() !== '' ? valor.trim() : null;
   };
 
+  /** Normaliza um telefone para comparação, lidando com 9º dígito e códigos de país. */
+  const normalizarTelefoneParaComparacao = (telefone: string | null): string | null => {
+    if (!telefone || telefone.trim() === '') return null;
+    try {
+      return formatarTelefoneBR(telefone);
+    } catch {
+      const digitos = telefone.replace(/\D/g, '');
+      return digitos || null;
+    }
+  };
+
   const importar = async () => {
     if (!podeImportar) return;
+
+    const configUsuario = profile?.config;
+    if (!configUsuario) {
+      toast({
+        title: 'Configuração não encontrada',
+        description: 'Não foi possível identificar a configuração do usuário logado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setImportando(true);
     try {
-      const registros = linhas
+      const registrosBrutos = linhas
         .map((linha) => {
           const telefoneBruto = valorDaColuna(linha, mapeamento.telefone);
           let telefone: string | null = telefoneBruto;
@@ -149,16 +171,56 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
             email: valorDaColuna(linha, mapeamento.email),
             interesse: valorDaColuna(linha, mapeamento.interesse),
             Origem: origem,
-            config: profile?.config ?? null,
+            config: configUsuario,
           };
         })
         .filter((registro) => registro.nome || registro.telefone);
 
-      if (registros.length === 0) {
+      if (registrosBrutos.length === 0) {
         toast({
           title: 'Nenhum lead válido',
           description: 'Os registros do arquivo estão sem nome e sem telefone.',
           variant: 'destructive',
+        });
+        return;
+      }
+
+      // Busca leads existentes do mesmo config para verificar duplicidade por telefone.
+      const { data: existentes, error: erroConsulta } = await supabase
+        .from('lead')
+        .select('telefone')
+        .eq('config', configUsuario)
+        .not('telefone', 'is', null);
+
+      if (erroConsulta) throw erroConsulta;
+
+      const telefonesExistentes = new Set(
+        (existentes ?? [])
+          .map((item) => normalizarTelefoneParaComparacao(item.telefone))
+          .filter((telefone): telefone is string => !!telefone)
+      );
+
+      const telefonesJaProcessados = new Set<string>();
+      const registros = registrosBrutos.filter((registro) => {
+        const telefoneNormalizado = normalizarTelefoneParaComparacao(registro.telefone);
+        if (!telefoneNormalizado) return true;
+
+        if (
+          telefonesExistentes.has(telefoneNormalizado) ||
+          telefonesJaProcessados.has(telefoneNormalizado)
+        ) {
+          return false;
+        }
+        telefonesJaProcessados.add(telefoneNormalizado);
+        return true;
+      });
+
+      const ignorados = registrosBrutos.length - registros.length;
+
+      if (registros.length === 0) {
+        toast({
+          title: 'Nenhum lead novo',
+          description: 'Todos os registros do arquivo já existem na base de dados.',
         });
         return;
       }
@@ -173,7 +235,10 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
         inseridos += lote.length;
       }
 
-      toast({ title: `${inseridos} lead(s) importado(s) com sucesso` });
+      toast({
+        title: `${inseridos} novos lead(s) importado(s)`,
+        description: ignorados > 0 ? `${ignorados} registro(s) ignorado(s) por duplicidade.` : undefined,
+      });
       onImported();
       resetar();
       onOpenChange(false);
