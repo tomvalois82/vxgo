@@ -1,5 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Upload, FileSpreadsheet } from 'lucide-react';
+import { Upload, FileSpreadsheet, ChevronDown, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Dialog,
   DialogContent,
@@ -43,14 +45,28 @@ const ORIGENS = ['Whatsapp', 'Olx', 'Webmotors', 'Instagram', 'Facebook', 'Indic
 
 const SEM_MAPEAMENTO = '__nenhum__';
 
+type CampoLeadSimples = Exclude<CampoLead, 'interesse'>;
+
+interface MapeamentoCampos {
+  nome: string;
+  telefone: string;
+  email: string;
+  // Interesse aceita múltiplas colunas, concatenadas na ordem de seleção.
+  interesse: string[];
+}
+
 /** Sugere automaticamente a coluna do arquivo para cada campo do lead */
-const sugerirMapeamento = (cabecalho: string[]): Record<CampoLead, string> => {
-  const mapa = {} as Record<CampoLead, string>;
+const sugerirMapeamento = (cabecalho: string[]): MapeamentoCampos => {
+  const mapa = { interesse: [] } as unknown as MapeamentoCampos;
   CAMPOS_LEAD.forEach(({ campo, palavrasChave }) => {
     const indice = cabecalho.findIndex((coluna) =>
       palavrasChave.some((palavra) => coluna.toLowerCase().includes(palavra)),
     );
-    mapa[campo] = indice >= 0 ? String(indice) : SEM_MAPEAMENTO;
+    if (campo === 'interesse') {
+      mapa.interesse = indice >= 0 ? [String(indice)] : [];
+    } else {
+      mapa[campo as CampoLeadSimples] = indice >= 0 ? String(indice) : SEM_MAPEAMENTO;
+    }
   });
   return mapa;
 };
@@ -62,11 +78,11 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
   const [cabecalho, setCabecalho] = useState<string[]>([]);
   const [linhas, setLinhas] = useState<string[][]>([]);
   const [origem, setOrigem] = useState('');
-  const [mapeamento, setMapeamento] = useState<Record<CampoLead, string>>({
+  const [mapeamento, setMapeamento] = useState<MapeamentoCampos>({
     nome: SEM_MAPEAMENTO,
     telefone: SEM_MAPEAMENTO,
     email: SEM_MAPEAMENTO,
-    interesse: SEM_MAPEAMENTO,
+    interesse: [],
   });
   const [importando, setImportando] = useState(false);
 
@@ -79,9 +95,20 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
       nome: SEM_MAPEAMENTO,
       telefone: SEM_MAPEAMENTO,
       email: SEM_MAPEAMENTO,
-      interesse: SEM_MAPEAMENTO,
+      interesse: [],
     });
     if (inputRef.current) inputRef.current.value = '';
+  };
+
+  // Adiciona ou remove a coluna do interesse mantendo a ordem de seleção.
+  const alternarColunaInteresse = (indice: string) => {
+    setMapeamento((atual) => {
+      const selecionadas = atual.interesse;
+      const novas = selecionadas.includes(indice)
+        ? selecionadas.filter((item) => item !== indice)
+        : [...selecionadas, indice];
+      return { ...atual, interesse: novas };
+    });
   };
 
   const handleClose = (aberto: boolean) => {
@@ -165,11 +192,16 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
               telefone = telefoneBruto.replace(/\D/g, '') || null;
             }
           }
+          // Concatena as colunas de interesse na ordem em que foram selecionadas.
+          const interesse = mapeamento.interesse
+            .map((indice) => valorDaColuna(linha, indice))
+            .filter((valor): valor is string => !!valor)
+            .join(', ') || null;
           return {
             nome: valorDaColuna(linha, mapeamento.nome),
             telefone,
             email: valorDaColuna(linha, mapeamento.email),
-            interesse: valorDaColuna(linha, mapeamento.interesse),
+            interesse,
             Origem: origem,
             config: configUsuario,
           };
@@ -308,6 +340,63 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
               {CAMPOS_LEAD.map(({ campo, label }) => (
                 <div key={campo} className="grid grid-cols-[100px_1fr] items-center gap-3">
                   <Label className="text-sm">{label}</Label>
+                  {campo === 'interesse' ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between font-normal"
+                          type="button"
+                        >
+                          <span className="truncate">
+                            {mapeamento.interesse.length > 0
+                              ? mapeamento.interesse
+                                  .map((indice) => cabecalho[Number(indice)] || `Coluna ${Number(indice) + 1}`)
+                                  .join(', ')
+                              : 'Colunas do arquivo'}
+                          </span>
+                          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-2" align="start">
+                        <div className="max-h-56 space-y-1 overflow-y-auto">
+                          {cabecalho.map((coluna, indice) => {
+                            const chave = String(indice);
+                            const ordem = mapeamento.interesse.indexOf(chave);
+                            return (
+                              <label
+                                key={`${coluna}-${indice}`}
+                                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                              >
+                                <Checkbox
+                                  checked={ordem >= 0}
+                                  onCheckedChange={() => alternarColunaInteresse(chave)}
+                                />
+                                <span className="flex-1 truncate">
+                                  {coluna || `Coluna ${indice + 1}`}
+                                </span>
+                                {ordem >= 0 && (
+                                  <span className="text-xs text-muted-foreground">{ordem + 1}º</span>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {mapeamento.interesse.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            type="button"
+                            className="mt-1 w-full gap-1 text-xs"
+                            onClick={() => setMapeamento((atual) => ({ ...atual, interesse: [] }))}
+                          >
+                            <X className="h-3 w-3" />
+                            Limpar seleção
+                          </Button>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
                   <Select
                     value={mapeamento[campo]}
                     onValueChange={(valor) => setMapeamento((atual) => ({ ...atual, [campo]: valor }))}
@@ -324,6 +413,7 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
                       ))}
                     </SelectContent>
                   </Select>
+                  )}
                 </div>
               ))}
 
