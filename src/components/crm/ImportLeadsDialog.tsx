@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Upload, FileSpreadsheet, ChevronDown, X } from 'lucide-react';
+import { Upload, FileSpreadsheet, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
