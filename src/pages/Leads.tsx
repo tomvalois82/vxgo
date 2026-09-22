@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useLeadsList, type LeadListItem } from '@/hooks/crm/useLeadsList';
 import LeadDetailDialog from '@/components/crm/LeadDetailDialog';
 import CreateLeadDialog from '@/components/crm/CreateLeadDialog';
+import DeleteLeadDialog from '@/components/crm/DeleteLeadDialog';
 import OportunidadeDetailDialog from '@/components/crm/OportunidadeDetailDialog';
 import { getCorOrigem } from '@/lib/origem-utils';
 import { useQueryClient } from '@tanstack/react-query';
@@ -61,6 +62,8 @@ const Leads: React.FC = () => {
   const [criarAberto, setCriarAberto] = useState(false);
   const [oppId, setOppId] = useState<number | null>(null);
   const [oppAberto, setOppAberto] = useState(false);
+  const [leadParaExcluir, setLeadParaExcluir] = useState<LeadListItem | null>(null);
+  const [excluirAberto, setExcluirAberto] = useState(false);
 
   const { data, isLoading } = useLeadsList({ search: buscaAplicada, page, pageSize });
 
@@ -115,6 +118,7 @@ const Leads: React.FC = () => {
               <TableHead>Interesse</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead className="text-right">Oportunidades</TableHead>
+              <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -160,6 +164,21 @@ const Leads: React.FC = () => {
                 <TableCell>{formatarData(lead.created_at)}</TableCell>
                 <TableCell className="text-right">
                   <Badge variant="secondary">{lead.totalOportunidades}</Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    aria-label="Deletar lead"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLeadParaExcluir(lead);
+                      setExcluirAberto(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
