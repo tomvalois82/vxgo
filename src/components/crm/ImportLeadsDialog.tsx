@@ -85,6 +85,7 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
     interesse: [],
   });
   const [importando, setImportando] = useState(false);
+  const [interesseAberto, setInteresseAberto] = useState(false);
 
   const resetar = () => {
     setNomeArquivo('');
