@@ -157,6 +157,7 @@ const Leads: React.FC = () => {
                   )}
                 </TableCell>
                 <TableCell className="max-w-[240px] truncate">{lead.interesse || '-'}</TableCell>
+                <TableCell>{formatarData(lead.created_at)}</TableCell>
                 <TableCell className="text-right">
                   <Badge variant="secondary">{lead.totalOportunidades}</Badge>
                 </TableCell>
