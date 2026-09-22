@@ -364,7 +364,7 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
                         )}
                       </Button>
                       {interesseAberto && (
-                        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover p-2 shadow-md">
+                        <div className="mt-1 w-full rounded-md border bg-popover p-2 shadow-md">
                           <div className="max-h-56 space-y-1 overflow-y-auto">
                             {cabecalho.map((coluna, indice) => {
                               const chave = String(indice);
