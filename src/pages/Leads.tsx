@@ -129,7 +129,7 @@ const Leads: React.FC = () => {
 
             {!isLoading && (data?.leads.length ?? 0) === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                   Nenhum lead encontrado.
                 </TableCell>
               </TableRow>
