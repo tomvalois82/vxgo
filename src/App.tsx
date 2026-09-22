@@ -30,6 +30,7 @@ import RequireAdmin from "@/components/auth/RequireAdmin";
 import Canva from "@/pages/Canva";
 import CRM from "@/pages/CRM";
 import Agenda from "@/pages/Agenda";
+import Leads from "@/pages/Leads";
 
 // Import React Query components
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -63,6 +64,7 @@ const App = () => (
                   <Route path="followup" element={<Followup />} />
                   <Route path="crm" element={<CRM />} />
                   <Route path="crm/agenda" element={<Agenda />} />
+                  <Route path="crm/leads" element={<Leads />} />
                   <Route path="canva" element={<Canva />} />
                   <Route path="connections" element={<Connections />} />
                   <Route path="settings" element={<Settings />} />

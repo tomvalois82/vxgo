@@ -1503,6 +1503,209 @@ export type Database = {
         }
         Relationships: []
       }
+      vx_compras: {
+        Row: {
+          cancelada: boolean
+          created_at: string
+          data_compra: string
+          fechada: boolean | null
+          id: string
+          id_comprador: string | null
+          id_empresa: string
+          id_fornecedor: string
+          id_veiculo_comprado: number
+          observacoes: string | null
+          valor_total_compra: number
+        }
+        Insert: {
+          cancelada?: boolean
+          created_at?: string
+          data_compra: string
+          fechada?: boolean | null
+          id?: string
+          id_comprador?: string | null
+          id_empresa: string
+          id_fornecedor: string
+          id_veiculo_comprado: number
+          observacoes?: string | null
+          valor_total_compra: number
+        }
+        Update: {
+          cancelada?: boolean
+          created_at?: string
+          data_compra?: string
+          fechada?: boolean | null
+          id?: string
+          id_comprador?: string | null
+          id_empresa?: string
+          id_fornecedor?: string
+          id_veiculo_comprado?: number
+          observacoes?: string | null
+          valor_total_compra?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vx_compras_id_comprador_fkey"
+            columns: ["id_comprador"]
+            isOneToOne: false
+            referencedRelation: "vw_investidor_carteira"
+            referencedColumns: ["id_pessoa"]
+          },
+          {
+            foreignKeyName: "vx_compras_id_comprador_fkey"
+            columns: ["id_comprador"]
+            isOneToOne: false
+            referencedRelation: "vw_rentabilidade_investidor"
+            referencedColumns: ["id_pessoa"]
+          },
+          {
+            foreignKeyName: "vx_compras_id_comprador_fkey"
+            columns: ["id_comprador"]
+            isOneToOne: false
+            referencedRelation: "vx_pessoa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vx_compras_id_empresa_fkey1"
+            columns: ["id_empresa"]
+            isOneToOne: false
+            referencedRelation: "empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vx_compras_id_fornecedor_fkey"
+            columns: ["id_fornecedor"]
+            isOneToOne: false
+            referencedRelation: "vw_investidor_carteira"
+            referencedColumns: ["id_pessoa"]
+          },
+          {
+            foreignKeyName: "vx_compras_id_fornecedor_fkey"
+            columns: ["id_fornecedor"]
+            isOneToOne: false
+            referencedRelation: "vw_rentabilidade_investidor"
+            referencedColumns: ["id_pessoa"]
+          },
+          {
+            foreignKeyName: "vx_compras_id_fornecedor_fkey"
+            columns: ["id_fornecedor"]
+            isOneToOne: false
+            referencedRelation: "vx_pessoa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vx_compras_id_veiculo_comprado_fkey"
+            columns: ["id_veiculo_comprado"]
+            isOneToOne: false
+            referencedRelation: "estoque"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vx_compras_acerto: {
+        Row: {
+          created_at: string
+          data_lancamento: string
+          data_pagamento: string | null
+          id: string
+          id_compra: string
+          id_conta: string | null
+          id_forma_pagamento: string
+          id_movimento_gerado: string | null
+          numero: string | null
+          observacao: string | null
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data_lancamento: string
+          data_pagamento?: string | null
+          id?: string
+          id_compra: string
+          id_conta?: string | null
+          id_forma_pagamento: string
+          id_movimento_gerado?: string | null
+          numero?: string | null
+          observacao?: string | null
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          data_lancamento?: string
+          data_pagamento?: string | null
+          id?: string
+          id_compra?: string
+          id_conta?: string | null
+          id_forma_pagamento?: string
+          id_movimento_gerado?: string | null
+          numero?: string | null
+          observacao?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vx_compras_acerto_id_compra_fkey"
+            columns: ["id_compra"]
+            isOneToOne: false
+            referencedRelation: "vx_compras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vx_compras_acerto_id_conta_fkey1"
+            columns: ["id_conta"]
+            isOneToOne: false
+            referencedRelation: "vx_fin_conta"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vx_compras_acerto_id_forma_pagamento_fkey1"
+            columns: ["id_forma_pagamento"]
+            isOneToOne: false
+            referencedRelation: "vx_forma_pagamento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vx_compras_acerto_id_movimento_gerado_fkey1"
+            columns: ["id_movimento_gerado"]
+            isOneToOne: true
+            referencedRelation: "vx_fin_movimento"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vx_debug_log: {
+        Row: {
+          created_at: string | null
+          etapa: string | null
+          funcao: string | null
+          id: number
+          mensagem: string | null
+          valor_numero: number | null
+          valor_texto: string | null
+          valor_uuid: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          etapa?: string | null
+          funcao?: string | null
+          id?: number
+          mensagem?: string | null
+          valor_numero?: number | null
+          valor_texto?: string | null
+          valor_uuid?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          etapa?: string | null
+          funcao?: string | null
+          id?: number
+          mensagem?: string | null
+          valor_numero?: number | null
+          valor_texto?: string | null
+          valor_uuid?: string | null
+        }
+        Relationships: []
+      }
       vx_fin_anexo: {
         Row: {
           base64: string | null
@@ -1703,6 +1906,7 @@ export type Database = {
           id: string
           id_cartao: string | null
           id_categoria: string | null
+          id_compra: string | null
           id_conta: string | null
           id_conta_destino: string | null
           id_empresa: string
@@ -1732,6 +1936,7 @@ export type Database = {
           id?: string
           id_cartao?: string | null
           id_categoria?: string | null
+          id_compra?: string | null
           id_conta?: string | null
           id_conta_destino?: string | null
           id_empresa: string
@@ -1761,6 +1966,7 @@ export type Database = {
           id?: string
           id_cartao?: string | null
           id_categoria?: string | null
+          id_compra?: string | null
           id_conta?: string | null
           id_conta_destino?: string | null
           id_empresa?: string
@@ -1798,6 +2004,13 @@ export type Database = {
             columns: ["id_categoria"]
             isOneToOne: false
             referencedRelation: "vx_fin_categoria"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vx_fin_movimento_id_compra_fkey"
+            columns: ["id_compra"]
+            isOneToOne: false
+            referencedRelation: "vx_compras"
             referencedColumns: ["id"]
           },
           {

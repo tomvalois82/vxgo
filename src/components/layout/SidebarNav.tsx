@@ -70,6 +70,7 @@ const SidebarNav: React.FC<SidebarNavProps> = ({
   const crmSubItems = [
     { icon: Kanban, label: 'Kanban', href: '/dashboard/crm' },
     { icon: CalendarDays, label: 'Agenda', href: '/dashboard/crm/agenda' },
+    { icon: Users, label: 'Leads', href: '/dashboard/crm/leads' },
   ];
 
   const isActive = (href: string) => {
