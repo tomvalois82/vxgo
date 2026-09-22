@@ -256,6 +256,12 @@ const Leads: React.FC = () => {
         onCreated={() => queryClient.invalidateQueries({ queryKey: ['leads-list'] })}
       />
 
+      <ImportLeadsDialog
+        open={importarAberto}
+        onOpenChange={setImportarAberto}
+        onImported={() => queryClient.invalidateQueries({ queryKey: ['leads-list'] })}
+      />
+
       <OportunidadeDetailDialog oppId={oppId} open={oppAberto} onOpenChange={setOppAberto} />
 
       <DeleteLeadDialog
