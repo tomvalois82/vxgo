@@ -413,6 +413,7 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
                       ))}
                     </SelectContent>
                   </Select>
+                  )}
                 </div>
               ))}
 
