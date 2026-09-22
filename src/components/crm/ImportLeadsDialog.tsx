@@ -45,14 +45,28 @@ const ORIGENS = ['Whatsapp', 'Olx', 'Webmotors', 'Instagram', 'Facebook', 'Indic
 
 const SEM_MAPEAMENTO = '__nenhum__';
 
+type CampoLeadSimples = Exclude<CampoLead, 'interesse'>;
+
+interface MapeamentoCampos {
+  nome: string;
+  telefone: string;
+  email: string;
+  // Interesse aceita múltiplas colunas, concatenadas na ordem de seleção.
+  interesse: string[];
+}
+
 /** Sugere automaticamente a coluna do arquivo para cada campo do lead */
-const sugerirMapeamento = (cabecalho: string[]): Record<CampoLead, string> => {
-  const mapa = {} as Record<CampoLead, string>;
+const sugerirMapeamento = (cabecalho: string[]): MapeamentoCampos => {
+  const mapa = { interesse: [] } as unknown as MapeamentoCampos;
   CAMPOS_LEAD.forEach(({ campo, palavrasChave }) => {
     const indice = cabecalho.findIndex((coluna) =>
       palavrasChave.some((palavra) => coluna.toLowerCase().includes(palavra)),
     );
-    mapa[campo] = indice >= 0 ? String(indice) : SEM_MAPEAMENTO;
+    if (campo === 'interesse') {
+      mapa.interesse = indice >= 0 ? [String(indice)] : [];
+    } else {
+      mapa[campo as CampoLeadSimples] = indice >= 0 ? String(indice) : SEM_MAPEAMENTO;
+    }
   });
   return mapa;
 };
@@ -64,11 +78,11 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
   const [cabecalho, setCabecalho] = useState<string[]>([]);
   const [linhas, setLinhas] = useState<string[][]>([]);
   const [origem, setOrigem] = useState('');
-  const [mapeamento, setMapeamento] = useState<Record<CampoLead, string>>({
+  const [mapeamento, setMapeamento] = useState<MapeamentoCampos>({
     nome: SEM_MAPEAMENTO,
     telefone: SEM_MAPEAMENTO,
     email: SEM_MAPEAMENTO,
-    interesse: SEM_MAPEAMENTO,
+    interesse: [],
   });
   const [importando, setImportando] = useState(false);
 
@@ -81,9 +95,20 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
       nome: SEM_MAPEAMENTO,
       telefone: SEM_MAPEAMENTO,
       email: SEM_MAPEAMENTO,
-      interesse: SEM_MAPEAMENTO,
+      interesse: [],
     });
     if (inputRef.current) inputRef.current.value = '';
+  };
+
+  // Adiciona ou remove a coluna do interesse mantendo a ordem de seleção.
+  const alternarColunaInteresse = (indice: string) => {
+    setMapeamento((atual) => {
+      const selecionadas = atual.interesse;
+      const novas = selecionadas.includes(indice)
+        ? selecionadas.filter((item) => item !== indice)
+        : [...selecionadas, indice];
+      return { ...atual, interesse: novas };
+    });
   };
 
   const handleClose = (aberto: boolean) => {
