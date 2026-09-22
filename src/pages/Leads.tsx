@@ -41,6 +41,14 @@ const formatarTelefone = (telefone: string | null): string => {
   return telefone;
 };
 
+/** Formata data ISO para DD/MM/YYYY */
+const formatarData = (data: string | null): string => {
+  if (!data) return '-';
+  const d = new Date(data);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('pt-BR');
+};
+
 const Leads: React.FC = () => {
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState('');
