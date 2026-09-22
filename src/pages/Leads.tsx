@@ -94,10 +94,16 @@ const Leads: React.FC = () => {
             {total} lead{total !== 1 ? 's' : ''} cadastrado{total !== 1 ? 's' : ''}
           </p>
         </div>
-        <Button onClick={() => setCriarAberto(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo lead
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportarAberto(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Importar leads
+          </Button>
+          <Button onClick={() => setCriarAberto(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo lead
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-sm">
