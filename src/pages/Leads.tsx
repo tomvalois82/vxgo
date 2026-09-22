@@ -125,7 +125,7 @@ const Leads: React.FC = () => {
             {isLoading &&
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={6}>
+                  <TableCell colSpan={7}>
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
                 </TableRow>
@@ -133,7 +133,7 @@ const Leads: React.FC = () => {
 
             {!isLoading && (data?.leads.length ?? 0) === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
                   Nenhum lead encontrado.
                 </TableCell>
               </TableRow>
@@ -249,6 +249,16 @@ const Leads: React.FC = () => {
       />
 
       <OportunidadeDetailDialog oppId={oppId} open={oppAberto} onOpenChange={setOppAberto} />
+
+      <DeleteLeadDialog
+        lead={leadParaExcluir}
+        open={excluirAberto}
+        onOpenChange={setExcluirAberto}
+        onDeleted={() => {
+          setLeadParaExcluir(null);
+          queryClient.invalidateQueries({ queryKey: ['leads-list'] });
+        }}
+      />
     </div>
   );
 };
