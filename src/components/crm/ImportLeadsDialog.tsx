@@ -364,13 +364,23 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
                             const chave = String(indice);
                             const ordem = mapeamento.interesse.indexOf(chave);
                             return (
-                              <label
+                              <div
                                 key={`${coluna}-${indice}`}
+                                role="button"
+                                tabIndex={0}
                                 className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                                onClick={() => alternarColunaInteresse(chave)}
+                                onKeyDown={(evento) => {
+                                  if (evento.key === 'Enter' || evento.key === ' ') {
+                                    evento.preventDefault();
+                                    alternarColunaInteresse(chave);
+                                  }
+                                }}
                               >
                                 <Checkbox
                                   checked={ordem >= 0}
-                                  onCheckedChange={() => alternarColunaInteresse(chave)}
+                                  className="pointer-events-none"
+                                  tabIndex={-1}
                                 />
                                 <span className="flex-1 truncate">
                                   {coluna || `Coluna ${indice + 1}`}
@@ -378,7 +388,7 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
                                 {ordem >= 0 && (
                                   <span className="text-xs text-muted-foreground">{ordem + 1}º</span>
                                 )}
-                              </label>
+                              </div>
                             );
                           })}
                         </div>
