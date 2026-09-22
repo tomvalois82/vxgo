@@ -192,11 +192,16 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
               telefone = telefoneBruto.replace(/\D/g, '') || null;
             }
           }
+          // Concatena as colunas de interesse na ordem em que foram selecionadas.
+          const interesse = mapeamento.interesse
+            .map((indice) => valorDaColuna(linha, indice))
+            .filter((valor): valor is string => !!valor)
+            .join(', ') || null;
           return {
             nome: valorDaColuna(linha, mapeamento.nome),
             telefone,
             email: valorDaColuna(linha, mapeamento.email),
-            interesse: valorDaColuna(linha, mapeamento.interesse),
+            interesse,
             Origem: origem,
             config: configUsuario,
           };
