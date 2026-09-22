@@ -127,6 +127,17 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
     return valor && valor.trim() !== '' ? valor.trim() : null;
   };
 
+  /** Normaliza um telefone para comparação, lidando com 9º dígito e códigos de país. */
+  const normalizarTelefoneParaComparacao = (telefone: string | null): string | null => {
+    if (!telefone || telefone.trim() === '') return null;
+    try {
+      return formatarTelefoneBR(telefone);
+    } catch {
+      const digitos = telefone.replace(/\D/g, '');
+      return digitos || null;
+    }
+  };
+
   const importar = async () => {
     if (!podeImportar) return;
     setImportando(true);
