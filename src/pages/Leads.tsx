@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, Trash2, Upload } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -23,6 +23,7 @@ import { useLeadsList, type LeadListItem } from '@/hooks/crm/useLeadsList';
 import LeadDetailDialog from '@/components/crm/LeadDetailDialog';
 import CreateLeadDialog from '@/components/crm/CreateLeadDialog';
 import DeleteLeadDialog from '@/components/crm/DeleteLeadDialog';
+import ImportLeadsDialog from '@/components/crm/ImportLeadsDialog';
 import OportunidadeDetailDialog from '@/components/crm/OportunidadeDetailDialog';
 import { getCorOrigem } from '@/lib/origem-utils';
 import { useQueryClient } from '@tanstack/react-query';
@@ -60,6 +61,7 @@ const Leads: React.FC = () => {
   const [leadSelecionado, setLeadSelecionado] = useState<LeadListItem | null>(null);
   const [detalheAberto, setDetalheAberto] = useState(false);
   const [criarAberto, setCriarAberto] = useState(false);
+  const [importarAberto, setImportarAberto] = useState(false);
   const [oppId, setOppId] = useState<number | null>(null);
   const [oppAberto, setOppAberto] = useState(false);
   const [leadParaExcluir, setLeadParaExcluir] = useState<LeadListItem | null>(null);
