@@ -121,7 +121,7 @@ const Leads: React.FC = () => {
             {isLoading &&
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={6}>
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
                 </TableRow>
