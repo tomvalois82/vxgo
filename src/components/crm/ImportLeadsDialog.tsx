@@ -388,7 +388,7 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
                                 {ordem >= 0 && (
                                   <span className="text-xs text-muted-foreground">{ordem + 1}º</span>
                                 )}
-                              </label>
+                              </div>
                             );
                           })}
                         </div>
