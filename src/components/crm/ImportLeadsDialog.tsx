@@ -343,71 +343,76 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
                 <div key={campo} className="grid grid-cols-[100px_1fr] items-center gap-3">
                   <Label className="text-sm">{label}</Label>
                   {campo === 'interesse' ? (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-between font-normal"
-                          type="button"
-                        >
-                          <span className="truncate">
-                            {mapeamento.interesse.length > 0
-                              ? mapeamento.interesse
-                                  .map((indice) => cabecalho[Number(indice)] || `Coluna ${Number(indice) + 1}`)
-                                  .join(', ')
-                              : 'Colunas do arquivo'}
-                          </span>
+                    <div className="relative w-full">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between font-normal"
+                        type="button"
+                        onClick={() => setInteresseAberto((aberto) => !aberto)}
+                      >
+                        <span className="truncate">
+                          {mapeamento.interesse.length > 0
+                            ? mapeamento.interesse
+                                .map((indice) => cabecalho[Number(indice)] || `Coluna ${Number(indice) + 1}`)
+                                .join(', ')
+                            : 'Colunas do arquivo'}
+                        </span>
+                        {interesseAberto ? (
+                          <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        ) : (
                           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 p-2" align="start">
-                        <div className="max-h-56 space-y-1 overflow-y-auto">
-                          {cabecalho.map((coluna, indice) => {
-                            const chave = String(indice);
-                            const ordem = mapeamento.interesse.indexOf(chave);
-                            return (
-                              <div
-                                key={`${coluna}-${indice}`}
-                                role="button"
-                                tabIndex={0}
-                                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
-                                onClick={() => alternarColunaInteresse(chave)}
-                                onKeyDown={(evento) => {
-                                  if (evento.key === 'Enter' || evento.key === ' ') {
-                                    evento.preventDefault();
-                                    alternarColunaInteresse(chave);
-                                  }
-                                }}
-                              >
-                                <Checkbox
-                                  checked={ordem >= 0}
-                                  className="pointer-events-none"
-                                  tabIndex={-1}
-                                />
-                                <span className="flex-1 truncate">
-                                  {coluna || `Coluna ${indice + 1}`}
-                                </span>
-                                {ordem >= 0 && (
-                                  <span className="text-xs text-muted-foreground">{ordem + 1}º</span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {mapeamento.interesse.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            type="button"
-                            className="mt-1 w-full gap-1 text-xs"
-                            onClick={() => setMapeamento((atual) => ({ ...atual, interesse: [] }))}
-                          >
-                            <X className="h-3 w-3" />
-                            Limpar seleção
-                          </Button>
                         )}
-                      </PopoverContent>
-                    </Popover>
+                      </Button>
+                      {interesseAberto && (
+                        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover p-2 shadow-md">
+                          <div className="max-h-56 space-y-1 overflow-y-auto">
+                            {cabecalho.map((coluna, indice) => {
+                              const chave = String(indice);
+                              const ordem = mapeamento.interesse.indexOf(chave);
+                              return (
+                                <div
+                                  key={`${coluna}-${indice}`}
+                                  role="button"
+                                  tabIndex={0}
+                                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                                  onClick={() => alternarColunaInteresse(chave)}
+                                  onKeyDown={(evento) => {
+                                    if (evento.key === 'Enter' || evento.key === ' ') {
+                                      evento.preventDefault();
+                                      alternarColunaInteresse(chave);
+                                    }
+                                  }}
+                                >
+                                  <Checkbox
+                                    checked={ordem >= 0}
+                                    className="pointer-events-none"
+                                    tabIndex={-1}
+                                  />
+                                  <span className="flex-1 truncate">
+                                    {coluna || `Coluna ${indice + 1}`}
+                                  </span>
+                                  {ordem >= 0 && (
+                                    <span className="text-xs text-muted-foreground">{ordem + 1}º</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {mapeamento.interesse.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              className="mt-1 w-full gap-1 text-xs"
+                              onClick={() => setMapeamento((atual) => ({ ...atual, interesse: [] }))}
+                            >
+                              <X className="h-3 w-3" />
+                              Limpar seleção
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ) : (
                   <Select
                     value={mapeamento[campo]}
