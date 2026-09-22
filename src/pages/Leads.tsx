@@ -113,6 +113,7 @@ const Leads: React.FC = () => {
               <TableHead>Telefone</TableHead>
               <TableHead>Origem</TableHead>
               <TableHead>Interesse</TableHead>
+              <TableHead>Criado em</TableHead>
               <TableHead className="text-right">Oportunidades</TableHead>
             </TableRow>
           </TableHeader>
