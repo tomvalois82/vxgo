@@ -41,6 +41,14 @@ const formatarTelefone = (telefone: string | null): string => {
   return telefone;
 };
 
+/** Formata data ISO para DD/MM/YYYY */
+const formatarData = (data: string | null): string => {
+  if (!data) return '-';
+  const d = new Date(data);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('pt-BR');
+};
+
 const Leads: React.FC = () => {
   const queryClient = useQueryClient();
   const [busca, setBusca] = useState('');
@@ -105,6 +113,7 @@ const Leads: React.FC = () => {
               <TableHead>Telefone</TableHead>
               <TableHead>Origem</TableHead>
               <TableHead>Interesse</TableHead>
+              <TableHead>Criado em</TableHead>
               <TableHead className="text-right">Oportunidades</TableHead>
             </TableRow>
           </TableHeader>
@@ -112,7 +121,7 @@ const Leads: React.FC = () => {
             {isLoading &&
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={6}>
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
                 </TableRow>
@@ -120,7 +129,7 @@ const Leads: React.FC = () => {
 
             {!isLoading && (data?.leads.length ?? 0) === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                   Nenhum lead encontrado.
                 </TableCell>
               </TableRow>
@@ -148,6 +157,7 @@ const Leads: React.FC = () => {
                   )}
                 </TableCell>
                 <TableCell className="max-w-[240px] truncate">{lead.interesse || '-'}</TableCell>
+                <TableCell>{formatarData(lead.created_at)}</TableCell>
                 <TableCell className="text-right">
                   <Badge variant="secondary">{lead.totalOportunidades}</Badge>
                 </TableCell>
