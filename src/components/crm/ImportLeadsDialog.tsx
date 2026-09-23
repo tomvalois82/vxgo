@@ -104,6 +104,10 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
       interesse: [],
     });
     setInteresseAberto(false);
+    setObsModo('texto');
+    setObsTexto('');
+    setObsColunas([]);
+    setObsAberto(false);
     if (inputRef.current) inputRef.current.value = '';
   };
 
@@ -116,6 +120,13 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
         : [...selecionadas, indice];
       return { ...atual, interesse: novas };
     });
+  };
+
+  // Adiciona ou remove a coluna da observação mantendo a ordem de seleção.
+  const alternarColunaObs = (indice: string) => {
+    setObsColunas((atual) =>
+      atual.includes(indice) ? atual.filter((item) => item !== indice) : [...atual, indice],
+    );
   };
 
   const handleClose = (aberto: boolean) => {
