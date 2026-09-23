@@ -215,11 +215,20 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
             .map((indice) => valorDaColuna(linha, indice))
             .filter((valor): valor is string => !!valor)
             .join(', ') || null;
+          // Observação: texto livre comum a todos ou concatenação das colunas selecionadas.
+          const obs =
+            obsModo === 'texto'
+              ? obsTexto.trim() || null
+              : obsColunas
+                    .map((indice) => valorDaColuna(linha, indice))
+                    .filter((valor): valor is string => !!valor)
+                    .join(', ') || null;
           return {
             nome: valorDaColuna(linha, mapeamento.nome),
             telefone,
             email: valorDaColuna(linha, mapeamento.email),
             interesse,
+            obs,
             Origem: origem,
             config: configUsuario,
           };
