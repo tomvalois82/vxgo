@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Upload, FileSpreadsheet, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -85,6 +86,11 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
   });
   const [importando, setImportando] = useState(false);
   const [interesseAberto, setInteresseAberto] = useState(false);
+  // Observação: texto livre comum a todos ou colunas do arquivo por registro.
+  const [obsModo, setObsModo] = useState<'texto' | 'colunas'>('texto');
+  const [obsTexto, setObsTexto] = useState('');
+  const [obsColunas, setObsColunas] = useState<string[]>([]);
+  const [obsAberto, setObsAberto] = useState(false);
 
   const resetar = () => {
     setNomeArquivo('');
@@ -98,6 +104,10 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
       interesse: [],
     });
     setInteresseAberto(false);
+    setObsModo('texto');
+    setObsTexto('');
+    setObsColunas([]);
+    setObsAberto(false);
     if (inputRef.current) inputRef.current.value = '';
   };
 
@@ -110,6 +120,13 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
         : [...selecionadas, indice];
       return { ...atual, interesse: novas };
     });
+  };
+
+  // Adiciona ou remove a coluna da observação mantendo a ordem de seleção.
+  const alternarColunaObs = (indice: string) => {
+    setObsColunas((atual) =>
+      atual.includes(indice) ? atual.filter((item) => item !== indice) : [...atual, indice],
+    );
   };
 
   const handleClose = (aberto: boolean) => {
@@ -198,11 +215,20 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
             .map((indice) => valorDaColuna(linha, indice))
             .filter((valor): valor is string => !!valor)
             .join(', ') || null;
+          // Observação: texto livre comum a todos ou concatenação das colunas selecionadas.
+          const obs =
+            obsModo === 'texto'
+              ? obsTexto.trim() || null
+              : obsColunas
+                    .map((indice) => valorDaColuna(linha, indice))
+                    .filter((valor): valor is string => !!valor)
+                    .join(', ') || null;
           return {
             nome: valorDaColuna(linha, mapeamento.nome),
             telefone,
             email: valorDaColuna(linha, mapeamento.email),
             interesse,
+            obs,
             Origem: origem,
             config: configUsuario,
           };
@@ -432,6 +458,99 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
                   )}
                 </div>
               ))}
+
+              <div className="space-y-2 border-t pt-3">
+                <Label>Observação</Label>
+                <Select value={obsModo} onValueChange={(valor) => setObsModo(valor as 'texto' | 'colunas')}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="texto">Texto livre (igual para todos)</SelectItem>
+                    <SelectItem value="colunas">Colunas do arquivo (por registro)</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {obsModo === 'texto' ? (
+                  <Textarea
+                    value={obsTexto}
+                    onChange={(evento) => setObsTexto(evento.target.value)}
+                    placeholder="Observação que será salva em todos os leads importados"
+                    rows={3}
+                  />
+                ) : (
+                  <div className="relative w-full">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between font-normal"
+                      type="button"
+                      onClick={() => setObsAberto((aberto) => !aberto)}
+                    >
+                      <span className="truncate">
+                        {obsColunas.length > 0
+                          ? obsColunas
+                              .map((indice) => cabecalho[Number(indice)] || `Coluna ${Number(indice) + 1}`)
+                              .join(', ')
+                          : 'Colunas do arquivo'}
+                      </span>
+                      {obsAberto ? (
+                        <ChevronUp className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      ) : (
+                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      )}
+                    </Button>
+                    {obsAberto && (
+                      <div className="mt-1 w-full rounded-md border bg-popover p-2 shadow-md">
+                        <div className="max-h-56 space-y-1 overflow-y-auto">
+                          {cabecalho.map((coluna, indice) => {
+                            const chave = String(indice);
+                            const ordem = obsColunas.indexOf(chave);
+                            return (
+                              <div
+                                key={`obs-${coluna}-${indice}`}
+                                role="button"
+                                tabIndex={0}
+                                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted"
+                                onClick={() => alternarColunaObs(chave)}
+                                onKeyDown={(evento) => {
+                                  if (evento.key === 'Enter' || evento.key === ' ') {
+                                    evento.preventDefault();
+                                    alternarColunaObs(chave);
+                                  }
+                                }}
+                              >
+                                <Checkbox
+                                  checked={ordem >= 0}
+                                  className="pointer-events-none"
+                                  tabIndex={-1}
+                                />
+                                <span className="flex-1 truncate">
+                                  {coluna || `Coluna ${indice + 1}`}
+                                </span>
+                                {ordem >= 0 && (
+                                  <span className="text-xs text-muted-foreground">{ordem + 1}º</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {obsColunas.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            type="button"
+                            className="mt-1 w-full gap-1 text-xs"
+                            onClick={() => setObsColunas([])}
+                          >
+                            <X className="h-3 w-3" />
+                            Limpar seleção
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <p className="text-xs text-muted-foreground">
                 Informe ao menos o nome ou o telefone para concluir a importação.
