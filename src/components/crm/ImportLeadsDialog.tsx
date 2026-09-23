@@ -86,6 +86,11 @@ const ImportLeadsDialog: React.FC<ImportLeadsDialogProps> = ({ open, onOpenChang
   });
   const [importando, setImportando] = useState(false);
   const [interesseAberto, setInteresseAberto] = useState(false);
+  // Observação: texto livre comum a todos ou colunas do arquivo por registro.
+  const [obsModo, setObsModo] = useState<'texto' | 'colunas'>('texto');
+  const [obsTexto, setObsTexto] = useState('');
+  const [obsColunas, setObsColunas] = useState<string[]>([]);
+  const [obsAberto, setObsAberto] = useState(false);
 
   const resetar = () => {
     setNomeArquivo('');
