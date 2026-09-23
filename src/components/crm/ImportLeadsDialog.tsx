@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Upload, FileSpreadsheet, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
