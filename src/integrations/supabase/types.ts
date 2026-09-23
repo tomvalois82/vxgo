@@ -1068,6 +1068,7 @@ export type Database = {
           interesse: string | null
           intervencao: string | null
           nome: string | null
+          obs: string | null
           Origem: string | null
           proximofolowup: string | null
           session_id_olx: string | null
@@ -1085,6 +1086,7 @@ export type Database = {
           interesse?: string | null
           intervencao?: string | null
           nome?: string | null
+          obs?: string | null
           Origem?: string | null
           proximofolowup?: string | null
           session_id_olx?: string | null
@@ -1102,6 +1104,7 @@ export type Database = {
           interesse?: string | null
           intervencao?: string | null
           nome?: string | null
+          obs?: string | null
           Origem?: string | null
           proximofolowup?: string | null
           session_id_olx?: string | null
