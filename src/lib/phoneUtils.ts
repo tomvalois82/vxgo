@@ -70,3 +70,45 @@ export function formatarTelefoneBR(telefone?: string | null): string | null {
 
   return digitos;
 }
+
+/**
+ * Exibe um telefone brasileiro no formato de máscara (DD) 9XXXX-XXXX,
+ * para uso em telas e listagens.
+ *
+ * Regras:
+ * - Mantém apenas dígitos e remove código do país (55) quando o total
+ *   passa de 11 dígitos.
+ * - 11 dígitos -> (DD) XXXXX-XXXX
+ * - 10 dígitos -> (DD) XXXX-XXXX
+ * - Qualquer outro caso devolve o valor original sem alteração.
+ *
+ * @param telefone - Número de telefone em qualquer formato aceito.
+ * @returns String mascarada, o valor original ou null quando vazio.
+ *
+ * @example
+ * mascararTelefoneBR('81996505552') // '(81) 99650-5552'
+ * mascararTelefoneBR('8199650552')  // '(81) 9965-0552'
+ */
+export function mascararTelefoneBR(telefone?: string | null): string | null {
+  if (!telefone || telefone.trim() === '') {
+    return null;
+  }
+
+  let digitos = telefone.replace(/\D/g, '');
+
+  // Remove código do país (55) apenas quando sobra mais de 11 dígitos.
+  if (digitos.startsWith('55') && digitos.length > 11) {
+    digitos = digitos.slice(2);
+  }
+
+  if (digitos.length === 11) {
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
+  }
+
+  if (digitos.length === 10) {
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
+  }
+
+  return telefone.trim();
+}
+

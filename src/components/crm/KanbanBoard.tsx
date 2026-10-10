@@ -17,6 +17,8 @@ import {
 '@/hooks/crm/useKanban';
 import { useActiveFunis } from '@/hooks/crm/useFunis';
 import { getCorOrigem } from '@/lib/origem-utils';
+import { mascararTelefoneBR } from '@/lib/phoneUtils';
+
 import { useConfigUsers } from '@/hooks/crm/useConfigUsers';
 import { useAtividadesStatusByOportunidade, AtividadeStatusKanban } from '@/hooks/crm/useAtividades';
 import { useVeiculosPorIds } from '@/hooks/crm/useVeiculosPorIds';
@@ -392,7 +394,13 @@ const OportunidadeCardContent: React.FC<CardContentProps> = React.memo(({ opp, s
           </TooltipProvider>
         }
       </div>
+      {opp.lead?.telefone &&
+      <p className="text-sm text-muted-foreground mt-0.5">
+            {mascararTelefoneBR(opp.lead.telefone)}
+          </p>
+      }
       {opp.estoque && (opp.estoque.modelo || opp.estoque.ano) &&
+
       <p className="text-sm font-semibold text-muted-foreground mt-1">
             {[opp.estoque.modelo, opp.estoque.ano].filter(Boolean).join(' ')}
           </p>
