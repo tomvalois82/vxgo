@@ -1,6 +1,6 @@
 // @ts-expect-error tipos do bun:test não estão no projeto, mas bun os fornece em runtime
 import { describe, expect, it } from 'bun:test';
-import { formatarTelefoneBR, TelefoneInvalidoError } from './phoneUtils';
+import { formatarTelefoneBR, mascararTelefoneBR, TelefoneInvalidoError } from './phoneUtils';
 
 describe('formatarTelefoneBR', () => {
   describe('saídas válidas', () => {
@@ -58,3 +58,27 @@ describe('formatarTelefoneBR', () => {
     });
   });
 });
+
+describe('mascararTelefoneBR', () => {
+  it('mascara celular de 11 dígitos como (DD) XXXXX-XXXX', () => {
+    expect(mascararTelefoneBR('81996505552')).toBe('(81) 99650-5552');
+    expect(mascararTelefoneBR('5581996505552')).toBe('(81) 99650-5552');
+    expect(mascararTelefoneBR('(81) 99650-5552')).toBe('(81) 99650-5552');
+  });
+
+  it('mascara telefone de 10 dígitos como (DD) XXXX-XXXX', () => {
+    expect(mascararTelefoneBR('8136505552')).toBe('(81) 3650-5552');
+    expect(mascararTelefoneBR('(81) 3650-5552')).toBe('(81) 3650-5552');
+  });
+
+  it('devolve o valor original quando não é possível mascarar', () => {
+    expect(mascararTelefoneBR('12345')).toBe('12345');
+  });
+
+  it('devolve null para valores vazios', () => {
+    expect(mascararTelefoneBR('')).toBeNull();
+    expect(mascararTelefoneBR(null)).toBeNull();
+    expect(mascararTelefoneBR(undefined)).toBeNull();
+  });
+});
+
